@@ -4,3 +4,61 @@
 @media(max-width:900px){.editor-layout{grid-template-columns:minmax(0,1fr)}.preview-column{position:static}.tool-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.shell{width:min(100% - 22px,1240px)}.topbar-inner{min-height:68px}.brand img{width:43px;height:43px}.brand strong{font-size:15px}.brand small{font-size:9px}.public-link{font-size:10px}.mast{padding-top:22px}.mast-mark{display:none}.metrics{gap:7px}.metrics article{padding:13px 10px;border-radius:11px}.metrics strong{font-size:21px}.metrics small{font-size:9px;letter-spacing:.03em}.metrics span{font-size:9px}.tool-card{grid-template-columns:46px minmax(0,1fr) 14px;padding:14px;gap:11px}.tool-icon{width:44px;height:44px;font-size:24px}.tool-card b{font-size:17px}.tool-card small{font-size:11px}.section-panel.panel{padding:16px}.form-section{padding:17px 14px}.fields.two,.fields.three{grid-template-columns:repeat(2,minmax(0,1fr))}.fields.three label:last-child{grid-column:1/-1}.form-actions{padding:16px 14px}.form-actions .button{flex:1 1 130px}.item-fields{grid-template-columns:1fr 1fr}.item-description{grid-column:1/-1}.print-area{padding:18px 13px 21px}.doc-name{font-size:22px}.invoice-header img{width:77px;height:65px}.doc-items{font-size:9px}.doc-items th,.doc-items td{padding:8px 4px}.doc-items th:first-child{width:40%}.doc-meta{gap:9px}.doc-footer{font-size:8px}.record{align-items:flex-start}}
 @media print{@page{size:letter;margin:0.45in}body{background:white!important;margin:0!important}.topbar,.mast,.signin,.metrics,.section-heading,.tool-grid,.section-top,.editor-form,.preview-bar,.preview-footnote,.footer,.hint,#documents-section,#customers-section,.record-list{display:none!important}.shell{width:100%!important;margin:0!important}#workspace,#editor-section,.editor-layout,.preview-column{display:block!important;margin:0!important;width:100%!important;padding:0!important}.print-area{border:0!important;border-top:7px solid #f18b10!important;padding:18px 5px!important;box-shadow:none!important;width:100%!important;break-inside:auto}.doc-items tr{break-inside:avoid}.doc-foot,.totals-wrap{break-inside:avoid}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* SUPERIOR REMODEL ORIGINAL GOLD / SILVER / BLACK BRAND */
+:root{--navy:#111111;--navy2:#232323;--blue:#bc9850;--orange:#c6a256;--ink:#202020;--muted:#626262;--line:#d7d3cb;--light:#f5f3ee;--white:#fff}
+body{background:#f5f3ee;color:#202020}
+.topbar{background:#101010;border-bottom-color:#c9a552}
+.brand img,.invoice-header img{background:#080808}
+.brand strong{color:#f5f5f5}.brand small,.footer a{color:#d4b56f}
+.public-link{color:#d9d9d9}
+.mast h1,.section-heading,.section-top h2,.form-section h3{color:#191919}
+.mast h1 span,.eyebrow{color:#af8b3b}
+.mast p,.hint,.tool-card small,.preview-footnote{color:#626262}
+.mast-mark{color:#c7c7c7}.mast-mark span{color:#c6a256}
+.panel,.tool-card{border-color:#d8d4cc;box-shadow:0 8px 24px #1010100b}
+.signin code{background:#eae7e0}
+.button.primary{background:#c6a256;color:#111111;border-color:#ad873e}
+.button.dark{background:#191919;color:#fff}
+.button.secondary{background:#eeece7;color:#252525;border-color:#cec9c0}
+.button.add{background:#f6ecd7;color:#6a4f19;border-color:#d8c28f}
+.button:focus-visible,.tool-card:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid #b89549;outline-offset:2px}
+.metrics article,.metrics article:nth-child(2),.metrics article:nth-child(3){background:#171717;border:1px solid #6d5936}
+.metrics article:nth-child(2){background:#282828}.metrics article:nth-child(3){background:#373737}
+.metrics small{color:#d6b96f}.metrics span{color:#d7d7d7}
+.tool-card{background:#fffdf9;color:#202020}
+.tool-card b{color:#252525}.tool-card small{color:#666}.tool-arrow{color:#9d854e}
+.tool-icon.blue,.tool-icon.orange{background:#f2ead9;color:#a37a2e}
+.tool-icon.dark{background:#e2e2df;color:#3d3d3d}
+.record,.item-row{background:#faf9f6;border-color:#d8d3c9}
+.record small{color:#656565}.record .money{color:#886723}
+.pill{background:#f0e4c9;color:#74581e}
+.form-section{border-bottom-color:#dfdbd2}
+.form-section h3 span{color:#8c6922;background:#f4e8cb}
+label{color:#333}
+input,textarea,select{color:#222;border-color:#c7c3bb;background:#fff;outline-color:#c6a256}
+input:focus,textarea:focus,select:focus{border-color:#c6a256}
+.item-row .item-head b{color:#806126}
+.preview-bar{background:#181818;color:#fff;border-color:#544733}
+.preview-bar small{color:#d6d6d6}
+.print-area{border-color:#d3c7ad!important;border-top-color:#c6a256!important;background:#fff}
+.invoice-header{border-bottom-color:#c6a256}
+.doc-name{color:#151515}.doc-number{color:#aa853c}
+.business-title{color:#272727}.business-subtitle{color:#646464}
+.doc-meta{border-bottom-color:#dedbd5}
+.doc-meta .meta-head{color:#a17c35}.doc-meta strong,.doc-dates b{color:#252525}
+.doc-meta p,.doc-dates{color:#666}
+.doc-scope{background:#f5f2eb;border-left-color:#c6a256;color:#333}
+.doc-scope b{color:#6e5424}
+.doc-items th{background:#1e1e1e;color:#f5f0e5}
+.doc-items td{border-bottom-color:#e0ddd6}.doc-items td .item-category{color:#777}
+.total-row{color:#555}.total-row b{color:#222}
+.total-row.grand{background:#1b1b1b;color:#f3d698;border:1px solid #b99856}
+.total-row.grand b{color:#f3d698}
+.total-row.payment{color:#967534}
+.doc-foot{border-top-color:#d7d3cb;color:#535353}
+.doc-foot strong{color:#353535}
+.doc-footer{border-top-color:#c6a256;color:#686868}
+.signature{color:#777}.signature span{border-top-color:#aaa}
+.footer{background:#131313;color:#cecece}
+@media print{.print-area{border-top:7px solid #c6a256!important}}

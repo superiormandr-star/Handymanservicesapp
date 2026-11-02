@@ -11,6 +11,25 @@ main{max-width:780px;margin:20px auto 60px;padding:0 14px}
 label{display:block;font-weight:700;font-size:.94rem;margin:12px 0 7px}input[type=text],textarea{width:100%;padding:12px;border:1px solid #b9c9d9;border-radius:8px;font:inherit;color:#102f4e}label.check{display:flex;align-items:flex-start;gap:10px;line-height:1.45;font-weight:500}label.check input{width:21px;height:21px;flex:none}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}button{border:0;border-radius:9px;padding:13px 20px;min-height:46px;font:800 .95rem system-ui;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.approve{background:#0b6541;color:white}.decline{background:#fff0e3;color:#a74606}.print{background:#e6edf5;color:#183e6d}#error{color:#ae2020}.muted{color:#62778b}.hidden,[hidden]{display:none!important}
 @media(max-width:520px){.sheet,.panel{padding:17px}.grid{grid-template-columns:1fr;gap:9px}h1{font-size:1.45rem}th,td{padding:9px 5px;font-size:.82rem}}
+
+/* Original Superior Maintenance & Remodeling brand: black, gold, metallic silver. */
+:root{color:#262626;background:#f3f3f1}
+header{background:#101113;border-bottom-color:#b99148}
+.head small{color:#d8bd82}
+.sheet,.panel{border-color:#d5d4d0;box-shadow:0 5px 22px #1011130b}
+.eyebrow{color:#a47d34}
+h1,h2{color:#1f2022}
+.tag{background:#eee6d4;color:#72541e}
+.grid b{color:#333}
+.grid p,.terms{color:#4f565b}
+.scope{background:#f7f4eb;border-left-color:#b99148;color:#414141}
+th{background:#222326;color:#f5f5f4}
+td{border-bottom-color:#e1e0da}
+.summary .grand{background:#191a1c;color:#fff;border-left:5px solid #b99148}
+.approve{background:#b99148;color:#141414}
+.decline{background:#f5ebe7;color:#813a2e}
+.print{background:#e4e4e2;color:#242424}
+input[type=text],textarea{border-color:#b7b5ae;color:#171717}
 @media print{header,#decision,.actions,.panel{display:none!important}body{background:white}.sheet{border:0;box-shadow:none;margin:0;padding:0}main{padding:0}.tag{border:1px solid #bbb}}
 
 /* Superior Remodel authentic black, gold and silver identity */
@@ -33,7 +52,7 @@ input[type=text],textarea{border-color:#bdb8ae;color:#222;outline-color:#c6a256}
 .approve{background:#c6a256;color:#141414}
 .decline{background:#eeeeeb;color:#333;border:1px solid #b7b1a6}
 .print{background:#262626;color:#fff}
-</style></head><body><header><div class="head"><img src="/superior-logo.png" alt="Superior logo"><div><strong>SUPERIOR MAINTENANCE AND REMODELING</strong><small>From an idea to a finished improvement.</small></div></div></header>
+</style></head><body><header><div class="head"><a href="https://superior-maintenance-remodeling.indigotune5.chatgpt.site/" aria-label="Superior Remodeling website"><img src="/superior-logo.png" alt="Superior logo"></a><div><strong>SUPERIOR MAINTENANCE AND REMODELING</strong><small>From an idea to a finished improvement.</small></div></div></header>
 <main><p class="muted" id="loading">Loading your estimate…</p><p id="error" role="alert"></p>
 <div id="content" hidden><section class="sheet"><div class="title"><div><span class="eyebrow">PREPARED FOR YOUR REVIEW</span><h1>Project Estimate</h1><p class="muted" id="number"></p></div><span class="tag" id="status">Awaiting approval</span></div>
 <div class="grid"><div><b>Customer</b><p id="client"></p><p id="address"></p></div><div><b>Project</b><p id="project"></p><p id="projectAddress"></p></div></div>

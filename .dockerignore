@@ -1,0 +1,7 @@
+.git
+*.zip
+node_modules
+.DS_Store
+tests
+*.log
+data/*.json

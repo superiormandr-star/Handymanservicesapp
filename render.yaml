@@ -1,0 +1,18 @@
+# Render Blueprint: free web-service trial of Handyman Services.
+# WARNING: Render free web services use ephemeral storage. Customer reviews,
+# provider applications, and subscription references can disappear after idle
+# spin-downs, restarts, or redeployments. DO NOT promote as a live paid service
+# until persistent storage is connected and end-to-end billing is verified.
+services:
+  - type: web
+    name: handyman-services-directory
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_TOKEN
+        generateValue: true

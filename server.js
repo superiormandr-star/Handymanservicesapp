@@ -76,12 +76,12 @@ http.createServer(async (req,res)=>{
   }));
   if(items.some(item=>!item.description||!validNumber(item.qty,1e5)||!validNumber(item.rate,1e7)||item.qty<=0))
    return send(res,400,{error:'Every line needs a description, positive quantity, and valid rate.'});
-  if(!validNumber(x.discount,1e8)||!validNumber(x.taxRate,100)||!validNumber(x.payment,1e8))
+  if(!validNumber(x.discount,1e8)||!validNumber(x.markup||0,1e8)||!validNumber(x.taxRate,100)||!validNumber(x.payment,1e8))
    return send(res,400,{error:'Check discount, tax and deposit/payment values.'});
   const subtotal=Math.round(items.reduce((sum,item)=>sum+item.qty*item.rate,0)*100)/100;
-  const discount=Number(x.discount)||0,taxRate=Number(x.taxRate)||0,payment=Number(x.payment)||0;
-  if(discount>subtotal)return send(res,400,{error:'Discount cannot exceed subtotal.'});
-  const tax=Math.round((subtotal-discount)*taxRate)/100,total=Math.round((subtotal-discount+tax)*100)/100;
+  const discount=Number(x.discount)||0,markup=Number(x.markup)||0,taxRate=Number(x.taxRate)||0,payment=Number(x.payment)||0;
+  if(discount>subtotal+markup)return send(res,400,{error:'Discount cannot exceed subtotal plus markup.'});
+  const tax=Math.round((subtotal+markup-discount)*taxRate)/100,total=Math.round((subtotal+markup-discount+tax)*100)/100;
   if(payment>total)return send(res,400,{error:'Deposit/payment cannot exceed total.'});
   const d=db();d.documents=Array.isArray(d.documents)?d.documents:[];
   const id=clean(x.id,80),index=id?d.documents.findIndex(doc=>doc.id===id):-1;
@@ -95,7 +95,7 @@ http.createServer(async (req,res)=>{
    client,clientPhone:clean(x.clientPhone,60),clientEmail:clean(x.clientEmail,150),
    clientAddress:clean(x.clientAddress,250),project:clean(x.project,150),
    projectAddress:clean(x.projectAddress,250),date:clean(x.date,10),dueDate:clean(x.dueDate,10),
-   scope:clean(x.scope,1800),items,discount,taxRate,payment,subtotal,tax,total,
+   scope:clean(x.scope,1800),items,markup,discount,taxRate,payment,subtotal,tax,total,sourceEstimateId:prior?.sourceEstimateId||null,
    notes:clean(x.notes,1500),terms:clean(x.terms,1000),
    license:clean(x.license,80),createdAt:prior?.createdAt||now,updatedAt:now
   };

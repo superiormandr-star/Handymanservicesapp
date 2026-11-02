@@ -49,8 +49,9 @@ module.exports = async function estimateRoutes(req,res,util){
       number:old?.number||'EST-'+new Date().getFullYear()+'-'+String(count).padStart(4,'0'),
       status:'ready',client,clientEmail:email,clientPhone:phone,clientAddress:clean(x.clientAddress,250),
       project:clean(x.project,150),projectAddress:clean(x.projectAddress,250),
+      date:clean(x.date,10),dueDate:clean(x.dueDate,10),license:clean(x.license,80),
       scope:clean(x.scope,1800),items,subtotal,markup,discount,taxRate,tax,total,
-      deposit,notes:clean(x.notes,1500),terms:clean(x.terms,1200),
+      deposit,payment:deposit,notes:clean(x.notes,1500),terms:clean(x.terms,1200),
       approvalToken:old?.approvalToken||crypto.randomBytes(32).toString('hex'),
       createdAt:old?.createdAt||now,updatedAt:now,decision:null,decidedAt:null,
       signer:null,invoiceId:null
@@ -90,7 +91,7 @@ module.exports = async function estimateRoutes(req,res,util){
         const count=d.documents.filter(t=>t.type==='invoice').length+1;
         invoiceNumber='INV-'+new Date().getFullYear()+'-'+String(count).padStart(4,'0');
         const invoice={...record,id:crypto.randomUUID(),type:'invoice',number:invoiceNumber,
-          status:'unpaid',sourceEstimateId:record.id,sourceEstimateNumber:record.number,
+          status:'unpaid',payment:0,sourceEstimateId:record.id,sourceEstimateNumber:record.number,
           approvalToken:undefined,createdAt:record.decidedAt,updatedAt:record.decidedAt};
         record.invoiceId=invoice.id;
         d.documents.push(invoice);

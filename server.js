@@ -2,7 +2,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const base=path.join(__dirname,'public'),dataFile=process.env.DATA_FILE||path.join(__dirname,'data','database.json'),port=Number(process.env.PORT||3000);
 const ADMIN_TOKEN=process.env.ADMIN_TOKEN||'';
-const seed={profiles:[{id:'superior',name:'Superior Maintenance and Remodeling',tagline:'From an idea to a finished improvement.',city:'Fontana',area:'Fontana, California — contact for service coverage',coverageMode:'cities',coverageAreas:[],coverageZip:'',coverageRadius:null,phone:'909-352-3627',website:'https://superior-maintenance-remodeling.indigotune5.chatgpt.site',logo:'/superior-logo.png',description:'Residential and commercial maintenance, painting and remodeling. Contact Superior to discuss the scope, estimate, and availability for your next project.',services:['Painting','Drywall & repairs','Flooring','Kitchens & bathrooms','Doors & windows','Patios & decks','General maintenance','Remodeling'],verified:false,featured:true,createdAt:'2026-11-01T00:00:00.000Z'}],reviews:[],intake:[]};
+const seed={profiles:[{id:'superior',name:'Superior Maintenance and Remodeling',tagline:'From an idea to a finished improvement.',city:'Fontana',area:'Fontana, California — contact for service coverage',coverageMode:'cities',coverageAreas:[],coverageZip:'',coverageRadius:null,phone:'909-352-3627',website:'https://superior-maintenance-remodeling.indigotune5.chatgpt.site',logo:'/superior-logo.png',description:'Residential and commercial maintenance, painting and remodeling. Contact Superior to discuss the scope, estimate, and availability for your next project.',services:['Painting','Drywall & repairs','Flooring','Kitchens & bathrooms','Doors & windows','Patios & decks','General maintenance','Remodeling'],verified:false,featured:true,createdAt:'2026-11-01T00:00:00.000Z'}],reviews:[],intake:[],documents:[]};
 function db(){try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...seed,...val}}catch{return structuredClone(seed)}}
 function save(x){fs.mkdirSync(path.dirname(dataFile),{recursive:true});const tmp=dataFile+'.'+process.pid+'.tmp';fs.writeFileSync(tmp,JSON.stringify(x,null,2),{mode:0o600});fs.renameSync(tmp,dataFile)}
 if(!fs.existsSync(dataFile))save(seed);
@@ -54,6 +54,53 @@ http.createServer(async (req,res)=>{
  if(route==='/api/admin/reply'&&req.method==='POST'){if(!admin(req))return send(res,401,{error:'Admin access required'});const x=await body(req);const d=db(),r=d.reviews.find(r=>r.id===x.id);if(!r)return send(res,404,{error:'Not found'});r.ownerReply=clean(x.reply,500)||null;save(d);return send(res,200,{ok:true})}
  if(route==='/api/admin/intake'&&req.method==='POST'){if(!admin(req))return send(res,401,{error:'Admin access required'});const x=await body(req);const d=db(),r=d.intake.find(r=>r.id===x.id);if(!r)return send(res,404,{error:'Not found'});if(!['interest','pending_payment_verification','verified','declined'].includes(x.status))return send(res,400,{error:'Invalid status'});r.status=x.status;save(d);return send(res,200,{ok:true})}
  if(route==='/api/admin/profile'&&req.method==='POST'){if(!admin(req))return send(res,401,{error:'Admin access required'});const x=await body(req);const d=db();const id=clean(x.id,80)||crypto.randomUUID();const p={id,name:clean(x.name,100),tagline:clean(x.tagline,150),city:clean(x.city,80),area:clean(x.area,400),coverageMode:clean(x.coverageMode,16),coverageZip:clean(x.coverageZip,5),coverageRadius:Number(x.coverageRadius)||null,coverageAreas:clean(x.coverageAreas,400).split(/[,\n;]+/).map(v=>clean(v,60)).filter(Boolean).slice(0,25),phone:clean(x.phone,40),website:clean(x.website,280),logo:'',description:clean(x.description,700),services:Array.isArray(x.services)?x.services.slice(0,15).map(v=>clean(v,40)):[],verified:false,featured:false,createdAt:new Date().toISOString()};if(!p.name||!p.city)return send(res,400,{error:'Name and city required'});const i=d.profiles.findIndex(e=>e.id===id);if(i<0)d.profiles.push(p);else {if(!x.logo)p.logo=d.profiles[i].logo;p.featured=d.profiles[i].featured;d.profiles[i]={...d.profiles[i],...p}}save(d);return send(res,200,{ok:true,profile:p})}
+
+ if(route==='/api/admin/documents'&&req.method==='GET'){
+  if(!admin(req))return send(res,401,{error:'Owner access required'});
+  const records=(db().documents||[]).slice().sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+  return send(res,200,{documents:records});
+ }
+ if(route==='/api/admin/documents'&&req.method==='POST'){
+  if(!admin(req))return send(res,401,{error:'Owner access required'});
+  const x=await body(req),type=clean(x.type,10);
+  if(!['estimate','invoice'].includes(type))return send(res,400,{error:'Choose estimate or invoice.'});
+  const client=clean(x.client,120);
+  if(client.length<2)return send(res,400,{error:'Enter the customer name.'});
+  const validNumber=(v,maximum)=>Number.isFinite(Number(v))&&Number(v)>=0&&Number(v)<=maximum;
+  if(!Array.isArray(x.items)||!x.items.length||x.items.length>35)return send(res,400,{error:'Add 1–35 line items.'});
+  const items=x.items.map(item=>({
+   description:clean(item.description,250),category:['Labor','Materials','Other'].includes(item.category)?item.category:'Labor',
+   qty:Number(item.qty),unit:clean(item.unit,25)||'ea',rate:Number(item.rate)
+  }));
+  if(items.some(item=>!item.description||!validNumber(item.qty,1e5)||!validNumber(item.rate,1e7)||item.qty<=0))
+   return send(res,400,{error:'Every line needs a description, positive quantity, and valid rate.'});
+  if(!validNumber(x.discount,1e8)||!validNumber(x.taxRate,100)||!validNumber(x.payment,1e8))
+   return send(res,400,{error:'Check discount, tax and deposit/payment values.'});
+  const subtotal=Math.round(items.reduce((sum,item)=>sum+item.qty*item.rate,0)*100)/100;
+  const discount=Number(x.discount)||0,taxRate=Number(x.taxRate)||0,payment=Number(x.payment)||0;
+  if(discount>subtotal)return send(res,400,{error:'Discount cannot exceed subtotal.'});
+  const tax=Math.round((subtotal-discount)*taxRate)/100,total=Math.round((subtotal-discount+tax)*100)/100;
+  if(payment>total)return send(res,400,{error:'Deposit/payment cannot exceed total.'});
+  const d=db();d.documents=Array.isArray(d.documents)?d.documents:[];
+  const id=clean(x.id,80),index=id?d.documents.findIndex(doc=>doc.id===id):-1;
+  if(id&&index<0)return send(res,404,{error:'Document not found.'});
+  const prior=index>=0?d.documents[index]:null,now=new Date().toISOString();
+  const count=d.documents.filter(doc=>doc.type===type).length+1;
+  const defaultNo=(type==='estimate'?'EST':'INV')+'-'+new Date().getFullYear()+'-'+String(count).padStart(4,'0');
+  const record={
+   id:prior?.id||crypto.randomUUID(),type,number:clean(x.number,45)||prior?.number||defaultNo,
+   status:['draft','sent','approved','paid'].includes(x.status)?x.status:'draft',
+   client,clientPhone:clean(x.clientPhone,60),clientEmail:clean(x.clientEmail,150),
+   clientAddress:clean(x.clientAddress,250),project:clean(x.project,150),
+   projectAddress:clean(x.projectAddress,250),date:clean(x.date,10),dueDate:clean(x.dueDate,10),
+   scope:clean(x.scope,1800),items,discount,taxRate,payment,subtotal,tax,total,
+   notes:clean(x.notes,1500),terms:clean(x.terms,1000),
+   license:clean(x.license,80),createdAt:prior?.createdAt||now,updatedAt:now
+  };
+  if(index>=0)d.documents[index]=record;else d.documents.push(record);
+  save(d);return send(res,200,{ok:true,document:record});
+ }
+
  if(route.startsWith('/api/'))return send(res,404,{error:'Not found'});
  if(!['GET','HEAD'].includes(req.method))return send(res,405,{error:'Method not allowed'});
  const filepath=path.resolve(base,'.'+(route==='/'?'/index.html':route));if(!filepath.startsWith(base+path.sep))return send(res,403,{error:'Forbidden'});

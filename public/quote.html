@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#092b50"><title>Your Estimate | Superior Maintenance and Remodeling</title>
+<style>
+:root{font:16px system-ui,Arial,sans-serif;color:#122d4b;background:#edf2f6}*{box-sizing:border-box}body{margin:0}
+header{background:#092b50;border-bottom:5px solid #f38917;color:white;padding:14px}.head{max-width:780px;margin:auto;display:flex;align-items:center;gap:14px}.head img{height:62px;width:85px;object-fit:contain}.head strong{font-size:1rem}.head small{display:block;color:#f3a747;font-weight:700;letter-spacing:.04em}
+main{max-width:780px;margin:20px auto 60px;padding:0 14px}
+.sheet,.panel{background:white;border:1px solid #d8e2ed;border-radius:13px;padding:26px;margin-bottom:15px;box-shadow:0 4px 18px #1738580e}
+.title{display:flex;justify-content:space-between;gap:12px;align-items:start;flex-wrap:wrap}.eyebrow{font-size:.74rem;font-weight:800;color:#c16c09;letter-spacing:.13em}h1{font-size:1.75rem;color:#082e57;margin:8px 0}h2{font-size:1.17rem;margin:0 0 12px;color:#0a345c}.tag{border-radius:22px;background:#e8f0fc;color:#1c4d7b;padding:6px 11px;font-size:.78rem;font-weight:800}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:22px 0}.grid b{display:block;margin-bottom:5px;color:#173f68}.grid p{margin:4px 0;white-space:pre-wrap;color:#3e5570;font-size:.94rem}
+.scope{background:#f2f6fb;border-left:4px solid #f28d16;padding:15px;border-radius:3px;white-space:pre-wrap;line-height:1.55;color:#284766;margin:20px 0}table{width:100%;border-collapse:collapse;font-size:.9rem}th{background:#12395f;color:white;text-align:left;padding:11px 8px}td{padding:11px 8px;border-bottom:1px solid #e1e8ef}th:last-child,td:last-child{text-align:right}.sub{color:#788999;font-size:.77rem}.summary{width:min(100%,370px);margin:20px 0 20px auto}.summary>div{display:flex;gap:20px;justify-content:space-between;padding:8px;border-bottom:1px solid #e1e8ee}.summary .grand{background:#0b365f;color:white;border-radius:6px;font-weight:900;font-size:1.25rem;margin-top:6px;padding:15px}.terms{white-space:pre-wrap;line-height:1.6;color:#49627a;font-size:.9rem}
+label{display:block;font-weight:700;font-size:.94rem;margin:12px 0 7px}input[type=text],textarea{width:100%;padding:12px;border:1px solid #b9c9d9;border-radius:8px;font:inherit;color:#102f4e}label.check{display:flex;align-items:flex-start;gap:10px;line-height:1.45;font-weight:500}label.check input{width:21px;height:21px;flex:none}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}button{border:0;border-radius:9px;padding:13px 20px;min-height:46px;font:800 .95rem system-ui;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}.approve{background:#0b6541;color:white}.decline{background:#fff0e3;color:#a74606}.print{background:#e6edf5;color:#183e6d}#error{color:#ae2020}.muted{color:#62778b}.hidden,[hidden]{display:none!important}
+@media(max-width:520px){.sheet,.panel{padding:17px}.grid{grid-template-columns:1fr;gap:9px}h1{font-size:1.45rem}th,td{padding:9px 5px;font-size:.82rem}}
+@media print{header,#decision,.actions,.panel{display:none!important}body{background:white}.sheet{border:0;box-shadow:none;margin:0;padding:0}main{padding:0}.tag{border:1px solid #bbb}}
+</style></head><body><header><div class="head"><img src="/superior-logo.png" alt="Superior logo"><div><strong>SUPERIOR MAINTENANCE AND REMODELING</strong><small>From an idea to a finished improvement.</small></div></div></header>
+<main><p class="muted" id="loading">Loading your estimate…</p><p id="error" role="alert"></p>
+<div id="content" hidden><section class="sheet"><div class="title"><div><span class="eyebrow">PREPARED FOR YOUR REVIEW</span><h1>Project Estimate</h1><p class="muted" id="number"></p></div><span class="tag" id="status">Awaiting approval</span></div>
+<div class="grid"><div><b>Customer</b><p id="client"></p><p id="address"></p></div><div><b>Project</b><p id="project"></p><p id="projectAddress"></p></div></div>
+<h2>Scope of work</h2><div class="scope" id="scope"></div>
+<div style="overflow-x:auto"><table><thead><tr><th>DESCRIPTION</th><th>QTY</th><th>RATE</th><th>AMOUNT</th></tr></thead><tbody id="items"></tbody></table></div>
+<div class="summary"><div><span>Subtotal</span><b id="subtotal"></b></div><div id="markuprow" hidden><span>Markup</span><b id="markup"></b></div><div id="discountrow" hidden><span>Discount</span><b id="discount"></b></div><div id="taxrow" hidden><span>Tax</span><b id="tax"></b></div><div class="grand"><span>Total</span><b id="total"></b></div><div id="depositrow" hidden><span>Requested deposit</span><b id="deposit"></b></div></div>
+<h2>Terms and conditions</h2><p class="terms" id="terms"></p><div id="notesblock" hidden><h2>Notes</h2><p class="terms" id="notes"></p></div></section>
+<section class="panel" id="decision"><h2>Approve or decline this estimate</h2><p class="muted">Your decision will be recorded with a date and time. Approval will create an invoice for Superior's records; this page does not collect any payment.</p>
+<label for="signer">Full name of person approving</label><input type="text" id="signer" placeholder="Type your full name" maxlength="120">
+<label class="check"><input type="checkbox" id="agreed"><span>I have reviewed the scope, pricing, and terms above and agree to authorize this estimate.</span></label>
+<label for="reason">Reason for declining (optional)</label><textarea id="reason" rows="2" placeholder="You may leave this blank"></textarea>
+<div class="actions"><button type="button" class="approve" id="approve">Approve estimate</button><button type="button" class="decline" id="decline">Decline estimate</button><button type="button" class="print" onclick="window.print()">Print / Save PDF</button></div><p id="actionstatus" role="status"></p></section>
+<section class="panel" id="result" hidden><h2 id="resultheading"></h2><p id="resultmessage"></p><button type="button" class="print" onclick="window.print()">Print / Save PDF</button></section></div></main>
+<script>
+(()=>{'use strict';const $=s=>document.querySelector(s),token=new URLSearchParams(location.search).get('token');
+const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(v)||0);
+const set=(id,v)=>$(id).textContent=String(v??'');
+const add=(tag,text)=>{const el=document.createElement(tag);el.textContent=text;return el};
+let record;
+async function load(){if(!token||!(/^[a-f0-9]{64}$/.test(token))){set('#error','Invalid estimate link.');return}
+try{const res=await fetch('/api/public-estimates/'+token,{cache:'no-store'});const value=await res.json();if(!res.ok)throw Error(value.error||'Cannot load estimate');record=value.document;render();
+$('#content').hidden=false;}catch(e){set('#error',e.message)}finally{$('#loading').hidden=true}}
+function render(){const r=record;set('#number',r.number||'');set('#client',r.client);set('#address',r.clientAddress);set('#project',r.project||'Project estimate');set('#projectAddress',r.projectAddress);set('#scope',r.scope||'See line items below.');
+$('#items').replaceChildren();for(const i of r.items||[]){const tr=document.createElement('tr'),description=document.createElement('td');description.append(add('strong',i.description),add('div',i.section||i.category||''));description.lastChild.className='sub';tr.append(description,add('td',i.qty+' '+(i.unit||'')),add('td',money(i.rate)),add('td',money(i.rate*i.qty)));$('#items').append(tr)}
+for(const k of ['subtotal','markup','discount','tax','total','deposit'])set('#'+k,money(r[k]));for(const k of ['markup','discount','tax','deposit'])$('#'+k+'row').hidden=!(Number(r[k])>0);
+set('#terms',r.terms||'Customer approval is required before scheduling. Any change in scope must be agreed in writing.');set('#notes',r.notes||'');$('#notesblock').hidden=!r.notes;$('#status').textContent=r.status==='approved'?'Approved':r.status==='declined'?'Declined':'Awaiting approval';
+$('#decision').hidden=r.status!=='ready';$('#result').hidden=r.status==='ready';if(r.status!=='ready'){set('#resultheading',r.status==='approved'?'Estimate approved':'Estimate declined');set('#resultmessage',r.status==='approved'?'Your approval has been recorded. A corresponding invoice has been created. No payment has been charged.':'Your decision has been recorded. Superior will be able to see the response.')}}
+async function decide(decision){if(record.status!=='ready')return;const signer=$('#signer').value.trim(),agreed=$('#agreed').checked;
+if(decision==='approved'&&(signer.length<2||!agreed)){set('#actionstatus','Enter your full name and check the authorization box to approve.');return}
+if(!confirm(decision==='approved'?'Approve this estimate and authorize the stated work?':'Decline this estimate?'))return;
+$('#approve').disabled=true;$('#decline').disabled=true;set('#actionstatus','Recording decision…');
+try{const response=await fetch('/api/public-estimates/'+token+'/decision',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({decision,signer,agreed,reason:$('#reason').value})});
+const v=await response.json();if(!response.ok)throw Error(v.error||'Could not record decision');record.status=decision;render()}catch(e){set('#actionstatus',e.message);$('#approve').disabled=false;$('#decline').disabled=false}}
+$('#approve').onclick=()=>decide('approved');$('#decline').onclick=()=>decide('declined');load();
+})();
+</script></body></html>

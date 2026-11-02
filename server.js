@@ -91,7 +91,7 @@ http.createServer(async (req,res)=>{
   const defaultNo=(type==='estimate'?'EST':'INV')+'-'+new Date().getFullYear()+'-'+String(count).padStart(4,'0');
   const record={
    id:prior?.id||crypto.randomUUID(),type,number:clean(x.number,45)||prior?.number||defaultNo,
-   status:['draft','sent','approved','paid'].includes(x.status)?x.status:'draft',
+   status:['draft','sent','approved','paid','unpaid'].includes(x.status)?x.status:'draft',
    client,clientPhone:clean(x.clientPhone,60),clientEmail:clean(x.clientEmail,150),
    clientAddress:clean(x.clientAddress,250),project:clean(x.project,150),
    projectAddress:clean(x.projectAddress,250),date:clean(x.date,10),dueDate:clean(x.dueDate,10),
@@ -101,6 +101,80 @@ http.createServer(async (req,res)=>{
   };
   if(index>=0)d.documents[index]=record;else d.documents.push(record);
   save(d);return send(res,200,{ok:true,document:record});
+ }
+
+
+ // Owner-only estimates with a private customer-approval link.
+ if(route==='/api/command/estimates'&&req.method==='GET'){
+  if(!admin(req))return send(res,401,{error:'Owner access required'});
+  return send(res,200,{documents:(db().documents||[]).slice().sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))});
+ }
+ if(route==='/api/command/estimates'&&req.method==='POST'){
+  if(!admin(req))return send(res,401,{error:'Owner access required'});
+  const x=await body(req),client=clean(x.client,120),id=clean(x.id,80);
+  if(client.length<2)return send(res,400,{error:'Enter customer name.'});
+  if(!Array.isArray(x.items)||x.items.length<1||x.items.length>35)return send(res,400,{error:'Provide 1–35 line items.'});
+  const items=x.items.map(v=>({description:clean(v.description,250),category:['Labor','Materials','Other'].includes(v.category)?v.category:'Labor',unit:clean(v.unit,25)||'ea',qty:Number(v.qty),rate:Number(v.rate)}));
+  if(items.some(v=>!v.description||!Number.isFinite(v.qty)||v.qty<=0||v.qty>1e5||!Number.isFinite(v.rate)||v.rate<0||v.rate>1e7))return send(res,400,{error:'Check item descriptions, quantities and rates.'});
+  const markup=Number(x.markup)||0,discount=Number(x.discount)||0,taxRate=Number(x.taxRate)||0,deposit=Number(x.deposit)||0;
+  if(![markup,discount,taxRate,deposit].every(Number.isFinite)||markup<0||markup>1e7||discount<0||taxRate<0||taxRate>100||deposit<0)return send(res,400,{error:'Check markup, discount, tax and deposit.'});
+  const subtotal=Math.round(items.reduce((t,v)=>t+v.qty*v.rate,0)*100)/100;
+  if(discount>subtotal+markup)return send(res,400,{error:'Discount cannot exceed subtotal plus markup.'});
+  const tax=Math.round((subtotal+markup-discount)*taxRate)/100,total=Math.round((subtotal+markup-discount+tax)*100)/100;
+  if(deposit>total)return send(res,400,{error:'Requested deposit cannot exceed estimate total.'});
+  const d=db();d.documents=Array.isArray(d.documents)?d.documents:[];
+  const index=id?d.documents.findIndex(r=>r.id===id):-1;
+  if(id&&index<0)return send(res,404,{error:'Estimate not found.'});
+  const prior=index>=0?d.documents[index]:null;
+  if(prior&&prior.type!=='estimate')return send(res,400,{error:'Only estimates can be edited here.'});
+  if(prior&&['approved','declined'].includes(prior.status))return send(res,409,{error:'An accepted or declined estimate cannot be changed. Create a new one.'});
+  const now=new Date().toISOString(),count=d.documents.filter(v=>v.type==='estimate').length+1;
+  const rec={id:prior?.id||crypto.randomUUID(),type:'estimate',number:clean(x.number,45)||prior?.number||'EST-'+new Date().getFullYear()+'-'+String(count).padStart(4,'0'),
+   status:'ready',approvalToken:prior?.approvalToken||crypto.randomBytes(32).toString('hex'),
+   client,clientPhone:clean(x.clientPhone,60),clientEmail:clean(x.clientEmail,150),clientAddress:clean(x.clientAddress,250),
+   project:clean(x.project,150),projectAddress:clean(x.projectAddress,250),scope:clean(x.scope,1800),
+   date:clean(x.date,10),dueDate:clean(x.dueDate,10),items,subtotal,markup,discount,taxRate,tax,total,
+   deposit,payment:deposit,notes:clean(x.notes,1500),terms:clean(x.terms,1000),license:clean(x.license,80),
+   createdAt:prior?.createdAt||now,updatedAt:now};
+  if(index>=0)d.documents[index]=rec;else d.documents.push(rec);
+  save(d);return send(res,200,{ok:true,document:rec});
+ }
+ if(route.startsWith('/api/command/estimates/')&&route.endsWith('/paid')&&req.method==='POST'){
+  if(!admin(req))return send(res,401,{error:'Owner access required'});
+  const id=route.slice('/api/command/estimates/'.length,-'/paid'.length);
+  const d=db(),rec=(d.documents||[]).find(v=>v.id===id);
+  if(!rec||rec.type!=='invoice')return send(res,404,{error:'Invoice not found.'});
+  if(rec.status!=='unpaid')return send(res,409,{error:'Only unpaid invoices may be marked paid.'});
+  rec.status='paid';rec.payment=rec.total;rec.updatedAt=new Date().toISOString();save(d);
+  return send(res,200,{ok:true,document:rec});
+ }
+ // Unlisted tokenized customer estimate access, not indexable or owner-token accessible.
+ if(route.startsWith('/api/public-estimates/')){
+  const parts=route.split('/').filter(Boolean),share=parts[2]||'';
+  if(!/^[a-f0-9]{64}$/.test(share))return send(res,404,{error:'Estimate not found.'});
+  const d=db(),rec=(d.documents||[]).find(v=>v.type==='estimate'&&v.approvalToken===share);
+  if(!rec)return send(res,404,{error:'Estimate not found.'});
+  if(parts.length===3&&req.method==='GET'){
+   const {id,type,number,client,clientAddress,project,projectAddress,scope,date,dueDate,items,subtotal,markup,discount,tax,total,deposit,notes,terms,status}=rec;
+   return send(res,200,{document:{id,type,number,client,clientAddress,project,projectAddress,scope,date,dueDate,items,subtotal,markup,discount,tax,total,deposit,notes,terms,status}});
+  }
+  if(parts.length===4&&parts[3]==='decision'&&req.method==='POST'){
+   if(limited(req))return send(res,429,{error:'Too many requests. Try later.'});
+   if(rec.status!=='ready')return send(res,409,{error:'This estimate already has a decision.'});
+   const x=await body(req),decision=clean(x.decision,10),signer=clean(x.signer,100);
+   if(!['approved','declined'].includes(decision))return send(res,400,{error:'Invalid decision.'});
+   if(decision==='approved'&&(signer.length<2||x.agreed!==true))return send(res,400,{error:'Full name and acceptance are required.'});
+   rec.status=decision;rec.decisionSigner=signer;rec.decisionReason=clean(x.reason,700);rec.decidedAt=new Date().toISOString();rec.updatedAt=rec.decidedAt;
+   if(decision==='approved'){
+    const count=d.documents.filter(v=>v.type==='invoice').length+1,now=new Date(),due=new Date(now);due.setDate(due.getDate()+14);
+    const invoice={...rec,id:crypto.randomUUID(),type:'invoice',
+     number:'INV-'+now.getFullYear()+'-'+String(count).padStart(4,'0'),approvalToken:null,
+     status:'unpaid',sourceEstimateId:rec.id,deposit:0,payment:0,
+     date:now.toISOString().slice(0,10),dueDate:due.toISOString().slice(0,10),createdAt:rec.decidedAt,updatedAt:rec.decidedAt};
+    d.documents.push(invoice);
+   }
+   save(d);return send(res,200,{ok:true,document:{status:rec.status,number:rec.number}});
+  }
  }
 
  if(route.startsWith('/api/'))return send(res,404,{error:'Not found'});

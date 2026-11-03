@@ -216,3 +216,11 @@ main, header, footer, section, .container, .nav, .hero-grid, .hero-copy,
   .nav-cta .pro-cta-label { font-size:12px; }
   .nav-cta .pro-cta-label span { font-size:12px; }
 }
+/* Founding professional offer: first 25 qualified advertisers */
+.announcement strong{color:#ffb42f;font-size:11px}
+.announcement a{color:#fff;display:inline-block;margin-left:9px;text-decoration:underline;text-underline-offset:3px}
+.announcement a:hover,.announcement a:focus-visible{color:#ffb42f}
+.plan-text{min-width:0}
+.plan-text>small:first-child{display:block;max-width:330px;line-height:1.6}
+.plan-text>small:last-child{display:block;max-width:330px;line-height:1.6;letter-spacing:.035em}
+@media(max-width:620px){.announcement{line-height:1.7;padding:9px 16px}.announcement strong{font-size:10px}.announcement a{margin-left:4px}.plan{gap:10px;padding:19px 16px}.plan-mark{font-size:32px}.plan-price{font-size:52px}}

@@ -87,3 +87,33 @@ During professional subscription intake, each applicant selects **specific citie
 Hero, section headlines, and footer are national/generic; the seed Superior Maintenance and Remodeling business listing retains its truthful location and original gold-and-silver logo.
 
 Subscribers must also list the actual services they provide; owner dashboard copies submitted services and service areas into the pending listing editor.
+
+## Professional workspace and real inquiries
+
+Customers can use **Request a quote** on a business profile. Contact permission is required. Inquiries are stored privately for that business; there are no generated leads or automatic outbound messages.
+
+The directory owner creates a business-specific access link in `/admin.html`. Share it privately. `/pro.html` removes the key from the address bar after opening and keeps it in memory only; reopening requires the link or key. Keys are hashed in storage. Creating a replacement or revoking access invalidates old keys. Each business can search only its own inquiries, update stages from New through Paid, add notes, and set reminder dates. Reminders are shown in the workspace; no email or push notifications are sent.
+
+Level 2 estimate assistance is **off by default** and is not included in the proposed directory membership. After agreeing pricing, staffing and fulfillment with participants, the operator can set `ESTIMATE_ASSISTANCE_ENABLED=true`. Professionals can then request a draft for a job. The owner prepares itemized drafts in the owner console. Professionals review, approve, or request changes. Nothing is automatically sent to their customer, and no payment is collected. File/photo uploads and forwarded-email ingestion are not implemented.
+
+Membership checkout remains paused. Applications are interest only and do not reserve a founding place. Paid subscriptions, verified payment webhooks, and automatic founding-member allocation must be implemented and verified before enabling payments.
+
+## Data storage and tested restoration
+
+The app uses a single-process JSON data file with atomic file replacement. **A mounted persistent volume is required for a live deployment.** Setting `DATA_FILE` alone does not provision one. The included free Render configuration still has ephemeral storage and is suitable only for a disposable trial. No paid infrastructure has been provisioned by these changes.
+
+Back up the complete private data file, including access-key hashes and CRM records:
+
+```sh
+DATA_FILE=/var/data/handyman.json node storage-tool.js backup /secure/backups/handyman-2026-11-12.json
+```
+
+Stop the app before restoring. The restore command validates the backup and preserves a copy of any existing live file before replacing it:
+
+```sh
+DATA_FILE=/var/data/handyman.json node storage-tool.js restore /secure/backups/handyman-2026-11-12.json
+```
+
+Store backups privately on separate durable storage. The integration tests exercise restart persistence, restoring a backup into another data file, rejected invalid backups, business isolation, key revocation, inquiry consent, and draft review. Corrupt data is reported instead of silently resetting records.
+
+The Docker image now includes both API route modules and the backup tool. Run `npm test` to check directory and CRM flows.

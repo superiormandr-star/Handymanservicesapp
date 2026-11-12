@@ -1,10 +1,11 @@
 'use strict';
 const estimateRoutes = require('./estimate-routes');
+const crmRoutes = require('./crm-routes');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const base=path.join(__dirname,'public'),dataFile=process.env.DATA_FILE||path.join(__dirname,'data','database.json'),port=Number(process.env.PORT||3000);
 const ADMIN_TOKEN=process.env.ADMIN_TOKEN||'';
 const seed={profiles:[{id:'superior',name:'Superior Maintenance and Remodeling',tagline:'From an idea to a finished improvement.',city:'Fontana',area:'Fontana, California — contact for service coverage',coverageMode:'cities',coverageAreas:[],coverageZip:'',coverageRadius:null,phone:'909-352-3627',website:'https://superior-maintenance-remodeling.indigotune5.chatgpt.site',logo:'/superior-logo.png',description:'Residential and commercial maintenance, painting and remodeling. Contact Superior to discuss the scope, estimate, and availability for your next project.',services:['Painting','Drywall & repairs','Flooring','Kitchens & bathrooms','Doors & windows','Patios & decks','General maintenance','Remodeling'],verified:false,featured:true,createdAt:'2026-11-01T00:00:00.000Z'}],reviews:[],intake:[],documents:[]};
-function db(){try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...seed,...val}}catch{return structuredClone(seed)}}
+function db(){try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...structuredClone(seed),...val}}catch(e){if(e.code==='ENOENT')return structuredClone(seed);throw new Error('Stored data could not be read. Contact the owner; existing records have not been replaced.')}}
 function save(x){fs.mkdirSync(path.dirname(dataFile),{recursive:true});const tmp=dataFile+'.'+process.pid+'.tmp';fs.writeFileSync(tmp,JSON.stringify(x,null,2),{mode:0o600});fs.renameSync(tmp,dataFile)}
 if(!fs.existsSync(dataFile))save(seed);
 function send(res,status,payload){res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin'});res.end(JSON.stringify(payload))}
@@ -18,6 +19,7 @@ const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
 http.createServer(async (req,res)=>{
  try {
  const url=new URL(req.url,'http://localhost');const route=url.pathname;
+ if(await crmRoutes(req,res,{db,save,send,body,admin,clean,limited}))return;
  if(await estimateRoutes(req,res,{db,save,send,body,admin,clean}))return;
  if(route==='/api/health'&&req.method==='GET')return send(res,200,{ok:true,persistence:process.env.DATA_FILE?'configured data file':'local file (configure persistent storage before public launch)',payments:'PayPal plan details must be verified'});
  if(route==='/api/profiles'&&req.method==='GET')return send(res,200,{profiles:db().profiles});

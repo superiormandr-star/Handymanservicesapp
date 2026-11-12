@@ -117,3 +117,7 @@ DATA_FILE=/var/data/handyman.json node storage-tool.js restore /secure/backups/h
 Store backups privately on separate durable storage. The integration tests exercise restart persistence, restoring a backup into another data file, rejected invalid backups, business isolation, key revocation, inquiry consent, and draft review. Corrupt data is reported instead of silently resetting records.
 
 The Docker image now includes both API route modules and the backup tool. Run `npm test` to check directory and CRM flows.
+
+## Updated directory logo and Android installation
+
+The public directory header and hero now use the owner-requested green/gold Superior Handyman Services artwork. The separate Superior Maintenance and Remodeling profile and estimate brand retains its original asset. Existing launcher icons are unchanged. The footer includes an Android installation button, using the browser installation prompt where available and Chrome instructions otherwise. This is an installable web app, not an APK or a Play Store release.

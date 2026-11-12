@@ -217,3 +217,5 @@ main, header, footer, section, .container, .nav, .hero-grid, .hero-copy,
   .nav-cta .pro-cta-label span { font-size:12px; }
 }
 .quote-intake{margin:24px 0}.quote-intake form{max-width:760px}.consent{display:block;line-height:1.6}.consent input{display:inline-block;width:auto;min-height:0;margin-right:8px;vertical-align:middle}.quote-intake textarea{width:100%}
+
+dialog{max-width:min(480px,calc(100vw - 32px));border:1px solid #ced9e7;border-radius:16px;padding:24px;color:#142d4d}dialog::backdrop{background:#071a35aa}

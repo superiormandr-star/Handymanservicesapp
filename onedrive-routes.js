@@ -2,7 +2,6 @@
 const crypto = require('node:crypto');
 const ROOT = 'Superior ProConnect';
 const SCOPE = 'offline_access Files.ReadWrite User.Read';
-const enc = s => Buffer.from(s).toString('base64url');
 function config() {
   const {MS_CLIENT_ID, MS_CLIENT_SECRET, MS_REDIRECT_URI, ONEDRIVE_ENCRYPTION_KEY} = process.env;
   if (![MS_CLIENT_ID,MS_CLIENT_SECRET,MS_REDIRECT_URI,ONEDRIVE_ENCRYPTION_KEY].every(Boolean)) return null;
@@ -23,16 +22,18 @@ module.exports=async function(req,res,{db,save,send,admin,body}){
  try {
   if(route==='/api/owner/onedrive/callback'&&req.method==='GET'){
    const state=url.searchParams.get('state')||'',parts=state.split('.'),signature=crypto.createHmac('sha256',cfg.key).update(parts[0]||'').digest('base64url');
-   if(parts.length!==2||!crypto.timingSafeEqual(Buffer.from(signature),Buffer.from(parts[1]))||Date.now()-Number(parts[0])>600000||Date.now()<Number(parts[0]))throw Error('Expired or invalid authorization state');
+   const cookies=Object.fromEntries((req.headers.cookie||'').split(';').map(v=>v.trim().split('=').map(decodeURIComponent)).filter(v=>v.length===2));
+   if(parts.length!==2||parts[1].length!==signature.length||!crypto.timingSafeEqual(Buffer.from(signature),Buffer.from(parts[1]))||cookies.onedrive_oauth_state!==state||!Number.isFinite(Number(parts[0]))||Date.now()-Number(parts[0])>600000||Date.now()<Number(parts[0]))throw Error('Expired or invalid authorization state');
    if(url.searchParams.get('error'))throw Error('Microsoft authorization was declined');
    const token=await tokenRequest(cfg,{grant_type:'authorization_code',code:url.searchParams.get('code')||'',redirect_uri:cfg.redirect,scope:SCOPE});
    const d=db();d.ownerOneDrive=seal({access_token:token.access_token,refresh_token:token.refresh_token,expiresAt:Date.now()+token.expires_in*1000},cfg.key);save(d);
-   res.writeHead(302,{location:'/admin.html?onedrive=connected','cache-control':'no-store'});res.end();return true;
+   res.writeHead(302,{location:'/admin.html?onedrive=connected','cache-control':'no-store','set-cookie':'onedrive_oauth_state=; HttpOnly; Secure; SameSite=Lax; Path=/api/owner/onedrive; Max-Age=0'});res.end();return true;
   }
   if(!admin(req)){send(res,401,{error:'Owner authorization required'});return true}
   if(route==='/api/owner/onedrive/connect'&&req.method==='GET'){
    const ts=String(Date.now()),sig=crypto.createHmac('sha256',cfg.key).update(ts).digest('base64url');
    const p=new URLSearchParams({client_id:cfg.client,response_type:'code',redirect_uri:cfg.redirect,response_mode:'query',scope:SCOPE,state:ts+'.'+sig,prompt:'select_account'});
+   res.setHeader('set-cookie','onedrive_oauth_state='+encodeURIComponent(ts+'.'+sig)+'; HttpOnly; Secure; SameSite=Lax; Path=/api/owner/onedrive; Max-Age=600');
    send(res,200,{authorizationUrl:'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?'+p});return true;
   }
   if(route==='/api/owner/onedrive/status'&&req.method==='GET'){send(res,200,{connected:!!db().ownerOneDrive,configured:true});return true}

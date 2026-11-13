@@ -15,13 +15,13 @@ function validateBackup(text) {
 }
 
 // Intended for a persistent Node host. Vercel needs a durable database/token store first.
-function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), readSnapshot}) {
+function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), readSnapshot, stateStore=null}) {
  const origin = env.APP_ORIGIN;
  const redirectUri = origin ? new URL('/api/auth/microsoft/callback', origin).href : null;
  const key = env.BACKUP_ENCRYPTION_KEY;
  const directory = env.ONEDRIVE_STATE_DIR;
  const clientSecret = env.MICROSOFT_CLIENT_SECRET || env.microsoft_client_secret;
- const enabled = Boolean(origin && env.MICROSOFT_CLIENT_ID && env.MICROSOFT_TENANT_ID && clientSecret && /^[a-f0-9]{64}$/i.test(key||'') && directory && !env.VERCEL);
+ const enabled = Boolean(origin && env.MICROSOFT_CLIENT_ID && env.MICROSOFT_TENANT_ID && clientSecret && /^[a-f0-9]{64}$/i.test(key||'') && (stateStore || (directory && !env.VERCEL)));
  let busy = false;
  const scopes = 'offline_access Files.ReadWrite.AppFolder';
  function requireConfig() {
@@ -44,11 +44,12 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
  }
  function file(name) { return path.join(directory,name+'.json'); }
  function put(name,value) {
+  if(stateStore)return stateStore.put(name,value);
   fs.mkdirSync(directory,{recursive:true,mode:0o700});
   const dest=file(name), temp=dest+'.'+crypto.randomUUID()+'.tmp';
   fs.writeFileSync(temp,seal(value),{mode:0o600,flag:'wx'});fs.renameSync(temp,dest);
  }
- function get(name) {try{return unseal(fs.readFileSync(file(name),'utf8'))}catch(error){if(error.code==='ENOENT')return null;throw error}}
+ function get(name) {if(stateStore)return stateStore.get(name);try{return unseal(fs.readFileSync(file(name),'utf8'))}catch(error){if(error.code==='ENOENT')return null;throw error}}
  async function token(parameters) {
   const result=await request('https://login.microsoftonline.com/'+encodeURIComponent(env.MICROSOFT_TENANT_ID)+'/oauth2/v2.0/token',{
    method:'POST',signal:AbortSignal.timeout(30000),headers:{'content-type':'application/x-www-form-urlencoded'},
@@ -88,7 +89,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   async callback(state,code) {
    requireConfig();const pending=get('pending');
    if(!pending||pending.expiresAt<now()||typeof state!=='string'||state.length!==pending.state.length||!crypto.timingSafeEqual(Buffer.from(state),Buffer.from(pending.state)))throw Error('Invalid or expired Microsoft authorization state.');
-   fs.unlinkSync(file('pending'));
+   if(stateStore)stateStore.remove('pending');else fs.unlinkSync(file('pending'));
    if(!code)throw Error('Microsoft authorization was canceled or denied.');
    return exclusive(async()=>{await token({grant_type:'authorization_code',code,code_verifier:pending.verifier});});
   },
@@ -99,8 +100,12 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
     const contents=seal({version:1,createdAt:new Date(now()).toISOString(),sha256:crypto.createHash('sha256').update(text).digest('hex'),snapshot:text});
     const result=await graph('special/approot:/'+name+':/content',{method:'PUT',headers:{'content-type':'application/octet-stream'},body:contents});
     const item=await result.json();
+    if(!item.id)throw Error('OneDrive did not confirm an uploaded item.');
+    const downloaded=await (await graph('items/'+encodeURIComponent(item.id)+'/content')).text();
+    const digest=crypto.createHash('sha256').update(contents).digest('hex');
+    if(crypto.createHash('sha256').update(downloaded).digest('hex')!==digest)throw Error('OneDrive upload verification failed: downloaded checksum does not match.');
     put('last-backup',{id:item.id,name,createdAt:new Date(now()).toISOString(),sha256:crypto.createHash('sha256').update(text).digest('hex')});
-    return {id:item.id,name};
+    return {id:item.id,name,verified:true,sha256:digest};
    });
   },
   async list() {
@@ -123,7 +128,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   },
   schedule(onError=()=>{}) {
    const minutes=Number(env.ONEDRIVE_BACKUP_INTERVAL_MINUTES);
-   if(!enabled||!Number.isFinite(minutes)||minutes<5||minutes>10080)return null;
+   if(env.VERCEL||!enabled||!Number.isFinite(minutes)||minutes<5||minutes>10080)return null;
    const timer=setInterval(()=>api.backup().catch(onError),minutes*60000);timer.unref();return timer;
   }
  };

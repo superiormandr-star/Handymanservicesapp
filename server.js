@@ -4,23 +4,70 @@ const crmRoutes = require('./crm-routes');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const base=path.join(__dirname,'public'),dataFile=process.env.DATA_FILE||path.join(__dirname,'data','database.json'),port=Number(process.env.PORT||3000);
 const ADMIN_TOKEN=process.env.ADMIN_TOKEN||'';
-const oneDrive = require('./onedrive').createOneDrive({readSnapshot:()=>fs.readFileSync(dataFile,'utf8')});
+const {createPayPal,checkoutHash}=require('./paypal');
+const payments=createPayPal();
+const persistentStore=require('./persistent-store').createStore();
+const oneDrive = require('./onedrive').createOneDrive({readSnapshot:()=>JSON.stringify(db()),stateStore:persistentStore.enabled?persistentStore.stateStore:null});
 oneDrive.schedule(()=>console.error('Automatic OneDrive backup failed. Check the owner backup connection.'));
 const seed={profiles:[{id:'superior',name:'Superior Maintenance and Remodeling',tagline:'From an idea to a finished improvement.',city:'Fontana',area:'Fontana, California — contact for service coverage',coverageMode:'cities',coverageAreas:[],coverageZip:'',coverageRadius:null,phone:'909-352-3627',website:'https://superior-maintenance-remodeling.indigotune5.chatgpt.site',logo:'/superior-logo.png',description:'Residential and commercial maintenance, painting and remodeling. Contact Superior to discuss the scope, estimate, and availability for your next project.',services:['Painting','Drywall & repairs','Flooring','Kitchens & bathrooms','Doors & windows','Patios & decks','General maintenance','Remodeling'],verified:false,featured:true,createdAt:'2026-11-01T00:00:00.000Z'}],reviews:[],intake:[],documents:[]};
-function db(){try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...structuredClone(seed),...val}}catch(e){if(e.code==='ENOENT')return structuredClone(seed);throw new Error('Stored data could not be read. Contact the owner; existing records have not been replaced.')}}
-function save(x){fs.mkdirSync(path.dirname(dataFile),{recursive:true});const tmp=dataFile+'.'+process.pid+'.tmp';fs.writeFileSync(tmp,JSON.stringify(x,null,2),{mode:0o600});fs.renameSync(tmp,dataFile)}
-if(!fs.existsSync(dataFile))save(seed);
+function db(){const transaction=persistentStore.context.getStore();if(transaction)return structuredClone(transaction.value.records);try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...structuredClone(seed),...val}}catch(e){if(e.code==='ENOENT')return structuredClone(seed);throw new Error('Stored data could not be read. Contact the owner; existing records have not been replaced.')}}
+function save(x){const transaction=persistentStore.context.getStore();if(transaction){transaction.value.records=x;transaction.dirty=true;return;}if(process.env.VERCEL)throw Error('Persistent request context required.');fs.mkdirSync(path.dirname(dataFile),{recursive:true});const tmp=dataFile+'.'+process.pid+'.tmp';fs.writeFileSync(tmp,JSON.stringify(x,null,2),{mode:0o600});fs.renameSync(tmp,dataFile)}
+if(!process.env.VERCEL&&!persistentStore.enabled&&!fs.existsSync(dataFile))save(seed);
 function send(res,status,payload){res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin'});res.end(JSON.stringify(payload))}
-function body(req){return new Promise((resolve,reject)=>{let size=0,chunks=[];req.on('data',chunk=>{size+=chunk.length;if(size>16*1024){reject(new Error('Request too large'));req.destroy()}else chunks.push(chunk)});req.on('end',()=>{try{resolve(JSON.parse(Buffer.concat(chunks).toString()||'{}'))}catch{reject(new Error('Invalid JSON'))}});req.on('error',reject)})}
+function body(req,max=16*1024){return new Promise((resolve,reject)=>{let size=0,chunks=[];req.on('data',chunk=>{size+=chunk.length;if(size>max){reject(new Error('Request too large'));req.destroy()}else chunks.push(chunk)});req.on('end',()=>{try{resolve(JSON.parse(Buffer.concat(chunks).toString()||'{}'))}catch{reject(new Error('Invalid JSON'))}});req.on('error',reject)})}
 const visits=new Map();
 function limited(req){let ip=(req.socket.remoteAddress||'unknown');let now=Date.now();let rec=visits.get(ip)||[];rec=rec.filter(t=>now-t<3600_000);const deny=rec.length>=8;rec.push(now);visits.set(ip,rec);return deny}
 function admin(req){if(!ADMIN_TOKEN)return false;const token=req.headers['x-admin-token'];if(typeof token!=='string'||Buffer.byteLength(token)!==Buffer.byteLength(ADMIN_TOKEN))return false;return crypto.timingSafeEqual(Buffer.from(token),Buffer.from(ADMIN_TOKEN))}
 function clean(v,max){return String(v??'').trim().replace(/[<>]/g,'').slice(0,max)}
 function fail(res,e){send(res,e.message==='Request too large'?413:400,{error:e.message||'Invalid request'})}
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png','.webmanifest':'application/manifest+json','.ico':'image/x-icon','.svg':'image/svg+xml'};
-http.createServer(async (req,res)=>{
+async function handle(req,res){
  try {
  const url=new URL(req.url,'http://localhost');const route=url.pathname;
+ if(route==='/api/admin/export'&&req.method==='GET'){if(!admin(req))return send(res,401,{error:'Owner access required'});return send(res,200,db());}
+ if(route==='/api/cron/backup'&&req.method==='GET'){
+  const provided=req.headers.authorization||'',expected='Bearer '+(process.env.CRON_SECRET||'');
+  if(!process.env.CRON_SECRET||provided.length!==expected.length||!crypto.timingSafeEqual(Buffer.from(provided),Buffer.from(expected)))return send(res,401,{error:'Scheduled backup authorization required'});
+  return send(res,200,await oneDrive.backup());
+ }
+
+ if(route==='/api/payments/config'&&req.method==='GET')return send(res,200,payments.config());
+ if(route==='/api/paypal/webhook'&&req.method==='POST'){
+  if(!payments.configured)return send(res,503,{error:'Payment verification is not configured.'});
+  const event=await body(req,128*1024);
+  let checked;try{checked=await payments.webhook(req.headers,event)}catch{return send(res,400,{error:'PayPal signature could not be verified.'})}
+  const snapshot=db();
+  if((snapshot.paypalEvents||[]).some(v=>v.id===checked.eventId))return send(res,200,{ok:true,duplicate:true});
+  const original=snapshot.intake.find(v=>v.paypalSubscriptionId===checked.subscriptionId);
+  const result=original?await payments.inspect(original,checked.subscriptionId):null;
+  // Reload after external verification so concurrent local requests are retained.
+  const d=db();d.paypalEvents=Array.isArray(d.paypalEvents)?d.paypalEvents:[];
+  if(d.paypalEvents.some(v=>v.id===checked.eventId))return send(res,200,{ok:true,duplicate:true});
+  const record=d.intake.find(v=>v.paypalSubscriptionId===checked.subscriptionId);
+  if(record&&result){
+   record.paymentVerification=result;record.paidPrivileges=result.verified;
+   record.status=result.verified?'verified_payment':result.status==='CANCELLED'?'subscription_cancelled':'pending_payment_verification';
+  }
+  d.paypalEvents.push({id:checked.eventId,receivedAt:new Date().toISOString(),matched:Boolean(record)});
+  save(d);return send(res,200,{ok:true});
+ }
+ if(['/api/paypal/checkout','/api/paypal/verify'].includes(route)&&req.method==='POST'){
+  if(limited(req))return send(res,429,{error:'Too many requests. Try later.'});
+  const input=await body(req),d=db(),record=d.intake.find(v=>v.id===input.requestId);
+  if(!record||typeof input.checkoutToken!=='string'||!record.checkoutTokenHash||checkoutHash(input.checkoutToken)!==record.checkoutTokenHash)return send(res,401,{error:'Use the original application session to continue membership checkout.'});
+  if(!payments.configured)return send(res,503,{error:'Payment verification is not configured. No charge has been made.'});
+  if(route==='/api/paypal/checkout'){
+   const checkout=await payments.create(record),latest=db(),current=latest.intake.find(v=>v.id===record.id);
+   if(!current)return send(res,409,{error:'Application changed. Please try again.'});
+   current.paypalSubscriptionId=checkout.subscriptionId;save(latest);return send(res,200,checkout);
+  }
+  if(input.subscriptionId!==record.paypalSubscriptionId)return send(res,400,{error:'Subscription does not match this application.'});
+  const result=await payments.inspect(record,input.subscriptionId);
+  const latest=db(),current=latest.intake.find(v=>v.id===record.id&&v.paypalSubscriptionId===input.subscriptionId);
+  if(!current)return send(res,409,{error:'Application changed. Please try again.'});
+  current.paymentVerification=result;current.paidPrivileges=result.verified;current.status=result.verified?'verified_payment':'pending_payment_verification';
+  save(latest);return send(res,200,{verified:result.verified,message:result.verified?'Payment verified. Your business listing still requires owner review.':'Payment is not verified yet. No paid privileges have been activated.'});
+ }
  if(route==='/api/auth/microsoft/callback'&&req.method==='GET'){
   try {await oneDrive.callback(url.searchParams.get('state'),url.searchParams.get('code'));
    res.writeHead(303,{'location':'/backups.html','cache-control':'no-store','referrer-policy':'no-referrer'});res.end();
@@ -67,13 +114,13 @@ http.createServer(async (req,res)=>{
   if(coverageMode==='radius'&&(!/^[0-9]{5}$/.test(coverageZip)||![5,10,15,25,50,75,100,150].includes(coverageRadius)))return send(res,400,{error:'Enter a 5-digit starting ZIP code and choose a radius.'});
   if(coverageMode!=='radius'&&!coverageAreas.length)return send(res,400,{error:'List at least one city, county, ZIP code or state you serve.'});
   const serviceArea=coverageMode==='radius'?`${coverageRadius}-mile radius from ZIP ${coverageZip}`:coverageAreas.join(', ');
-  const d=db();const record={id:crypto.randomUUID(),business,email,city,phone,industry,membership,services,coverageMode,coverageAreas:coverageMode==='radius'?[]:coverageAreas,coverageZip:coverageMode==='radius'?coverageZip:'',coverageRadius:coverageMode==='radius'?coverageRadius:null,serviceArea,paypalSubscriptionId:null,status:'interest',createdAt:new Date().toISOString()};d.intake.push(record);save(d);return send(res,201,{ok:true,requestId:record.id,message:'Interest submitted. Complete PayPal checkout and await business listing verification.'});
+  const d=db(),checkoutToken=crypto.randomBytes(32).toString('hex');const record={id:crypto.randomUUID(),business,email,city,phone,industry,membership,services,coverageMode,coverageAreas:coverageMode==='radius'?[]:coverageAreas,coverageZip:coverageMode==='radius'?coverageZip:'',coverageRadius:coverageMode==='radius'?coverageRadius:null,serviceArea,paypalSubscriptionId:null,checkoutTokenHash:checkoutHash(checkoutToken),paidPrivileges:false,status:'interest',createdAt:new Date().toISOString()};d.intake.push(record);save(d);return send(res,201,{ok:true,requestId:record.id,checkoutToken,message:'Interest submitted. No payment has been taken.'});
  }
  if(route==='/api/subscription'&&req.method==='POST'){
   const x=await body(req);const requestId=clean(x.requestId,90),subscriptionId=clean(x.subscriptionId,100);
   if(!/^I-[A-Z0-9-]{6,}$/i.test(subscriptionId))return send(res,400,{error:'Invalid subscription ID'});
   const d=db(),rec=d.intake.find(e=>e.id===requestId);if(!rec)return send(res,404,{error:'Application not found'});
-  rec.paypalSubscriptionId=subscriptionId;rec.status='pending_payment_verification';save(d);return send(res,200,{ok:true,message:'Subscription reference received. Listing will be activated after verification.'});
+  return send(res,409,{error:'Continue through the original application checkout session. Browser subscription references do not verify payment.'});
  }
  if(route==='/api/admin/pending'&&req.method==='GET'){if(!admin(req))return send(res,401,{error:'Admin access required'});const d=db();return send(res,200,{reviews:d.reviews.filter(r=>r.status==='pending'),intake:d.intake,profiles:d.profiles})}
  if(route==='/api/admin/reviews'&&req.method==='GET'){if(!admin(req))return send(res,401,{error:'Admin access required'});return send(res,200,{reviews:db().reviews})}
@@ -207,4 +254,7 @@ http.createServer(async (req,res)=>{
  const filepath=path.resolve(base,'.'+(route==='/'?'/index.html':route));if(!filepath.startsWith(base+path.sep))return send(res,403,{error:'Forbidden'});
  fs.stat(filepath,(err,stat)=>{if(err||!stat.isFile()){res.writeHead(404);res.end('Not found');return}res.writeHead(200,{'content-type':mime[path.extname(filepath)]||'application/octet-stream','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin','x-frame-options':'SAMEORIGIN','cache-control':route==='/service-worker.js'?'no-cache':'public, max-age=120'});if(req.method==='HEAD')return res.end();fs.createReadStream(filepath).pipe(res)});
  }catch(e){fail(res,e)}
-}).listen(port,'0.0.0.0',()=>console.log(`Handyman Services running on port ${port}`));
+}
+async function dispatch(req,res){if(req.url.startsWith('/api/')&&(process.env.VERCEL||persistentStore.enabled))return persistentStore.run(req,res,seed,handle);return handle(req,res);}
+module.exports=dispatch;
+if(require.main===module)http.createServer(dispatch).listen(port,'0.0.0.0',()=>console.log(`Handyman Services running on port ${port}`));

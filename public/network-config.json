@@ -140,29 +140,28 @@
     "category": "Automotive Repair Businesses",
     "separateFrom": "Independent Automotive Professionals",
     "pricingModel": "monthly base subscription plus per successfully generated and delivered estimate",
-    "chargeTrigger": "successful estimate generation and delivery regardless of customer approval or denial",
-    "noChargeFor": "correction of platform errors",
+    "chargeTrigger": "One charge for each completed estimate generated and delivered, whether customer approves or declines",
+    "noChargeFor": "Corrections and revisions to the same estimate",
     "tiers": [
       {
         "id": "shop-exposure",
         "name": "Shop Exposure",
-        "weeklyGuideline": 15,
-        "monthlyEstimateCap": 60,
-        "baseMonthlyPrice": null,
-        "perEstimatePrice": null
+        "baseMonthlyPrice": 45,
+        "monthlyEstimateCap": 0,
+        "perEstimatePrice": null,
+        "estimateGeneration": false
       },
       {
         "id": "shop-pro",
         "name": "Shop Pro",
-        "weeklyGuideline": null,
-        "monthlyEstimateCap": 60,
-        "baseMonthlyPrice": null,
-        "perEstimatePrice": null
+        "baseMonthlyPrice": 89.99,
+        "monthlyEstimateCap": 40,
+        "perEstimatePrice": 2.99,
+        "estimateGeneration": true
       }
     ],
-    "capPolicy": "Hard monthly cap; no automatic overage; no unlimited generation",
+    "capPolicy": "40 estimates per calendar billing month for Shop Pro; hard stop at cap, no automatic overages",
     "invoiceHandling": "Shop-managed; no platform-managed invoicing",
-    "pricingStatus": "proposed, not finalized",
-    "note": "Tier differentiation and exact caps/prices require owner approval; 60/month for both tiers is a placeholder, not a finalized distinction"
+    "pricingStatus": "Base prices and caps specified by owner; $2.99 per estimate recommended, pending owner confirmation"
   }
 }

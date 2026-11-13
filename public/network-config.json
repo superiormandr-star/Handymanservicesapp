@@ -81,8 +81,7 @@
           "serviceArea",
           "contactLink"
         ],
-        "ratingsBelowListing": true,
-        "estimateTool": null
+        "ratingsBelowListing": true
       },
       {
         "id": "independent-pro",
@@ -96,33 +95,39 @@
           "contactLink",
           "shortDescription",
           "customerComments",
-          "customizableEstimateTemplate"
+          "genericQuoteTemplate",
+          "genericInvoiceTemplate"
         ],
         "ratingsBelowListing": true,
-        "estimateTool": {
-          "download": true,
-          "shareViaDevice": true,
+        "documentTemplates": {
+          "quote": "generic",
+          "invoice": "generic",
+          "customization": false,
+          "memberFillsAndSends": true,
           "platformDelivery": false,
-          "platformApproval": false
+          "platformPayments": false
         }
       }
     ],
     "compliance": "Do not imply certification, licensing, or verified credentials; apply applicable California repair requirements",
-    "platformRole": "Directory discovery and self-service estimate template only",
+    "platformRole": "Directory listings and generic self-service quote/invoice templates for Independent Pro members only",
     "platformDoesNotProvide": [
-      "invoicing",
+      "customized quote or invoice templates",
+      "issuing or sending documents on behalf of members",
       "payment processing",
       "job management",
       "customer approvals",
-      "sending estimates on behalf of members"
+      "repair dispute handling"
     ],
     "professionalResponsibilities": [
-      "send estimates through their own channels",
+      "complete and issue their own quotes and invoices",
+      "send documents through their own channels",
       "manage customer communications",
       "obtain legally required authorizations",
-      "handle invoices and payments",
-      "comply with applicable licensing and repair laws"
+      "collect payments",
+      "comply with applicable repair laws"
     ],
-    "liabilityNote": "Directory status and terms do not eliminate applicable platform legal obligations"
+    "liabilityNote": "Directory status and terms do not eliminate applicable platform legal obligations",
+    "documentDisclaimer": "Independent Service Provider Notice: This document is prepared and issued by the independent service provider identified above, not by The Superior Network. The provider is responsible for document accuracy, services, pricing, legally required authorizations, payment collection, and fulfillment. The Superior Network does not perform or guarantee the services described. This notice does not waive nonwaivable legal obligations."
   }
 }

@@ -38,7 +38,7 @@ module.exports=async function(req,res,{db,save,send,admin,body}){
   }
   if(route==='/api/owner/onedrive/status'&&req.method==='GET'){send(res,200,{connected:!!db().ownerOneDrive,configured:true});return true}
   if(route==='/api/owner/onedrive/upload'&&req.method==='POST'){
-   const x=await body(req),name=String(x.name||'');
+   const x=await body(req,110*1024),name=String(x.name||'');
    if(!/^[a-zA-Z0-9][a-zA-Z0-9_. -]{0,119}$/.test(name)||name==='.'||name==='..')throw Error('Invalid filename');
    if(typeof x.content!=='string'||Buffer.byteLength(x.content,'utf8')>100000)throw Error('File must be text under 100 KB');
    const token=await access(cfg,db,save),dir=await folder(token);

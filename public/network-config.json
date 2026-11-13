@@ -81,7 +81,9 @@
           "serviceArea",
           "contactLink"
         ],
-        "ratingsBelowListing": true
+        "ratingsBelowListing": true,
+        "weeklyDocumentLimit": 0,
+        "documentTemplates": null
       },
       {
         "id": "independent-pro",
@@ -106,7 +108,10 @@
           "memberFillsAndSends": true,
           "platformDelivery": false,
           "platformPayments": false
-        }
+        },
+        "weeklyDocumentLimit": 10,
+        "documentLimitUnit": "combined generic quotes and invoices",
+        "resetCadence": "weekly"
       }
     ],
     "compliance": "Do not imply certification, licensing, or verified credentials; apply applicable California repair requirements",
@@ -128,6 +133,7 @@
       "comply with applicable repair laws"
     ],
     "liabilityNote": "Directory status and terms do not eliminate applicable platform legal obligations",
-    "documentDisclaimer": "Independent Service Provider Notice: This document is prepared and issued by the independent service provider identified above, not by The Superior Network. The provider is responsible for document accuracy, services, pricing, legally required authorizations, payment collection, and fulfillment. The Superior Network does not perform or guarantee the services described. This notice does not waive nonwaivable legal obligations."
+    "documentDisclaimer": "Independent Service Provider Notice: This document is prepared and issued by the independent service provider identified above, not by The Superior Network. The provider is responsible for document accuracy, services, pricing, legally required authorizations, payment collection, and fulfillment. The Superior Network does not perform or guarantee the services described. This notice does not waive nonwaivable legal obligations.",
+    "documentAllowanceScope": "Independent automotive professionals only; separate from business subscriber plans"
   }
 }

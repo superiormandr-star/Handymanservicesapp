@@ -233,3 +233,34 @@ dialog{max-width:min(480px,calc(100vw - 32px));border:1px solid #ced9e7;border-r
 .hero{background:radial-gradient(circle at 80% 38%,#29425d 0,#172a42 38%,#101e34 76%)}.hero h1{font-size:clamp(37px,4.9vw,66px);letter-spacing:-.045em;line-height:1.09}.hero h1 em{color:#e1c78f}.hero-copy>p{color:#d3dce8}.hero-glow{background:#c2ad8340}.hero-card{background:linear-gradient(160deg,#293d55,#111f32);border-color:#647188;transform:none}.hero-card-bottom b{color:#d6b67c}.btn-primary{background:linear-gradient(135deg,#ead7ac,#c7a66c);color:#18283d;box-shadow:0 10px 24px #b99b5630}.eyebrow.orange,.section h2 span{color:#a78042}.eyebrow.light{color:#e5d3ae}.bullet,.dot{background:#d3b577;box-shadow:0 0 0 4px #d3b57720}.ticker{background:linear-gradient(90deg,#e5d4b0,#c5a66f)}
 .network-hero-emblem{min-height:300px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:15px;padding:28px;border:1px solid #ffffff25;border-radius:23px;background:radial-gradient(circle at 50% 20%,#62738a55,transparent 65%)}.network-hero-monogram{display:grid;place-items:center;width:116px;height:116px;border-radius:30px;border:2px solid #d4bd8c;background:#17283e;color:#e5d4b0;font:900 54px Outfit,sans-serif;letter-spacing:-.1em;padding-right:8px}.network-hero-name{font:800 clamp(15px,2vw,21px) Outfit,sans-serif;letter-spacing:.12em;color:#fff}.network-hero-tagline{font:700 10px 'DM Sans',sans-serif;letter-spacing:.13em;color:#d9c69f}.hero-card-label{color:#d5deeb}
 @media(max-width:650px){.brand{font-size:12px}.brand strong{font-size:14px}.network-mark{width:43px;height:43px;font-size:17px}.hero h1{font-size:clamp(34px,9vw,49px)}.network-hero-emblem{min-height:230px;padding:18px}.network-hero-monogram{width:85px;height:85px;font-size:39px}}
+
+/* Critical Android mobile repair: readable text and restrained navigation. */
+@media(max-width:620px){
+ html,body{width:100%;max-width:100%;overflow-x:clip}
+ .site-header{position:relative;top:auto;z-index:20}
+ .site-header .nav{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;min-height:70px!important;gap:10px!important;padding:10px 0!important}
+ .site-header .brand{display:flex!important;align-items:center!important;flex:1 1 auto!important;width:auto!important;min-width:0!important;overflow:visible!important;font-size:12px!important;line-height:1.05!important}
+ .site-header .brand>span:last-child{font-size:12px!important;overflow-wrap:normal!important;white-space:normal!important}
+ .site-header .brand strong{font-size:13px!important;letter-spacing:.025em!important}
+ .site-header .network-mark{width:38px!important;height:38px!important;min-width:38px!important;flex:0 0 38px!important;font-size:15px!important;padding:0!important}
+ .site-header .nav-cta{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;flex:0 0 auto!important;width:auto!important;max-width:130px!important;min-height:42px!important;padding:7px 11px!important;border-radius:9px!important;background:#d6b77e!important;color:#14243a!important;box-shadow:none!important;transform:none!important;position:static!important}
+ .site-header .nav-cta .pro-cta-kicker{font-size:9px!important;line-height:1.15!important}
+ .site-header .nav-cta .pro-cta-label{font-size:11px!important;line-height:1.15!important;white-space:nowrap!important}
+ .site-header .nav-cta .pro-cta-label span{font-size:11px!important}
+ .hero,.hero *{opacity:1!important;visibility:visible!important}
+ .hero{position:relative!important;isolation:isolate!important;background:#14243b!important;color:#fff!important}
+ .hero-grid{display:flex!important;flex-direction:column!important;align-items:stretch!important;min-height:0!important;gap:28px!important;padding:38px 0 58px!important}
+ .hero-copy{display:block!important;position:relative!important;z-index:1!important;width:100%!important;max-width:100%!important;min-width:0!important}
+ .hero .eyebrow{font-size:10px!important;color:#e0c99b!important;letter-spacing:.1em!important}
+ .hero h1{font-size:clamp(30px,8vw,43px)!important;line-height:1.12!important;letter-spacing:-.035em!important;margin:18px 0!important;color:#fff!important;font-weight:800!important;overflow-wrap:normal!important;word-break:normal!important}
+ .hero h1 em{color:#e1c78f!important}
+ .hero-copy>p{font-size:16px!important;line-height:1.6!important;color:#e0e6ef!important;font-weight:400!important;margin:0!important}
+ .hero-actions{display:flex!important;flex-direction:column!important;gap:12px!important;margin:26px 0!important}
+ .hero-actions .btn{font-size:14px!important;padding:14px 16px!important}
+ .hero-feature{width:100%!important;position:relative!important;z-index:1!important}
+ .hero-card{width:100%!important;max-width:360px!important;margin:0 auto!important;transform:none!important}
+ .float-card{position:relative!important;right:auto!important;bottom:auto!important;margin:12px auto 0!important;max-width:100%!important}
+ .trustline{color:#fff!important}.trustline strong{color:#fff!important}.trustline small{color:#d3dce7!important}
+ .network-hero-emblem{min-height:215px!important}
+ .ticker-inner{overflow:auto!important;gap:18px!important}
+}

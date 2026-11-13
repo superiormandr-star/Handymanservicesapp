@@ -324,3 +324,40 @@ dialog{max-width:min(480px,calc(100vw - 32px));border:1px solid #ced9e7;border-r
  .site-header .nav>a.nav-cta{display:none!important}
  .site-header .desktop-nav{display:none!important}
 }
+
+/* ProConnect mobile page-wide polish: consistent palette, scale, and overflow safety. */
+@media(max-width:767px){
+ html,body{max-width:100%!important;overflow-x:hidden!important}
+ .container{width:calc(100% - 36px)!important;max-width:100%!important}
+ .hero,.hero-grid,.hero-copy,.hero-feature,.hero-card,.float-card,.network-hero-emblem,.section,.section-head,.advertise-grid,.advertise-copy,.steps,.steps article,.directory-list{min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+ .hero-feature{display:block!important;overflow:visible!important}
+ .hero-card{width:100%!important;max-width:360px!important;margin:0 auto!important;padding:15px!important;transform:none!important}
+ .network-hero-emblem{min-height:190px!important;width:100%!important;padding:16px!important}
+ .network-hero-name{font-size:clamp(12px,4vw,18px)!important;letter-spacing:.045em!important;overflow-wrap:anywhere!important}
+ .network-hero-tagline{font-size:9px!important;letter-spacing:.05em!important;overflow-wrap:anywhere!important}
+ .float-card{position:static!important;width:100%!important;max-width:360px!important;margin:12px auto 0!important;transform:none!important;display:flex!important;overflow:visible!important}
+ .float-card div{min-width:0!important}.float-card b,.float-card small{overflow-wrap:break-word!important;white-space:normal!important}
+ .hero-actions .btn{font-size:14px!important;line-height:1.3!important;min-height:48px!important;padding:12px 15px!important;border-radius:11px!important;white-space:normal!important}
+ .hero-actions .btn-outline{color:#fff!important;background:transparent!important;border:1px solid #a8b7c8!important}
+ .trustline{margin-bottom:0!important}
+ .section{padding:46px 0!important}
+ .section h2,.advertise h2{font-size:clamp(27px,7.4vw,36px)!important;line-height:1.16!important;letter-spacing:-.025em!important;overflow-wrap:normal!important;word-break:normal!important;margin:12px 0 18px!important}
+ .section-head{margin-bottom:24px!important}.section-head p{font-size:14px!important;line-height:1.6!important}
+ .steps{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:14px!important;margin-top:20px!important}
+ .steps article{padding:20px!important;border-radius:16px!important}
+ .steps h3{font-size:21px!important;line-height:1.25!important}.steps p{font-size:14px!important}
+ .advertise{background:#f4f7fb!important;color:#172b43!important}
+ .advertise .eyebrow.light{color:#8a672e!important}
+ .advertise h2{color:#172b43!important}
+ .advertise h2 span{color:#a47b3c!important}
+ .advertise-copy>p{color:#35475d!important;font-size:15px!important;line-height:1.6!important;font-weight:500!important}
+ .advertise-grid{grid-template-columns:minmax(0,1fr)!important;gap:24px!important}
+ .advertise .founder-heading{color:#25364d!important}.advertise .founder-heading span,.advertise .founder-note{color:#47576c!important}
+ .advertise .founder-plan{background:#fff!important;color:#172b43!important;border-color:#d3bd91!important}
+ .advertise .founder-plan strong{color:#172b43!important}.advertise .founder-plan p{color:#48576a!important}
+ .advertise-form{padding:20px!important;max-width:100%!important}
+ .directory-footnote{font-size:12px!important;line-height:1.55!important}
+ .bottom-nav{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:center!important;justify-items:stretch!important;gap:0!important;padding:5px 6px max(5px,env(safe-area-inset-bottom))!important;background:#f5f7fa!important;border-top:1px solid #d6dde6!important;box-shadow:0 -2px 12px #14243b12!important}
+ .bottom-nav a{min-height:43px!important;min-width:0!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:2px!important;font-size:19px!important;line-height:1!important;color:#a67c40!important}
+ .bottom-nav small{font-size:10px!important;line-height:1.1!important;color:#233a56!important;font-weight:700!important}
+}

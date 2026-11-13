@@ -298,3 +298,18 @@ dialog{max-width:min(480px,calc(100vw - 32px));border:1px solid #ced9e7;border-r
  .bottom-nav small{font-size:9px!important}
  .bottom-nav svg,.bottom-nav .nav-icon{width:19px!important;height:19px!important;font-size:19px!important}
 }
+
+/* Narrow-phone layout: protect full network name and prevent CTA overlap. */
+@media(max-width:620px){
+ .site-header .nav{display:grid!important;grid-template-columns:minmax(0,1fr) 94px!important;gap:6px!important;min-height:52px!important;padding:6px 0!important}
+ .site-header .brand{display:grid!important;grid-template-columns:29px minmax(0,1fr)!important;gap:6px!important;width:100%!important;max-width:100%!important;overflow:visible!important;align-items:center!important}
+ .site-header .network-mark{width:29px!important;height:29px!important;min-width:29px!important;font-size:11px!important}
+ .site-header .brand>span:last-child{display:block!important;overflow:visible!important;white-space:normal!important;word-break:normal!important;overflow-wrap:normal!important;font-size:clamp(9px,2.5vw,12px)!important;line-height:1.1!important;letter-spacing:-.02em!important}
+ .site-header .brand strong{display:block!important;font-size:clamp(9px,2.6vw,12px)!important;letter-spacing:-.02em!important;white-space:normal!important}
+ .site-header a.nav-cta{width:94px!important;max-width:94px!important;min-height:32px!important;padding:4px 5px!important;border-radius:7px!important}
+ .site-header .nav-cta .pro-cta-kicker{font-size:8px!important}.site-header .nav-cta .pro-cta-label{font-size:9px!important}
+ .bottom-nav{padding:3px 5px max(3px,env(safe-area-inset-bottom))!important}
+ .bottom-nav a{min-height:39px!important;gap:0!important}
+ .bottom-nav small{font-size:9px!important}
+ .bottom-nav svg,.bottom-nav .nav-icon{width:17px!important;height:17px!important;font-size:17px!important}
+}

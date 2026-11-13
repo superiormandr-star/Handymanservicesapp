@@ -1,0 +1,243 @@
+{
+  "network": "The Superior Network",
+  "platform": "Superior ProConnect",
+  "version": 1,
+  "ownerPortal": "/admin.html",
+  "members": [
+    {
+      "id": "superior-remodeling",
+      "displayName": "Superior Remodeling",
+      "industry": "construction",
+      "subscription": {
+        "type": "complimentary",
+        "billingEnabled": false
+      },
+      "documentType": "estimate",
+      "template": "construction",
+      "status": "pilot"
+    },
+    {
+      "id": "best-wrench-works",
+      "displayName": "Best Wrench Works",
+      "industry": "automotive",
+      "specialty": "repair",
+      "subscription": {
+        "type": "complimentary",
+        "billingEnabled": false
+      },
+      "documentType": "quote",
+      "template": "automotive-repair",
+      "status": "pilot"
+    }
+  ],
+  "documentRules": {
+    "branding": "member",
+    "customerRecords": "isolated-by-member",
+    "paymentRecipient": "member-authorized-account",
+    "approval": "customer-authorization-required",
+    "invoiceFromApprovedDocument": true
+  },
+  "templates": [
+    {
+      "id": "construction",
+      "documentLabel": "Estimate",
+      "fields": [
+        "customer",
+        "projectAddress",
+        "scope",
+        "labor",
+        "materials",
+        "total",
+        "approval"
+      ]
+    },
+    {
+      "id": "automotive-repair",
+      "documentLabel": "Quote",
+      "fields": [
+        "customer",
+        "vehicle",
+        "requestedServices",
+        "parts",
+        "labor",
+        "total",
+        "authorization"
+      ]
+    }
+  ],
+  "futureSpecialties": "Add templates without changing shared document lifecycle",
+  "independentAutomotive": {
+    "category": "Independent Automotive Professionals",
+    "credentials": "self-reported unless verified",
+    "tiers": [
+      {
+        "id": "independent-exposure",
+        "name": "Exposure",
+        "listing": true,
+        "profile": false,
+        "fields": [
+          "displayName",
+          "services",
+          "serviceArea",
+          "contactLink"
+        ],
+        "ratingsBelowListing": true,
+        "weeklyDocumentLimit": 0,
+        "documentTemplates": null
+      },
+      {
+        "id": "independent-pro",
+        "name": "Independent Pro",
+        "listing": true,
+        "profile": "limited",
+        "fields": [
+          "displayName",
+          "services",
+          "serviceArea",
+          "contactLink",
+          "shortDescription",
+          "customerComments",
+          "genericQuoteTemplate",
+          "genericInvoiceTemplate"
+        ],
+        "ratingsBelowListing": true,
+        "documentTemplates": {
+          "quote": "generic",
+          "invoice": "generic",
+          "customization": false,
+          "memberFillsAndSends": true,
+          "platformDelivery": false,
+          "platformPayments": false
+        },
+        "weeklyDocumentLimit": 10,
+        "documentLimitUnit": "combined generic quotes and invoices",
+        "resetCadence": "weekly",
+        "perDocumentPrice": 4.99,
+        "documentDelivery": [
+          "download PDF",
+          "open and share using member's own device or app"
+        ]
+      }
+    ],
+    "compliance": "Do not imply certification, licensing, or verified credentials; apply applicable California repair requirements",
+    "platformRole": "Directory listings and generic self-service quote/invoice templates for Independent Pro members only",
+    "platformDoesNotProvide": [
+      "customized quote or invoice templates",
+      "issuing or sending documents on behalf of members",
+      "payment processing",
+      "job management",
+      "customer approvals",
+      "repair dispute handling"
+    ],
+    "professionalResponsibilities": [
+      "complete and issue their own quotes and invoices",
+      "send documents through their own channels",
+      "manage customer communications",
+      "obtain legally required authorizations",
+      "collect payments",
+      "comply with applicable repair laws"
+    ],
+    "liabilityNote": "Directory status and terms do not eliminate applicable platform legal obligations",
+    "documentDisclaimer": "Independent Service Provider Notice: This document is prepared and issued by the independent service provider identified above, not by The Superior Network. The provider is responsible for document accuracy, services, pricing, legally required authorizations, payment collection, and fulfillment. The Superior Network does not perform or guarantee the services described. This notice does not waive nonwaivable legal obligations.",
+    "documentAllowanceScope": "Independent automotive professionals only; separate from business subscriber plans",
+    "pricingStatus": "Owner confirmed $4.99 per generic document for Independent Pro; subscription base price not specified here",
+    "chargeTrigger": "Each successfully generated generic quote or invoice, regardless of customer acceptance; corrections to same document free"
+  },
+  "automotiveRepairShops": {
+    "category": "Automotive Repair Businesses",
+    "separateFrom": "Independent Automotive Professionals",
+    "pricingModel": "monthly base subscription plus per successfully generated and delivered estimate",
+    "chargeTrigger": "One charge for each completed estimate generated and delivered, whether customer approves or declines",
+    "noChargeFor": "Corrections and revisions to the same estimate",
+    "tiers": [
+      {
+        "id": "shop-exposure",
+        "name": "Shop Exposure",
+        "baseMonthlyPrice": 45,
+        "monthlyEstimateCap": 0,
+        "perEstimatePrice": null,
+        "estimateGeneration": false
+      },
+      {
+        "id": "shop-pro",
+        "name": "Shop Pro",
+        "baseMonthlyPrice": 89.99,
+        "monthlyEstimateCap": 40,
+        "perEstimatePrice": 4.99,
+        "estimateGeneration": true
+      }
+    ],
+    "capPolicy": "40 estimates per calendar billing month for Shop Pro; hard stop at cap, no automatic overages",
+    "invoiceHandling": "Shop-managed; no platform-managed invoicing",
+    "pricingStatus": "Owner confirmed $45 Shop Exposure; $89.99 Shop Pro base; $4.99 per estimate; 40 Shop Pro estimates monthly",
+    "estimateApprovalWorkflow": {
+      "customerRequest": "Customer submits request and contact details privately",
+      "estimateGeneration": "Shop Pro estimate generated and delivered through platform",
+      "approval": "Customer may approve or decline estimate",
+      "contactVisibility": "Customer contact details hidden from shop until customer approves estimate",
+      "consentNotice": "Inform customer before submission that contact details will be shared with the shop on approval",
+      "afterApproval": "Shop and customer communicate and transact directly; platform does not manage repairs or service payments",
+      "feePolicy": "Charge per completed estimate regardless of approval or decline",
+      "privacyNote": "Shop should receive only necessary customer information; define appropriate handling for requests where shop needs contact to quote"
+    }
+  },
+  "automotivePaymentSeparation": {
+    "platformRevenue": [
+      "subscriptions",
+      "document-generation fees"
+    ],
+    "serviceRevenueRecipient": "Individual independent professional or automotive repair shop",
+    "customerPaymentProcessingByPlatform": false,
+    "platformCollectsRepairPayments": false,
+    "providerPaymentInstructions": {
+      "requiredForInvoice": true,
+      "ownedByProvider": true,
+      "allowedExamples": [
+        "PayPal",
+        "Zelle",
+        "bank transfer",
+        "cash",
+        "other provider-designated method"
+      ],
+      "noPlatformCheckout": true
+    },
+    "documentPaymentDisclaimer": "Payment for automotive services is owed directly to the independent service provider or repair shop named on this document, not to The Superior Network. The Superior Network does not collect or process service payments.",
+    "accountingNote": "Keep platform fees separate from provider service revenue; consult qualified accountant for tax classification"
+  },
+  "tagline": "Where the Community Is the Network.",
+  "architecture": {
+    "model": "one expandable multi-industry network",
+    "industryIsolation": "Each industry has separate service categories, member types, plans and workflows while sharing platform identity and owner administration",
+    "industries": [
+      {
+        "id": "construction",
+        "label": "Construction",
+        "status": "active",
+        "customerTypes": [
+          "homeowners",
+          "businesses"
+        ],
+        "providerTypes": [
+          "construction professionals"
+        ],
+        "workflow": "industry-specific lead connections and estimates"
+      },
+      {
+        "id": "automotive",
+        "label": "Automotive",
+        "status": "active",
+        "providerTypes": [
+          "repair shops",
+          "independent automotive professionals"
+        ],
+        "workflow": "shop quote approval and contact release; independent self-service generic documents"
+      }
+    ],
+    "futureIndustries": "Add industry configurations without creating separate platforms",
+    "providerServicePayments": "paid directly to each provider; never to network",
+    "platformRevenue": [
+      "subscriptions",
+      "platform document and estimate fees"
+    ]
+  }
+}

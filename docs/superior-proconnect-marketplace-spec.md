@@ -34,7 +34,7 @@ One installable app, two marketplace sections: Home Services and Automotive Serv
 
 ## Professional accounts
 - Basic promotional membership: **25 for 25** — the first 25 verified, paid Basic subscribers IN EACH CATEGORY (25 Construction + 25 Automotive; 50 total) receive a grandfathered $25/month rate while their qualifying subscription remains continuously active. Later Basic subscribers pay the then-current approved regular price (owner-proposed regular price $39.99/month; display as crossed-out comparison only once genuinely established as the regular price, with truthful promotional terms). Basic primarily accesses a separate, customer-consented lead source and basic listing, not automatic access to the competitive quote pool. Define exact Basic lead-board permissions and lead sourcing before launch.
-- Pro: $79/month; profile, direct contact, eligible job notifications, quote submissions and up to 10 AI-assisted estimate drafts/month for owner review.
+- Pro: **$79/month introductory promotional price**, with **$100/month proposed regular price**, in BOTH Construction and Automotive. Full profile, direct contact, eligible job notifications, quote submissions and up to 10 AI-assisted estimate drafts/month for owner review. Unlike founding Basic, Pro is NOT automatically grandfathered. Promotional duration, renewal price and effective billing date must be explicitly established and disclosed before checkout; never change an active subscription charge without required consent/notice.
 - Verify PayPal billing status server-side via signed webhooks or verified API before activating paid privileges; never trust browser callback alone.
 - Featured placement requires rating >= 3.0 plus applicable verification and policy compliance; genuine negative reviews remain visible.
 - New providers with insufficient review history require a separately labeled provisional verification policy.
@@ -76,3 +76,8 @@ Existing repository uses a mutable local JSON file. Do not deploy this as a prod
 - **Total**: 50 potential grandfathered founding subscriptions. A filled category does not consume or block the other category's allocation.
 - Subscription must be assigned to exactly one category for a founding slot. Cross-category access or dual membership requires a separate explicitly approved rule; do not silently double-count or confer free access.
 - At full occupancy, 50 x $25 = $1,250/month gross recurring revenue before fees, churn and expenses; this is not a forecast or guarantee.
+
+## Pro promotional pricing — owner decision
+- Applies separately in both industries: Pro intro **$79/month**, proposed regular **$100/month**.
+- $79 is temporary, not a lifetime grandfathered price. Exact end date, number of introductory billing cycles, or enrollment cutoff is **not yet decided**. Do not implement an automatic $100 charge until those terms are approved and disclosed.
+- Strikethrough $100 comparison only if bona fide established regular price; verify actual PayPal billing plans and customer authorization.

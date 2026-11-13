@@ -169,7 +169,17 @@
     ],
     "capPolicy": "40 estimates per calendar billing month for Shop Pro; hard stop at cap, no automatic overages",
     "invoiceHandling": "Shop-managed; no platform-managed invoicing",
-    "pricingStatus": "Owner confirmed $45 Shop Exposure; $89.99 Shop Pro base; $4.99 per estimate; 40 Shop Pro estimates monthly"
+    "pricingStatus": "Owner confirmed $45 Shop Exposure; $89.99 Shop Pro base; $4.99 per estimate; 40 Shop Pro estimates monthly",
+    "estimateApprovalWorkflow": {
+      "customerRequest": "Customer submits request and contact details privately",
+      "estimateGeneration": "Shop Pro estimate generated and delivered through platform",
+      "approval": "Customer may approve or decline estimate",
+      "contactVisibility": "Customer contact details hidden from shop until customer approves estimate",
+      "consentNotice": "Inform customer before submission that contact details will be shared with the shop on approval",
+      "afterApproval": "Shop and customer communicate and transact directly; platform does not manage repairs or service payments",
+      "feePolicy": "Charge per completed estimate regardless of approval or decline",
+      "privacyNote": "Shop should receive only necessary customer information; define appropriate handling for requests where shop needs contact to quote"
+    }
   },
   "automotivePaymentSeparation": {
     "platformRevenue": [

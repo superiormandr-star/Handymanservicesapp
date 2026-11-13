@@ -70,3 +70,15 @@ The automated suite includes existing directory/CRM/document flows, local recove
 PayPal verification/rejection cases, OneDrive encryption/recovery, and actual SQLite
 CAS/history operations with real Ed25519/AES-GCM cryptography. Production checks
 must additionally exercise the deployed service and actual provider responses.
+
+## Latest checks
+
+All 13 automated tests pass, including HTTP payment routes with a simulated PayPal
+service and encrypted upload/download/recovery corruption checks. Chromium checks
+passed for 320/390/768/1280 widths, category navigation, filtering, signup selection,
+and network footers. The Handyman Services category uses the existing original
+handyman-logo.png unchanged; the Remodeling logo is also unchanged.
+
+The native API preview responds explicitly with HTTP 503 while persistent storage
+is unconfigured. This is not a functioning production record service yet. Payment
+provider calls in tests are simulated; no real charge was created or verified.

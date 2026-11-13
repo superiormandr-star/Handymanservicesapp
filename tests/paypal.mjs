@@ -19,7 +19,7 @@ test('subscription privileges require exact account binding, plan and confirmed 
  const {state,api}=fixture();assert.equal((await api.inspect(record,'I-EXAMPLE123')).verified,true);
  delete state.sub.billing_info.last_payment;assert.equal((await api.inspect(record,'I-EXAMPLE123')).verified,false);
  state.sub.custom_id='other-application';await assert.rejects(api.inspect(record,'I-EXAMPLE123'),/does not belong/);
- state.sub.custom_id=record.id;state.sub.plan_overridden=true;await assert.rejects(api.inspect(record,'I-EXAMPLE123'),/does not belong/);
+ state.sub.custom_id=record.id;state.sub.billing_info.last_payment={amount:{value:'1.00',currency_code:'USD'}};assert.equal((await api.inspect(record,'I-EXAMPLE123')).verified,false);state.sub.plan_overridden=true;await assert.rejects(api.inspect(record,'I-EXAMPLE123'),/does not belong/);
 });
 test('signed webhooks are independently verified with PayPal',async()=>{
  const {state,api}=fixture();const headers=Object.fromEntries(['paypal-auth-algo','paypal-cert-url','paypal-transmission-id','paypal-transmission-sig','paypal-transmission-time'].map(k=>[k,'test-'+k]));

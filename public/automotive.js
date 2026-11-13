@@ -1,25 +1,26 @@
 'use strict';
 let providers=[];
 const search=document.querySelector('#search'),status=document.querySelector('#result-status'),list=document.querySelector('#providers-list'),retry=document.querySelector('#retry');
-const isAutomotive=p=>p.industry==='automotive'||String(p.name||'').toLowerCase().replace(/[^a-z]/g,'').startsWith('bestwrenchworx');
+const industry=document.body.dataset.industry||'automotive',label=industry==='construction'?'construction':'automotive';
+const isAutomotive=p=>(p.industry||(String(p.name||'').toLowerCase().replace(/[^a-z]/g,'').startsWith('bestwrenchworx')?'automotive':'construction'))===industry;
 function render(){
  const query=search.value.trim().toLowerCase();
  const matches=providers.filter(p=>[p.name,p.city,p.area,...(p.services||[])].join(' ').toLowerCase().includes(query));
  list.replaceChildren();
- status.textContent=matches.length?`${matches.length} automotive ${matches.length===1?'business':'businesses'} found.`:query?'No matching automotive businesses. Try a different service or area.':'No automotive businesses are published yet. Shop owners can apply below.';
+ status.textContent=matches.length?`${matches.length} ${label} ${matches.length===1?'business':'businesses'} found.`:query?`No matching ${label} businesses. Try a different service or area.`:`No ${label} businesses are published yet. Professionals can apply below.`;
  for(const profile of matches){
   const card=document.createElement('article');card.className='provider';
   const title=document.createElement('h3');title.textContent=profile.name;
   const area=document.createElement('p');area.textContent=profile.area||profile.city||'Contact this provider for its service area.';
   const services=document.createElement('p');services.className='services';services.textContent=(profile.services||[]).join(' · ');
-  const link=document.createElement('a');link.href='/#profile/'+encodeURIComponent(profile.id);link.textContent='View shop & request a quote →';
+  const link=document.createElement('a');link.href='/#profile/'+encodeURIComponent(profile.id);link.textContent=industry==='construction'?'View business & request a quote →':'View shop & request a quote →';
   card.append(title,area,services,link);list.append(card);
  }
 }
 async function load(){
- retry.hidden=true;status.textContent='Loading automotive providers…';
+ retry.hidden=true;status.textContent=`Loading ${label} providers…`;
  try{const response=await fetch('/api/profiles');if(!response.ok)throw Error('Unavailable');const data=await response.json();if(!Array.isArray(data.profiles))throw Error('Invalid directory');providers=data.profiles.filter(isAutomotive);render();}
- catch{list.replaceChildren();status.textContent='The automotive directory is temporarily unavailable. Please try again.';retry.hidden=false;}
+ catch{list.replaceChildren();status.textContent=`The ${label} directory is temporarily unavailable. Please try again.`;retry.hidden=false;}
 }
 document.querySelector('#search-form').addEventListener('submit',event=>{event.preventDefault();render()});
 search.addEventListener('input',render);retry.addEventListener('click',load);load();

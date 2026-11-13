@@ -1,6 +1,7 @@
 'use strict';
 const estimateRoutes = require('./estimate-routes');
 const crmRoutes = require('./crm-routes');
+const onedriveRoutes = require('./onedrive-routes');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const base=path.join(__dirname,'public'),dataFile=process.env.DATA_FILE||path.join(__dirname,'data','database.json'),port=Number(process.env.PORT||3000);
 const ADMIN_TOKEN=process.env.ADMIN_TOKEN||'';
@@ -19,6 +20,7 @@ const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
 http.createServer(async (req,res)=>{
  try {
  const url=new URL(req.url,'http://localhost');const route=url.pathname;
+ if(await onedriveRoutes(req,res,{db,save,send,body,admin}))return;
  if(await crmRoutes(req,res,{db,save,send,body,admin,clean,limited}))return;
  if(await estimateRoutes(req,res,{db,save,send,body,admin,clean}))return;
  if(route==='/api/health'&&req.method==='GET')return send(res,200,{ok:true,persistence:process.env.DATA_FILE?'configured data file':'local file (configure persistent storage before public launch)',payments:'PayPal plan details must be verified'});

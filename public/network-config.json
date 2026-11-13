@@ -1,5 +1,5 @@
 {
-  "network": "Superior Network",
+  "network": "The Superior Network",
   "platform": "Superior ProConnect",
   "version": 1,
   "ownerPortal": "/admin.html",
@@ -203,5 +203,41 @@
     },
     "documentPaymentDisclaimer": "Payment for automotive services is owed directly to the independent service provider or repair shop named on this document, not to The Superior Network. The Superior Network does not collect or process service payments.",
     "accountingNote": "Keep platform fees separate from provider service revenue; consult qualified accountant for tax classification"
+  },
+  "tagline": "Where the Community Is the Network.",
+  "architecture": {
+    "model": "one expandable multi-industry network",
+    "industryIsolation": "Each industry has separate service categories, member types, plans and workflows while sharing platform identity and owner administration",
+    "industries": [
+      {
+        "id": "construction",
+        "label": "Construction",
+        "status": "active",
+        "customerTypes": [
+          "homeowners",
+          "businesses"
+        ],
+        "providerTypes": [
+          "construction professionals"
+        ],
+        "workflow": "industry-specific lead connections and estimates"
+      },
+      {
+        "id": "automotive",
+        "label": "Automotive",
+        "status": "active",
+        "providerTypes": [
+          "repair shops",
+          "independent automotive professionals"
+        ],
+        "workflow": "shop quote approval and contact release; independent self-service generic documents"
+      }
+    ],
+    "futureIndustries": "Add industry configurations without creating separate platforms",
+    "providerServicePayments": "paid directly to each provider; never to network",
+    "platformRevenue": [
+      "subscriptions",
+      "platform document and estimate fees"
+    ]
   }
 }

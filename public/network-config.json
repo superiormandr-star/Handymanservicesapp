@@ -1,0 +1,69 @@
+{
+  "network": "Superior Network",
+  "platform": "Superior ProConnect",
+  "version": 1,
+  "ownerPortal": "/admin.html",
+  "members": [
+    {
+      "id": "superior-remodeling",
+      "displayName": "Superior Remodeling",
+      "industry": "construction",
+      "subscription": {
+        "type": "complimentary",
+        "billingEnabled": false
+      },
+      "documentType": "estimate",
+      "template": "construction",
+      "status": "pilot"
+    },
+    {
+      "id": "best-wrench-works",
+      "displayName": "Best Wrench Works",
+      "industry": "automotive",
+      "specialty": "repair",
+      "subscription": {
+        "type": "complimentary",
+        "billingEnabled": false
+      },
+      "documentType": "quote",
+      "template": "automotive-repair",
+      "status": "pilot"
+    }
+  ],
+  "documentRules": {
+    "branding": "member",
+    "customerRecords": "isolated-by-member",
+    "paymentRecipient": "member-authorized-account",
+    "approval": "customer-authorization-required",
+    "invoiceFromApprovedDocument": true
+  },
+  "templates": [
+    {
+      "id": "construction",
+      "documentLabel": "Estimate",
+      "fields": [
+        "customer",
+        "projectAddress",
+        "scope",
+        "labor",
+        "materials",
+        "total",
+        "approval"
+      ]
+    },
+    {
+      "id": "automotive-repair",
+      "documentLabel": "Quote",
+      "fields": [
+        "customer",
+        "vehicle",
+        "requestedServices",
+        "parts",
+        "labor",
+        "total",
+        "authorization"
+      ]
+    }
+  ],
+  "futureSpecialties": "Add templates without changing shared document lifecycle"
+}

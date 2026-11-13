@@ -287,3 +287,14 @@ dialog{max-width:min(480px,calc(100vw - 32px));border:1px solid #ced9e7;border-r
  .bottom-nav svg,.bottom-nav .nav-icon{width:21px!important;height:21px!important;font-size:21px!important}
  main{padding-bottom:64px!important}
 }
+
+/* Small final compactness adjustment requested for mobile header and bottom bar. */
+@media(max-width:620px){
+ .site-header .nav{min-height:56px!important;padding:6px 0!important}
+ .site-header .network-mark{width:31px!important;height:31px!important;min-width:31px!important;flex-basis:31px!important;font-size:12px!important}
+ .site-header a.nav-cta{width:100px!important;max-width:100px!important;min-height:34px!important;padding:5px 6px!important}
+ .bottom-nav{padding:4px 6px max(4px,env(safe-area-inset-bottom))!important}
+ .bottom-nav a{min-height:43px!important;padding:1px!important}
+ .bottom-nav small{font-size:9px!important}
+ .bottom-nav svg,.bottom-nav .nav-icon{width:19px!important;height:19px!important;font-size:19px!important}
+}

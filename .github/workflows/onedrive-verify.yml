@@ -1,0 +1,28 @@
+name: OneDrive backup verification
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify configured OneDrive upload and download
+        env:
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          MICROSOFT_TENANT_ID: ${{ secrets.MICROSOFT_TENANT_ID }}
+          MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+          MICROSOFT_REFRESH_TOKEN: ${{ secrets.MICROSOFT_REFRESH_TOKEN }}
+          ONEDRIVE_DRIVE_ID: ${{ secrets.ONEDRIVE_DRIVE_ID }}
+        run: |
+          node - <<'NODE'
+          const { uploadAndVerify } = require('./onedrive-backup');
+          uploadAndVerify({ type: 'verification-only', app: 'Superior ProConnect', timestamp: new Date().toISOString() })
+            .then(result => console.log('VERIFIED:', JSON.stringify(result)))
+            .catch(error => { console.error('NOT VERIFIED:', error.message); process.exitCode = 1; });
+          NODE

@@ -10,6 +10,9 @@ Do not register a preview deployment hostname as the production callback. Config
 APP_ORIGIN to the origin that actually runs the backend; the callback must reach
 that backend. The existing Vercel production endpoint returned 404 for `/api/health`
 during inspection. A READY static deployment does not verify backend availability.
+`vercel.json` now routes API requests to the existing Render service at
+`https://superior-handyman-services-app.onrender.com`. This does not restart that
+service, migrate data, or deploy this branch's new backend code to Render.
 
 ## Required private configuration
 
@@ -50,6 +53,12 @@ The next production requirement is a durable transactional data/token store and
 platform scheduler (or an already available persistent Node backend). Existing live
 records must be inventoried and backed up before migration; no existing records
 were fetched or migrated by this change. No paid infrastructure was provisioned.
+
+Inspection found the existing Render backend healthy but reporting local file
+storage, plus a separate free PostgreSQL instance named
+`superior-command-center-data` expiring December 2, 2026. The database's empty
+external IP allowlist prevents the hosted read-only query tool from inspecting it.
+It has not been repurposed or modified, and may hold Command Center records.
 
 ## Recovery
 

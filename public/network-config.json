@@ -81,7 +81,8 @@
           "serviceArea",
           "contactLink"
         ],
-        "ratingsBelowListing": true
+        "ratingsBelowListing": true,
+        "estimateTool": null
       },
       {
         "id": "independent-pro",
@@ -95,11 +96,33 @@
           "contactLink",
           "shortDescription",
           "customerComments",
-          "quoteRequestLink"
+          "customizableEstimateTemplate"
         ],
-        "ratingsBelowListing": true
+        "ratingsBelowListing": true,
+        "estimateTool": {
+          "download": true,
+          "shareViaDevice": true,
+          "platformDelivery": false,
+          "platformApproval": false
+        }
       }
     ],
-    "compliance": "Do not imply certification, licensing, or verified credentials; apply applicable California repair requirements"
+    "compliance": "Do not imply certification, licensing, or verified credentials; apply applicable California repair requirements",
+    "platformRole": "Directory discovery and self-service estimate template only",
+    "platformDoesNotProvide": [
+      "invoicing",
+      "payment processing",
+      "job management",
+      "customer approvals",
+      "sending estimates on behalf of members"
+    ],
+    "professionalResponsibilities": [
+      "send estimates through their own channels",
+      "manage customer communications",
+      "obtain legally required authorizations",
+      "handle invoices and payments",
+      "comply with applicable licensing and repair laws"
+    ],
+    "liabilityNote": "Directory status and terms do not eliminate applicable platform legal obligations"
   }
 }

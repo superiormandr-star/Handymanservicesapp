@@ -65,5 +65,41 @@
       ]
     }
   ],
-  "futureSpecialties": "Add templates without changing shared document lifecycle"
+  "futureSpecialties": "Add templates without changing shared document lifecycle",
+  "independentAutomotive": {
+    "category": "Independent Automotive Professionals",
+    "credentials": "self-reported unless verified",
+    "tiers": [
+      {
+        "id": "independent-exposure",
+        "name": "Exposure",
+        "listing": true,
+        "profile": false,
+        "fields": [
+          "displayName",
+          "services",
+          "serviceArea",
+          "contactLink"
+        ],
+        "ratingsBelowListing": true
+      },
+      {
+        "id": "independent-pro",
+        "name": "Independent Pro",
+        "listing": true,
+        "profile": "limited",
+        "fields": [
+          "displayName",
+          "services",
+          "serviceArea",
+          "contactLink",
+          "shortDescription",
+          "customerComments",
+          "quoteRequestLink"
+        ],
+        "ratingsBelowListing": true
+      }
+    ],
+    "compliance": "Do not imply certification, licensing, or verified credentials; apply applicable California repair requirements"
+  }
 }

@@ -13,7 +13,7 @@ One installable app, two marketplace sections: Home Services and Automotive Serv
 5. Consumer privately compares accepted quotes, qualifications, genuine reviews, warranty and availability; chooses or reopens the request. No obligation to select the cheapest.
 
 ## Priority within five (owner-approved)
-- Industry-specific priority: **Home Services / Construction** prioritizes **Superior Maintenance and Remodeling**; **Automotive Services** prioritizes **Best Wrench Works**. Each receives first consideration among the FIVE accepted quotes only in its own industry, IF eligible for the trade, geography, licensing and job type AND it has actually submitted a valid quote before selection closes.
+- Industry-specific priority: **Home Services / Construction** prioritizes **Superior Maintenance and Remodeling**; **Automotive Services** prioritizes **Best Wrench Worx**. Each receives first consideration among the FIVE accepted quotes only in its own industry, IF eligible for the trade, geography, licensing and job type AND it has actually submitted a valid quote before selection closes.
 - Priority does NOT create a sixth slot, automatically submit a quote, or apply to preferred-pro requests for another business.
 - Other eligible quotes fill remaining spots in deterministic submission order. If Superior does not submit, all five slots remain open to other providers.
 - To prevent unfair surprise, disclose platform-affiliated placement preference in marketplace and subscriber terms and clearly label affiliated results.
@@ -48,7 +48,7 @@ Existing repository uses a mutable local JSON file. Do not deploy this as a prod
 - Two industry categories; one account.
 - Public competitive request, private preferred-pro request.
 - 0–5 delivered quotes, never 6 under parallel submissions.
-- Eligible Superior Maintenance and Remodeling quote is prioritized among five for construction; eligible Best Wrench Works quote is prioritized among five for automotive; never a sixth.
+- Eligible Superior Maintenance and Remodeling quote is prioritized among five for construction; eligible Best Wrench Worx quote is prioritized among five for automotive; never a sixth.
 - Industry priority business ineligible/no quote -> no special slot; construction and automotive priorities never cross over.
 - All selected and rejected professionals receive accurate notices.
 - Customers see only delivered quotes; pros cannot view competitors' private quotes.

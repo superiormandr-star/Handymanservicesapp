@@ -35,6 +35,8 @@ http.createServer(async (req,res)=>{
   if(limited(req))return send(res,429,{error:'Too many submissions. Try later.'});const x=await body(req);
   if(x.website)return send(res,200,{ok:true});const business=clean(x.business,100),email=clean(x.email,180),city=clean(x.city,80),phone=clean(x.phone,32);
   if(business.length<3||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||city.length<2)return send(res,400,{error:'Business name, valid email, and city are required.'});
+  const industry=clean(x.industry||'construction',24),membership=clean(x.membership||'basic',12);
+  if(!['construction','automotive'].includes(industry)||!['basic','pro'].includes(membership))return send(res,400,{error:'Select a valid industry and membership.'});
   const services=clean(x.services,300).split(/[,\n;]+/).map(v=>clean(v,50)).filter(Boolean).slice(0,15);
   if(!services.length)return send(res,400,{error:'List at least one service you provide.'});
   const coverageMode=clean(x.coverageMode||'cities',16), raw=clean(coverageMode==='states'?x.coverageStates:x.coverageAreas,400);
@@ -44,7 +46,7 @@ http.createServer(async (req,res)=>{
   if(coverageMode==='radius'&&(!/^[0-9]{5}$/.test(coverageZip)||![5,10,15,25,50,75,100,150].includes(coverageRadius)))return send(res,400,{error:'Enter a 5-digit starting ZIP code and choose a radius.'});
   if(coverageMode!=='radius'&&!coverageAreas.length)return send(res,400,{error:'List at least one city, county, ZIP code or state you serve.'});
   const serviceArea=coverageMode==='radius'?`${coverageRadius}-mile radius from ZIP ${coverageZip}`:coverageAreas.join(', ');
-  const d=db();const record={id:crypto.randomUUID(),business,email,city,phone,services,coverageMode,coverageAreas:coverageMode==='radius'?[]:coverageAreas,coverageZip:coverageMode==='radius'?coverageZip:'',coverageRadius:coverageMode==='radius'?coverageRadius:null,serviceArea,paypalSubscriptionId:null,status:'interest',createdAt:new Date().toISOString()};d.intake.push(record);save(d);return send(res,201,{ok:true,requestId:record.id,message:'Interest submitted. Complete PayPal checkout and await business listing verification.'});
+  const d=db();const record={id:crypto.randomUUID(),business,email,city,phone,industry,membership,services,coverageMode,coverageAreas:coverageMode==='radius'?[]:coverageAreas,coverageZip:coverageMode==='radius'?coverageZip:'',coverageRadius:coverageMode==='radius'?coverageRadius:null,serviceArea,paypalSubscriptionId:null,status:'interest',createdAt:new Date().toISOString()};d.intake.push(record);save(d);return send(res,201,{ok:true,requestId:record.id,message:'Interest submitted. Complete PayPal checkout and await business listing verification.'});
  }
  if(route==='/api/subscription'&&req.method==='POST'){
   const x=await body(req);const requestId=clean(x.requestId,90),subscriptionId=clean(x.subscriptionId,100);

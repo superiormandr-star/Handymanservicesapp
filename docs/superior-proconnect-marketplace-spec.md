@@ -33,11 +33,16 @@ One installable app, two marketplace sections: Home Services and Automotive Serv
 - Limit one active quote per professional per job, with tracked revisions; reject duplicate submissions and unqualified profiles.
 
 ## Professional accounts
-- Basic promotional membership: $25/month; searchable listing; no dedicated Pro profile.
+- Basic promotional membership: **25 for 25** — the first 25 verified, paid Basic subscribers receive a grandfathered $25/month rate while their qualifying subscription remains continuously active. Later Basic subscribers pay the then-current approved regular price (future price NOT yet set; do not advertise speculative $35/$45 pricing). Basic primarily accesses a separate, customer-consented lead source and basic listing, not automatic access to the competitive quote pool. Define exact Basic lead-board permissions and lead sourcing before launch.
 - Pro: $79/month; profile, direct contact, eligible job notifications, quote submissions and up to 10 AI-assisted estimate drafts/month for owner review.
 - Verify PayPal billing status server-side via signed webhooks or verified API before activating paid privileges; never trust browser callback alone.
 - Featured placement requires rating >= 3.0 plus applicable verification and policy compliance; genuine negative reviews remain visible.
 - New providers with insufficient review history require a separately labeled provisional verification policy.
+
+## Founding-member enrollment safeguards
+- Server-side atomic counter/transaction grants no more than 25 founding Basic slots after payment is verified; pending or abandoned checkout must not permanently consume a slot. Handle concurrent enrollments and cancellations safely.
+- Store immutable founding-member eligibility and original $25 rate; never silently increase grandfathered rates. Terms must define whether a canceled/lapsed account loses the rate, and disclose this before checkout.
+- Future Basic price is owner-controlled and must be explicitly approved before changing billing or promotional copy. Subscription price changes require payment-provider plan handling and applicable advance notice/consent.
 
 ## Automation and protections
 - Automated matching, notifications, status updates, customer comparison view and audit logs.

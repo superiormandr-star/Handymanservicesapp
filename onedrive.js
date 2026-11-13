@@ -20,7 +20,8 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
  const redirectUri = origin ? new URL('/api/auth/microsoft/callback', origin).href : null;
  const key = env.BACKUP_ENCRYPTION_KEY;
  const directory = env.ONEDRIVE_STATE_DIR;
- const enabled = Boolean(origin && env.MICROSOFT_CLIENT_ID && env.MICROSOFT_TENANT_ID && env.MICROSOFT_CLIENT_SECRET && /^[a-f0-9]{64}$/i.test(key||'') && directory && !env.VERCEL);
+ const clientSecret = env.MICROSOFT_CLIENT_SECRET || env.microsoft_client_secret;
+ const enabled = Boolean(origin && env.MICROSOFT_CLIENT_ID && env.MICROSOFT_TENANT_ID && clientSecret && /^[a-f0-9]{64}$/i.test(key||'') && directory && !env.VERCEL);
  let busy = false;
  const scopes = 'offline_access Files.ReadWrite.AppFolder';
  function requireConfig() {
@@ -51,7 +52,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
  async function token(parameters) {
   const result=await request('https://login.microsoftonline.com/'+encodeURIComponent(env.MICROSOFT_TENANT_ID)+'/oauth2/v2.0/token',{
    method:'POST',signal:AbortSignal.timeout(30000),headers:{'content-type':'application/x-www-form-urlencoded'},
-   body:new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,client_secret:env.MICROSOFT_CLIENT_SECRET,redirect_uri:redirectUri,scope:scopes,...parameters})
+   body:new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,client_secret:clientSecret,redirect_uri:redirectUri,scope:scopes,...parameters})
   });
   if(!result.ok)throw Error('Microsoft token exchange failed ('+result.status+'). Reconnect the Microsoft account.');
   const value=await result.json(), previous=get('tokens');

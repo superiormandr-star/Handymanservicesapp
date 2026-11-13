@@ -9,7 +9,7 @@ test('Microsoft state, PKCE, encrypted backup, refresh and authenticated recover
  const dir=mkdtempSync(join(tmpdir(),'proconnect-ms-'));
  const snapshot=JSON.stringify({profiles:[{id:'original'}],reviews:[],intake:[],documents:[{id:'estimate-existing'}],custom:{preserved:true}});
  let clock=1000000,uploaded,refreshes=0,fail=false;
- const env={APP_ORIGIN:'https://superior-proconnect.vercel.app',MICROSOFT_CLIENT_ID:'test-client',MICROSOFT_CLIENT_SECRET:'private-test-secret',MICROSOFT_TENANT_ID:'test-tenant',BACKUP_ENCRYPTION_KEY:'ab'.repeat(32),ONEDRIVE_STATE_DIR:dir};
+ const env={APP_ORIGIN:'https://superior-proconnect.vercel.app',MICROSOFT_CLIENT_ID:'test-client',microsoft_client_secret:'private-test-secret',MICROSOFT_TENANT_ID:'test-tenant',BACKUP_ENCRYPTION_KEY:'ab'.repeat(32),ONEDRIVE_STATE_DIR:dir};
  const request=async(url,options)=>{
   if(url.includes('/token')){
    assert.equal(options.body.get('client_secret'),'private-test-secret');

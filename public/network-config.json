@@ -156,12 +156,12 @@
         "name": "Shop Pro",
         "baseMonthlyPrice": 89.99,
         "monthlyEstimateCap": 40,
-        "perEstimatePrice": 2.99,
+        "perEstimatePrice": 4.99,
         "estimateGeneration": true
       }
     ],
     "capPolicy": "40 estimates per calendar billing month for Shop Pro; hard stop at cap, no automatic overages",
     "invoiceHandling": "Shop-managed; no platform-managed invoicing",
-    "pricingStatus": "Base prices and caps specified by owner; $2.99 per estimate recommended, pending owner confirmation"
+    "pricingStatus": "Owner confirmed $45 Shop Exposure; $89.99 Shop Pro base; $4.99 per estimate; 40 Shop Pro estimates monthly"
   }
 }

@@ -34,7 +34,7 @@ One installable app, two marketplace sections: Home Services and Automotive Serv
 
 ## Professional accounts
 - Basic promotional membership: **25 for 25** — the first 25 verified, paid Basic subscribers IN EACH CATEGORY (25 Construction + 25 Automotive; 50 total) receive a grandfathered $25/month rate while their qualifying subscription remains continuously active. Later Basic subscribers pay the then-current approved regular price (owner-proposed regular price $39.99/month; display as crossed-out comparison only once genuinely established as the regular price, with truthful promotional terms). Basic primarily accesses a separate, customer-consented lead source and basic listing, not automatic access to the competitive quote pool. Define exact Basic lead-board permissions and lead sourcing before launch.
-- Pro: **$80/month introductory promotional price**, with **$100/month proposed regular price**, in BOTH Construction and Automotive. Full profile, direct contact, eligible job notifications, quote submissions and up to 10 AI-assisted estimate drafts/month for owner review. Unlike founding Basic, Pro is NOT automatically grandfathered. Promotional duration, renewal price and effective billing date must be explicitly established and disclosed before checkout; never change an active subscription charge without required consent/notice.
+- Pro: **first 25 verified paid Pro subscribers in EACH industry** (25 Construction, 25 Automotive) qualify for **$80/month founding promotional price**; new Pro subscribers thereafter pay the owner-approved **$100/month regular price**. Full profile, direct contact, eligible job notifications, quote submissions, and up to 10 AI-assisted estimate drafts/month for owner review. Four separate founding counters total: Basic Construction 25, Basic Automotive 25, Pro Construction 25, Pro Automotive 25. Pro $80 eligibility is limited to founding subscribers; whether their $80 rate is grandfathered for their subscription lifetime or expires after a period remains to be confirmed and must be disclosed before checkout.
 - Verify PayPal billing status server-side via signed webhooks or verified API before activating paid privileges; never trust browser callback alone.
 - Featured placement requires rating >= 3.0 plus applicable verification and policy compliance; genuine negative reviews remain visible.
 - New providers with insufficient review history require a separately labeled provisional verification policy.
@@ -77,7 +77,9 @@ Existing repository uses a mutable local JSON file. Do not deploy this as a prod
 - Subscription must be assigned to exactly one category for a founding slot. Cross-category access or dual membership requires a separate explicitly approved rule; do not silently double-count or confer free access.
 - At full occupancy, 50 x $25 = $1,250/month gross recurring revenue before fees, churn and expenses; this is not a forecast or guarantee.
 
-## Pro promotional pricing — owner decision
-- Applies separately in both industries: Pro intro **$80/month**, proposed regular **$100/month**.
-- $80 is temporary, not a lifetime grandfathered price. Exact end date, number of introductory billing cycles, or enrollment cutoff is **not yet decided**. Do not implement an automatic $100 charge until those terms are approved and disclosed.
-- Strikethrough $100 comparison only if bona fide established regular price; verify actual PayPal billing plans and customer authorization.
+## Pro founding promotion — owner decision
+- Construction Pro: first 25 verified paid Pro members eligible for $80/month; thereafter $100/month.
+- Automotive Pro: first 25 verified paid Pro members eligible for $80/month; thereafter $100/month.
+- Count Pro and Basic founding slots independently in each industry: four separate transactional counters, each capped at 25; total up to 100 founding memberships.
+- Do not infer whether the $80 rate is permanently grandfathered or time-limited for the founding 25. Confirm and disclose that term before billing or automating renewal increases.
+- Crossed-out regular-price comparison only if bona fide established regular price; verify payment plans and customer authorization.

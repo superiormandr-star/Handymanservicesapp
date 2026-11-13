@@ -264,3 +264,26 @@ dialog{max-width:min(480px,calc(100vw - 32px));border:1px solid #ced9e7;border-r
  .network-hero-emblem{min-height:215px!important}
  .ticker-inner{overflow:auto!important;gap:18px!important}
 }
+
+/* Mobile production hotfix: compact masthead, no overlapping CTA, legible hero. */
+@media(max-width:620px){
+ .site-header,.site-header .container,.site-header .nav{box-sizing:border-box!important;max-width:100%!important;overflow:visible!important}
+ .site-header .nav{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;column-gap:8px!important;min-height:62px!important;padding:8px 0!important}
+ .site-header .brand{width:auto!important;min-width:0!important;max-width:100%!important;gap:7px!important;overflow:hidden!important;white-space:normal!important}
+ .site-header .brand>span:last-child{display:block!important;min-width:0!important;font-size:10px!important;line-height:1.1!important;letter-spacing:0!important;overflow:hidden!important;overflow-wrap:normal!important}
+ .site-header .brand strong{display:inline!important;font-size:11px!important;letter-spacing:0!important}
+ .site-header .network-mark{height:34px!important;width:34px!important;min-width:34px!important;flex:0 0 34px!important;border-radius:9px!important;font-size:13px!important}
+ .site-header a.nav-cta{display:flex!important;position:static!important;float:none!important;transform:none!important;box-shadow:none!important;flex:0 0 auto!important;width:105px!important;max-width:105px!important;min-width:0!important;height:auto!important;min-height:38px!important;padding:6px 7px!important;border:1px solid #d5b57c!important;border-radius:8px!important;line-height:1.1!important}
+ .site-header .nav-cta .pro-cta-kicker{font-size:8px!important}.site-header .nav-cta .pro-cta-label{font-size:10px!important;white-space:nowrap!important}.site-header .nav-cta .pro-cta-label span{font-size:10px!important}
+ .announcement{font-size:9px!important;line-height:1.35!important;letter-spacing:.09em!important;padding:9px 16px!important}
+ .hero-grid{padding:26px 0 44px!important;gap:24px!important}
+ .hero h1{font-size:clamp(28px,7.5vw,38px)!important;line-height:1.13!important;letter-spacing:-.035em!important;overflow-wrap:break-word!important;word-break:normal!important;margin:14px 0 18px!important}
+ .hero .eyebrow{font-size:9px!important;line-height:1.5!important;letter-spacing:.06em!important}
+ .hero-copy>p{font-size:15px!important;line-height:1.55!important}
+ .hero-actions .btn{min-height:44px!important}
+ .bottom-nav{min-height:0!important;padding:6px 6px max(6px,env(safe-area-inset-bottom))!important;border-top:1px solid #c8d4e0!important;background:#f2f5f9!important}
+ .bottom-nav a{gap:1px!important;min-height:48px!important;padding:2px!important}
+ .bottom-nav small{font-size:10px!important;line-height:1.1!important;color:#1d314b!important}
+ .bottom-nav svg,.bottom-nav .nav-icon{width:21px!important;height:21px!important;font-size:21px!important}
+ main{padding-bottom:64px!important}
+}

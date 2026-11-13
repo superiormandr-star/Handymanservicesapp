@@ -33,7 +33,7 @@ One installable app, two marketplace sections: Home Services and Automotive Serv
 - Limit one active quote per professional per job, with tracked revisions; reject duplicate submissions and unqualified profiles.
 
 ## Professional accounts
-- Basic promotional membership: **25 for 25** — the first 25 verified, paid Basic subscribers receive a grandfathered $25/month rate while their qualifying subscription remains continuously active. Later Basic subscribers pay the then-current approved regular price (future price NOT yet set; do not advertise speculative $35/$45 pricing). Basic primarily accesses a separate, customer-consented lead source and basic listing, not automatic access to the competitive quote pool. Define exact Basic lead-board permissions and lead sourcing before launch.
+- Basic promotional membership: **25 for 25** — the first 25 verified, paid Basic subscribers receive a grandfathered $25/month rate while their qualifying subscription remains continuously active. Later Basic subscribers pay the then-current approved regular price (owner-proposed regular price $39.99/month; display as crossed-out comparison only once genuinely established as the regular price, with truthful promotional terms). Basic primarily accesses a separate, customer-consented lead source and basic listing, not automatic access to the competitive quote pool. Define exact Basic lead-board permissions and lead sourcing before launch.
 - Pro: $79/month; profile, direct contact, eligible job notifications, quote submissions and up to 10 AI-assisted estimate drafts/month for owner review.
 - Verify PayPal billing status server-side via signed webhooks or verified API before activating paid privileges; never trust browser callback alone.
 - Featured placement requires rating >= 3.0 plus applicable verification and policy compliance; genuine negative reviews remain visible.
@@ -42,7 +42,7 @@ One installable app, two marketplace sections: Home Services and Automotive Serv
 ## Founding-member enrollment safeguards
 - Server-side atomic counter/transaction grants no more than 25 founding Basic slots after payment is verified; pending or abandoned checkout must not permanently consume a slot. Handle concurrent enrollments and cancellations safely.
 - Store immutable founding-member eligibility and original $25 rate; never silently increase grandfathered rates. Terms must define whether a canceled/lapsed account loses the rate, and disclose this before checkout.
-- Future Basic price is owner-controlled and must be explicitly approved before changing billing or promotional copy. Subscription price changes require payment-provider plan handling and applicable advance notice/consent.
+- Owner proposes $39.99/month as the regular Basic price and $25/month as the founding rate. A crossed-out $39.99 comparison must not be published until it is a bona fide regular price; verify PayPal plan setup and price presentation. Future price changes remain owner-controlled and require approval before changing billing or promotional copy. Subscription price changes require payment-provider plan handling and applicable advance notice/consent.
 
 ## Automation and protections
 - Automated matching, notifications, status updates, customer comparison view and audit logs.
@@ -65,3 +65,7 @@ Existing repository uses a mutable local JSON file. Do not deploy this as a prod
 - Basic/Pro permissions enforced server-side.
 - Rejected or unpaid subscriptions never activate.
 - Data survives restarts and deployments.
+
+## Promotional presentation proposal
+- Founding membership card: `25 FOR 25`, regular `$39.99/month` struck through (ONLY if established bona fide price), promotional `$25/month`, savings `$14.99/month` (~37.5%), first 25 verified paid Basic members only, grandfathered while qualifying subscription remains active.
+- Never fabricate a count of remaining spots. Display real verified count only.

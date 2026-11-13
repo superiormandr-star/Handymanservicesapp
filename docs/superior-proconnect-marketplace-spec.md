@@ -80,6 +80,15 @@ Existing repository uses a mutable local JSON file. Do not deploy this as a prod
 ## Pro founding promotion — approved grandfathering
 - Construction Pro: first 25 verified paid Pro members eligible for $80/month; thereafter $100/month.
 - Automotive Pro: first 25 verified paid Pro members eligible for $80/month; thereafter $100/month.
-- Count Pro and Basic founding slots independently in each industry: four separate transactional counters, each capped at 25; total up to 100 founding memberships.
+- Count Pro and Basic founding slots independently in each industry: two shared industry counters, each capped at 25; total up to 50 founding memberships.
 - Do not infer whether the $80 rate is permanently grandfathered or time-limited for the founding 25. Confirm and disclose that term before billing or automating renewal increases.
 - Crossed-out regular-price comparison only if bona fide established regular price; verify payment plans and customer authorization.
+
+## FINAL OVERRIDE — founding slots (confirmed by owner)
+- **Exactly 50 founding memberships total**, NOT 100.
+- **Construction/Home Services: 25 total founding spots shared between Basic and Pro.** Every verified paid founding Basic or Pro enrollment in this industry consumes ONE slot from the SAME Construction counter.
+- **Automotive Services: 25 total founding spots shared between Basic and Pro.** Every verified paid founding Basic or Pro enrollment in this industry consumes ONE slot from the SAME Automotive counter.
+- **Only TWO founding counters** exist, one per industry. Any earlier references to four separate counters or 25 per tier are SUPERSEDED and must not be implemented.
+- Founding Basic rate $25/month; founding Pro rate $80/month. Both grandfathered for as long as the qualifying subscription stays continuously active.
+- After all 25 spots in an industry are claimed, new Basic subscriptions are $39.99/month and new Pro subscriptions are $100/month (subject to bona fide price representation and checkout terms).
+- Claim founding slots atomically after verifying successful payment; do not count unverified or abandoned signups, and do not over-allocate under concurrency.

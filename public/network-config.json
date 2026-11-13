@@ -170,5 +170,28 @@
     "capPolicy": "40 estimates per calendar billing month for Shop Pro; hard stop at cap, no automatic overages",
     "invoiceHandling": "Shop-managed; no platform-managed invoicing",
     "pricingStatus": "Owner confirmed $45 Shop Exposure; $89.99 Shop Pro base; $4.99 per estimate; 40 Shop Pro estimates monthly"
+  },
+  "automotivePaymentSeparation": {
+    "platformRevenue": [
+      "subscriptions",
+      "document-generation fees"
+    ],
+    "serviceRevenueRecipient": "Individual independent professional or automotive repair shop",
+    "customerPaymentProcessingByPlatform": false,
+    "platformCollectsRepairPayments": false,
+    "providerPaymentInstructions": {
+      "requiredForInvoice": true,
+      "ownedByProvider": true,
+      "allowedExamples": [
+        "PayPal",
+        "Zelle",
+        "bank transfer",
+        "cash",
+        "other provider-designated method"
+      ],
+      "noPlatformCheckout": true
+    },
+    "documentPaymentDisclaimer": "Payment for automotive services is owed directly to the independent service provider or repair shop named on this document, not to The Superior Network. The Superior Network does not collect or process service payments.",
+    "accountingNote": "Keep platform fees separate from provider service revenue; consult qualified accountant for tax classification"
   }
 }

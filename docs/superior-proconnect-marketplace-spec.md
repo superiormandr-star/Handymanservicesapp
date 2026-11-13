@@ -33,14 +33,14 @@ One installable app, two marketplace sections: Home Services and Automotive Serv
 - Limit one active quote per professional per job, with tracked revisions; reject duplicate submissions and unqualified profiles.
 
 ## Professional accounts
-- Basic promotional membership: **25 for 25** — the first 25 verified, paid Basic subscribers receive a grandfathered $25/month rate while their qualifying subscription remains continuously active. Later Basic subscribers pay the then-current approved regular price (owner-proposed regular price $39.99/month; display as crossed-out comparison only once genuinely established as the regular price, with truthful promotional terms). Basic primarily accesses a separate, customer-consented lead source and basic listing, not automatic access to the competitive quote pool. Define exact Basic lead-board permissions and lead sourcing before launch.
+- Basic promotional membership: **25 for 25** — the first 25 verified, paid Basic subscribers IN EACH CATEGORY (25 Construction + 25 Automotive; 50 total) receive a grandfathered $25/month rate while their qualifying subscription remains continuously active. Later Basic subscribers pay the then-current approved regular price (owner-proposed regular price $39.99/month; display as crossed-out comparison only once genuinely established as the regular price, with truthful promotional terms). Basic primarily accesses a separate, customer-consented lead source and basic listing, not automatic access to the competitive quote pool. Define exact Basic lead-board permissions and lead sourcing before launch.
 - Pro: $79/month; profile, direct contact, eligible job notifications, quote submissions and up to 10 AI-assisted estimate drafts/month for owner review.
 - Verify PayPal billing status server-side via signed webhooks or verified API before activating paid privileges; never trust browser callback alone.
 - Featured placement requires rating >= 3.0 plus applicable verification and policy compliance; genuine negative reviews remain visible.
 - New providers with insufficient review history require a separately labeled provisional verification policy.
 
 ## Founding-member enrollment safeguards
-- Server-side atomic counter/transaction grants no more than 25 founding Basic slots after payment is verified; pending or abandoned checkout must not permanently consume a slot. Handle concurrent enrollments and cancellations safely.
+- Server-side atomic counter/transaction grants no more than 25 founding Basic slots PER CATEGORY (separate counters for Construction and Automotive) after payment is verified; pending or abandoned checkout must not permanently consume a slot. Handle concurrent enrollments and cancellations safely.
 - Store immutable founding-member eligibility and original $25 rate; never silently increase grandfathered rates. Terms must define whether a canceled/lapsed account loses the rate, and disclose this before checkout.
 - Owner proposes $39.99/month as the regular Basic price and $25/month as the founding rate. A crossed-out $39.99 comparison must not be published until it is a bona fide regular price; verify PayPal plan setup and price presentation. Future price changes remain owner-controlled and require approval before changing billing or promotional copy. Subscription price changes require payment-provider plan handling and applicable advance notice/consent.
 
@@ -67,5 +67,12 @@ Existing repository uses a mutable local JSON file. Do not deploy this as a prod
 - Data survives restarts and deployments.
 
 ## Promotional presentation proposal
-- Founding membership card: `25 FOR 25`, regular `$39.99/month` struck through (ONLY if established bona fide price), promotional `$25/month`, savings `$14.99/month` (~37.5%), first 25 verified paid Basic members only, grandfathered while qualifying subscription remains active.
+- Founding membership card: `25 FOR 25`, regular `$39.99/month` struck through (ONLY if established bona fide price), promotional `$25/month`, savings `$14.99/month` (~37.5%), first 25 verified paid Basic members in each category (25 + 25), grandfathered while qualifying subscription remains active.
 - Never fabricate a count of remaining spots. Display real verified count only.
+
+## Approved founding category allocation
+- **Construction / Home Services**: 25 founding Basic subscriptions at $25/month, independently counted.
+- **Automotive Services**: 25 founding Basic subscriptions at $25/month, independently counted.
+- **Total**: 50 potential grandfathered founding subscriptions. A filled category does not consume or block the other category's allocation.
+- Subscription must be assigned to exactly one category for a founding slot. Cross-category access or dual membership requires a separate explicitly approved rule; do not silently double-count or confer free access.
+- At full occupancy, 50 x $25 = $1,250/month gross recurring revenue before fees, churn and expenses; this is not a forecast or guarantee.

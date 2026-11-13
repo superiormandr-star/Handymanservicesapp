@@ -1,0 +1,131 @@
+'use strict';
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+
+function validateBackup(text) {
+ const data = JSON.parse(text);
+ for (const key of ['profiles','reviews','intake','documents']) {
+  if (!Array.isArray(data[key])) throw Error('Invalid backup: missing '+key);
+ }
+ for (const key of ['leads','proAccess','estimateRequests']) {
+  if (data[key] !== undefined && !Array.isArray(data[key])) throw Error('Invalid backup: '+key);
+ }
+ return data;
+}
+
+// Intended for a persistent Node host. Vercel needs a durable database/token store first.
+function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), readSnapshot}) {
+ const origin = env.APP_ORIGIN;
+ const redirectUri = origin ? new URL('/api/auth/microsoft/callback', origin).href : null;
+ const key = env.BACKUP_ENCRYPTION_KEY;
+ const directory = env.ONEDRIVE_STATE_DIR;
+ const enabled = Boolean(origin && env.MICROSOFT_CLIENT_ID && env.MICROSOFT_TENANT_ID && env.MICROSOFT_CLIENT_SECRET && /^[a-f0-9]{64}$/i.test(key||'') && directory && !env.VERCEL);
+ let busy = false;
+ const scopes = 'offline_access Files.ReadWrite.AppFolder';
+ function requireConfig() {
+  if (!enabled) throw Error('Microsoft backup requires configured credentials and a persistent state directory; Vercel requires a durable storage adapter.');
+  const parsed = new URL(origin);
+  if (parsed.origin !== origin || (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && ['localhost','127.0.0.1'].includes(parsed.hostname)))) throw Error('APP_ORIGIN must be an exact HTTPS origin.');
+  if (!/^[a-zA-Z0-9.-]+$/.test(env.MICROSOFT_TENANT_ID)) throw Error('Invalid Microsoft tenant identifier.');
+ }
+ function seal(value) {
+  const iv = crypto.randomBytes(12), cipher = crypto.createCipheriv('aes-256-gcm',Buffer.from(key,'hex'),iv);
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify(value)),cipher.final()]);
+  return JSON.stringify({version:1,iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),data:encrypted.toString('base64')});
+ }
+ function unseal(text) {
+  const value = JSON.parse(text);
+  if (value.version !== 1) throw Error('Unsupported encrypted backup.');
+  const decipher = crypto.createDecipheriv('aes-256-gcm',Buffer.from(key,'hex'),Buffer.from(value.iv,'base64'));
+  decipher.setAuthTag(Buffer.from(value.tag,'base64'));
+  return JSON.parse(Buffer.concat([decipher.update(Buffer.from(value.data,'base64')),decipher.final()]).toString());
+ }
+ function file(name) { return path.join(directory,name+'.json'); }
+ function put(name,value) {
+  fs.mkdirSync(directory,{recursive:true,mode:0o700});
+  const dest=file(name), temp=dest+'.'+crypto.randomUUID()+'.tmp';
+  fs.writeFileSync(temp,seal(value),{mode:0o600,flag:'wx'});fs.renameSync(temp,dest);
+ }
+ function get(name) {try{return unseal(fs.readFileSync(file(name),'utf8'))}catch(error){if(error.code==='ENOENT')return null;throw error}}
+ async function token(parameters) {
+  const result=await request('https://login.microsoftonline.com/'+encodeURIComponent(env.MICROSOFT_TENANT_ID)+'/oauth2/v2.0/token',{
+   method:'POST',signal:AbortSignal.timeout(30000),headers:{'content-type':'application/x-www-form-urlencoded'},
+   body:new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,client_secret:env.MICROSOFT_CLIENT_SECRET,redirect_uri:redirectUri,scope:scopes,...parameters})
+  });
+  if(!result.ok)throw Error('Microsoft token exchange failed ('+result.status+'). Reconnect the Microsoft account.');
+  const value=await result.json(), previous=get('tokens');
+  if(!value.access_token || !(value.refresh_token||previous?.refresh_token))throw Error('Microsoft did not return the required authorization tokens.');
+  put('tokens',{access_token:value.access_token,refresh_token:value.refresh_token||previous.refresh_token,expiresAt:now()+Number(value.expires_in||3600)*1000});
+  return value.access_token;
+ }
+ async function accessToken() {
+  const value=get('tokens');if(!value)throw Error('Connect the owner Microsoft account first.');
+  if(value.expiresAt>now()+60000)return value.access_token;
+  return token({grant_type:'refresh_token',refresh_token:value.refresh_token});
+ }
+ async function graph(resource, options={}) {
+  const response=await request('https://graph.microsoft.com/v1.0/me/drive/'+resource,{
+   ...options,signal:AbortSignal.timeout(30000),headers:{...options.headers,authorization:'Bearer '+await accessToken()}
+  });
+  if(!response.ok)throw Error('OneDrive request failed ('+response.status+').');
+  return response;
+ }
+ async function exclusive(action) {
+  if(busy)throw Error('A Microsoft backup operation is already running.');
+  busy=true;try{return await action()}finally{busy=false}
+ }
+ const api = {
+  status() {return {configured:enabled,connected:enabled&&Boolean(get('tokens')),redirectUri,automaticBackups:enabled&&Number(env.ONEDRIVE_BACKUP_INTERVAL_MINUTES)>=5};},
+  connect() {
+   requireConfig();const state=crypto.randomBytes(32).toString('hex'),verifier=crypto.randomBytes(48).toString('base64url');
+   put('pending',{state,verifier,expiresAt:now()+600000});
+   const url=new URL('https://login.microsoftonline.com/'+encodeURIComponent(env.MICROSOFT_TENANT_ID)+'/oauth2/v2.0/authorize');
+   url.search=new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,response_type:'code',redirect_uri:redirectUri,response_mode:'query',scope:scopes,state,code_challenge:crypto.createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256'}).toString();
+   return url.href;
+  },
+  async callback(state,code) {
+   requireConfig();const pending=get('pending');
+   if(!pending||pending.expiresAt<now()||typeof state!=='string'||state.length!==pending.state.length||!crypto.timingSafeEqual(Buffer.from(state),Buffer.from(pending.state)))throw Error('Invalid or expired Microsoft authorization state.');
+   fs.unlinkSync(file('pending'));
+   if(!code)throw Error('Microsoft authorization was canceled or denied.');
+   return exclusive(async()=>{await token({grant_type:'authorization_code',code,code_verifier:pending.verifier});});
+  },
+  async backup() {
+   requireConfig();return exclusive(async()=>{
+    const text=readSnapshot();validateBackup(text);
+    const name='superior-proconnect-'+new Date(now()).toISOString().replace(/[:.]/g,'-')+'-'+crypto.randomUUID()+'.json.enc';
+    const contents=seal({version:1,createdAt:new Date(now()).toISOString(),sha256:crypto.createHash('sha256').update(text).digest('hex'),snapshot:text});
+    const result=await graph('special/approot:/'+name+':/content',{method:'PUT',headers:{'content-type':'application/octet-stream'},body:contents});
+    const item=await result.json();
+    put('last-backup',{id:item.id,name,createdAt:new Date(now()).toISOString(),sha256:crypto.createHash('sha256').update(text).digest('hex')});
+    return {id:item.id,name};
+   });
+  },
+  async list() {
+   requireConfig();return exclusive(async()=>{
+    const result=await (await graph('special/approot/children?$top=200&$select=id,name,size,lastModifiedDateTime')).json();
+    return {backups:(result.value||[]).filter(item=>/^superior-proconnect-.*\.json\.enc$/.test(item.name)),hasMore:Boolean(result['@odata.nextLink'])};
+   });
+  },
+  async recover(id) {
+   requireConfig();if(!/^[a-zA-Z0-9!_-]{1,200}$/.test(id||''))throw Error('Invalid backup ID.');
+   return exclusive(async()=>{
+    // Resolve within the app folder, never an arbitrary user-controlled URL.
+    const listing=await (await graph('special/approot/children?$top=200&$select=id,name')).json();
+    if(!(listing.value||[]).some(item=>item.id===id&&/^superior-proconnect-.*\.json\.enc$/.test(item.name)))throw Error('Backup not found in the application folder.');
+    const response=await graph('items/'+encodeURIComponent(id)+'/content');
+    const backup=unseal(await response.text());
+    if(backup.version!==1||typeof backup.snapshot!=='string'||crypto.createHash('sha256').update(backup.snapshot).digest('hex')!==backup.sha256)throw Error('Backup integrity check failed.');
+    validateBackup(backup.snapshot);return backup.snapshot;
+   });
+  },
+  schedule(onError=()=>{}) {
+   const minutes=Number(env.ONEDRIVE_BACKUP_INTERVAL_MINUTES);
+   if(!enabled||!Number.isFinite(minutes)||minutes<5||minutes>10080)return null;
+   const timer=setInterval(()=>api.backup().catch(onError),minutes*60000);timer.unref();return timer;
+  }
+ };
+ return api;
+}
+module.exports={createOneDrive,validateBackup};

@@ -4,6 +4,8 @@ const crmRoutes = require('./crm-routes');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const base=path.join(__dirname,'public'),dataFile=process.env.DATA_FILE||path.join(__dirname,'data','database.json'),port=Number(process.env.PORT||3000);
 const ADMIN_TOKEN=process.env.ADMIN_TOKEN||'';
+const oneDrive = require('./onedrive').createOneDrive({readSnapshot:()=>fs.readFileSync(dataFile,'utf8')});
+oneDrive.schedule(()=>console.error('Automatic OneDrive backup failed. Check the owner backup connection.'));
 const seed={profiles:[{id:'superior',name:'Superior Maintenance and Remodeling',tagline:'From an idea to a finished improvement.',city:'Fontana',area:'Fontana, California — contact for service coverage',coverageMode:'cities',coverageAreas:[],coverageZip:'',coverageRadius:null,phone:'909-352-3627',website:'https://superior-maintenance-remodeling.indigotune5.chatgpt.site',logo:'/superior-logo.png',description:'Residential and commercial maintenance, painting and remodeling. Contact Superior to discuss the scope, estimate, and availability for your next project.',services:['Painting','Drywall & repairs','Flooring','Kitchens & bathrooms','Doors & windows','Patios & decks','General maintenance','Remodeling'],verified:false,featured:true,createdAt:'2026-11-01T00:00:00.000Z'}],reviews:[],intake:[],documents:[]};
 function db(){try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...structuredClone(seed),...val}}catch(e){if(e.code==='ENOENT')return structuredClone(seed);throw new Error('Stored data could not be read. Contact the owner; existing records have not been replaced.')}}
 function save(x){fs.mkdirSync(path.dirname(dataFile),{recursive:true});const tmp=dataFile+'.'+process.pid+'.tmp';fs.writeFileSync(tmp,JSON.stringify(x,null,2),{mode:0o600});fs.renameSync(tmp,dataFile)}
@@ -19,6 +21,25 @@ const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
 http.createServer(async (req,res)=>{
  try {
  const url=new URL(req.url,'http://localhost');const route=url.pathname;
+ if(route==='/api/auth/microsoft/callback'&&req.method==='GET'){
+  try {await oneDrive.callback(url.searchParams.get('state'),url.searchParams.get('code'));
+   res.writeHead(303,{'location':'/backups.html','cache-control':'no-store','referrer-policy':'no-referrer'});res.end();
+  }catch{return send(res,400,{error:'Microsoft authorization failed or expired. Start a new connection from the owner backups page.'});}
+  return;
+ }
+ if(route.startsWith('/api/admin/backups')){
+  if(!admin(req))return send(res,401,{error:'Owner access required'});
+  if(route==='/api/admin/backups/status'&&req.method==='GET')return send(res,200,oneDrive.status());
+  if(route==='/api/admin/backups/connect'&&req.method==='POST')return send(res,200,{authorizationUrl:oneDrive.connect()});
+  if(route==='/api/admin/backups'&&req.method==='POST')return send(res,201,await oneDrive.backup());
+  if(route==='/api/admin/backups'&&req.method==='GET')return send(res,200,await oneDrive.list());
+  if(route==='/api/admin/backups/recover'&&req.method==='POST'){
+   const input=await body(req),snapshot=await oneDrive.recover(input.id);
+   // Download only: never replace live records while the application is running.
+   res.writeHead(200,{'content-type':'application/json','content-disposition':'attachment; filename="superior-proconnect-recovery.json"','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(snapshot);return;
+  }
+  return send(res,404,{error:'Not found'});
+ }
  if(await crmRoutes(req,res,{db,save,send,body,admin,clean,limited}))return;
  if(await estimateRoutes(req,res,{db,save,send,body,admin,clean}))return;
  if(route==='/api/health'&&req.method==='GET')return send(res,200,{ok:true,persistence:process.env.DATA_FILE?'configured data file':'local file (configure persistent storage before public launch)',payments:'PayPal plan details must be verified'});

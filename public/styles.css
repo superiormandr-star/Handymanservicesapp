@@ -503,3 +503,14 @@ button.primary:hover,.btn-primary:hover,.button-primary:hover,.primary-btn:hover
 }
 @media(max-width:360px){.pc-launch{padding:12px 13px 22px!important}.pc-launch-mark{width:62px;height:62px}.pc-launch-grid a{min-height:88px}.pc-launch-inner{gap:9px}}
 @media(prefers-reduced-motion:reduce){.pc-launch-grid a{transition:none}}
+
+/* Clean mobile first-screen interaction and keep third-party overlays from covering choices. */
+@media(max-width:767px){
+ .pc-launch{padding-bottom:calc(98px + env(safe-area-inset-bottom))!important;min-height:100svh!important}
+ .pc-launch-inner{margin:auto}
+ .pc-launch-grid a:focus-visible{outline:2px solid #a8dfff;outline-offset:3px}
+ .bottom-nav{min-height:62px;padding:8px 8px max(9px,env(safe-area-inset-bottom))!important}
+ .bottom-nav a{min-height:48px!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+ .bottom-nav small{font-size:11px!important}
+ .pc-launch h1,.pc-launch-tag,.pc-launch-sub{overflow-wrap:normal;word-break:normal}
+}

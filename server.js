@@ -71,7 +71,7 @@ async function handle(req,res){
  if(route==='/api/auth/microsoft/callback'&&req.method==='GET'){
   try {await oneDrive.callback(url.searchParams.get('state'),url.searchParams.get('code'),{error:url.searchParams.get('error'),description:url.searchParams.get('error_description')});
    res.writeHead(303,{'location':'/backups.html','cache-control':'no-store','referrer-policy':'no-referrer'});res.end();
-  }catch(error){return send(res,400,{error:'Microsoft authorization could not complete. Start a new connection from the owner backups page.',reason:error.authReason||'authorization_failed',microsoftCode:error.microsoftCode?'AADSTS'+error.microsoftCode:undefined});}
+  }catch(error){console.warn(JSON.stringify({event:'microsoft_authorization_failed',reason:error.authReason||'authorization_failed',microsoftCode:Number.isSafeInteger(error.microsoftCode)?'AADSTS'+error.microsoftCode:null}));return send(res,400,{error:'Microsoft authorization could not complete. Start a new connection from the owner backups page.',reason:error.authReason||'authorization_failed',microsoftCode:error.microsoftCode?'AADSTS'+error.microsoftCode:undefined});}
   return;
  }
  if(route.startsWith('/api/admin/backups')){

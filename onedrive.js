@@ -78,7 +78,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   busy=true;try{return await action()}finally{busy=false}
  }
  const api = {
-  status() {return {configured:enabled,connected:enabled&&Boolean(get('tokens')),redirectUri,automaticBackups:enabled&&Boolean(get('tokens'))&&(Boolean(env.VERCEL&&env.CRON_SECRET)||Number(env.ONEDRIVE_BACKUP_INTERVAL_MINUTES)>=5),lastBackup:enabled?get('last-backup'):null};},
+  status() {return {configured:enabled,connected:enabled&&Boolean(get('tokens')),redirectUri,automaticBackups:enabled&&Boolean(get('tokens'))&&(Boolean(env.VERCEL&&env.CRON_SECRET)||Number(env.ONEDRIVE_BACKUP_INTERVAL_MINUTES)>=5),lastBackup:enabled?get('last-backup'):null,connectedAccountType:enabled&&get('tokens')?(get('tokens').authority==='consumers'?'personal':'business'):null,authorizationPending:enabled&&[...Object.values(get('pending-authorizations')||{}),get('pending')].some(value=>value&&value.expiresAt>now())};},
   async diagnose() {
    requireConfig();const access=await accessToken(),checks=[];
    for(const resource of ['','special/approot']){

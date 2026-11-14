@@ -25,7 +25,7 @@ function showShare(doc){
  $('#approval-share').hidden=false;$('#approval-share').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function show(name){$('#editor-section').hidden=name!=='editor';$('#documents-section').hidden=name!=='documents';$('#customers-section').hidden=name!=='customers';if(name!=='home')$(({editor:'#editor-section',documents:'#documents-section',customers:'#customers-section'})[name])?.scrollIntoView({behavior:'smooth',block:'start'})}
+function show(name){$('#backups-section').hidden=name!=='backups';if(name==='backups')refreshBackups().catch(backupError);$('#editor-section').hidden=name!=='editor';$('#documents-section').hidden=name!=='documents';$('#customers-section').hidden=name!=='customers';if(name!=='home')$(({editor:'#editor-section',documents:'#documents-section',customers:'#customers-section',backups:'#backups-section'})[name])?.scrollIntoView({behavior:'smooth',block:'start'})}
 function line(category='Labor',description='',qty=1,unit='ea',rate=0){
  const row=document.createElement('div');row.className='item-row';
  row.innerHTML='<div class="item-head"><b>LINE ITEM</b><button type="button" class="remove" aria-label="Remove line item">Remove ×</button></div><div class="item-fields"><label class="item-description">Description<input class="li-description" maxlength="250" placeholder="Work performed or material supplied" value="'+esc(description)+'"></label><label>Category<select class="li-category">'+['Labor','Materials','Other'].map(v=>'<option'+(v===category?' selected':'')+'>'+v+'</option>').join('')+'</select></label><label>Unit<select class="li-unit">'+['ea','hr','day','sq ft','lin ft','room','job','gal'].map(v=>'<option'+(v===unit?' selected':'')+'>'+v+'</option>').join('')+'</select></label><label>Qty<input class="li-qty" type="number" min="0.001" step="any" value="'+esc(qty)+'"></label><label>Unit rate ($)<input class="li-rate" type="number" min="0" step="0.01" value="'+esc(rate)+'"></label></div><div class="item-line-total">Amount: <span>$0.00</span></div>';
@@ -86,4 +86,22 @@ $('#backup-button').addEventListener('click',()=>{if(!records.length)return aler
 document.addEventListener('click',e=>{const edit=e.target.closest('[data-edit]'),conversion=e.target.closest('[data-convert]'),share=e.target.closest('[data-share]'),paid=e.target.closest('[data-paid]');if(edit)editRecord(edit.dataset.edit);if(conversion)convert(conversion.dataset.convert);if(share)showShare(records.find(r=>r.id===share.dataset.share));if(paid&&confirm('Mark invoice paid? Only do this after receiving payment.')){fetch('/api/command/estimates/'+encodeURIComponent(paid.dataset.paid)+'/paid',{method:'POST',headers:{'X-Admin-Token':token}}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Could not mark paid');await refresh()}).catch(err=>alert(err.message))}});
 $('#copy-approval').addEventListener('click',async()=>{const a=$('#approval-link');try{await navigator.clipboard.writeText(a.value);status('Customer link copied. Send it to your customer.')}catch{a.select();document.execCommand('copy');status('Customer link selected. You can copy it now.')}});
 $('#send-approval').addEventListener('click',async()=>{const url=$('#approval-link').value;if(!url)return;try{if(navigator.share)await navigator.share({title:'Superior Maintenance and Remodeling estimate',url,text:$('#approval-note').textContent});else{await navigator.clipboard.writeText(url);status('Link copied. Paste into your text or email.')}}catch{}});
+
+async function backupRequest(path='',method='GET',payload){
+ const response=await fetch('/api/admin/backups'+path,{method,cache:'no-store',headers:{'X-Admin-Token':token,'Content-Type':'application/json'},body:payload?JSON.stringify(payload):undefined});
+ if(!response.ok){const info=await response.json();throw Error(info.error||'Backup request failed.');}return response;
+}
+function backupError(error){$('#onedrive-status').textContent=error.message;}
+async function refreshBackups(){
+ const info=await (await backupRequest('/status')).json();
+ $('#onedrive-connect').disabled=!info.configured;$('#onedrive-backup').disabled=!info.connected;
+ $('#onedrive-status').textContent=!info.configured?'Microsoft configuration is incomplete.':!info.connected?'Approve Microsoft access to connect OneDrive.':'OneDrive connected. '+(info.automaticBackups?'Daily automatic backups enabled.':'Automatic backups are not enabled.')+(info.lastBackup?' Last verified upload: '+info.lastBackup.createdAt:' No upload has been verified yet.');
+ const list=$('#onedrive-list');list.replaceChildren();if(!info.connected)return;
+ const data=await (await backupRequest()).json();
+ for(const item of data.backups){const row=document.createElement('li'),button=document.createElement('button');button.type='button';button.className='button secondary';button.textContent='Download recovery';button.onclick=async()=>{button.disabled=true;try{const response=await backupRequest('/recover','POST',{id:item.id}),blob=await response.blob(),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='superior-proconnect-recovery.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(error){backupError(error)}finally{button.disabled=false}};row.append(document.createTextNode(item.name+' '),button);list.append(row);}
+ if(data.hasMore)$('#onedrive-status').textContent+=' Showing the first 200 items.';
+}
+$('#onedrive-refresh').onclick=()=>refreshBackups().catch(backupError);
+$('#onedrive-connect').onclick=async()=>{try{const info=await (await backupRequest('/connect','POST',{})).json();location.assign(info.authorizationUrl)}catch(error){backupError(error)}};
+$('#onedrive-backup').onclick=async()=>{const button=$('#onedrive-backup');button.disabled=true;$('#onedrive-status').textContent='Uploading and verifying encrypted backup…';try{await backupRequest('','POST',{});await refreshBackups()}catch(error){backupError(error)}finally{button.disabled=false}};
 })();

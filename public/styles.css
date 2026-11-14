@@ -432,3 +432,56 @@ button.primary:hover,.btn-primary:hover,.button-primary:hover,.primary-btn:hover
 .industry-entry-actions{display:flex;flex-direction:column;gap:12px;min-width:225px}
 .industry-entry .btn-outline{color:#fff;border-color:#8ca8c5;background:transparent}
 @media(max-width:767px){.industry-entry-inner{flex-direction:column;align-items:stretch}.industry-entry-actions{min-width:0}.industry-entry{padding:42px 0}.industry-entry .btn{white-space:normal;text-align:center}.nav,.footer-bottom,.footer-legal{flex-wrap:wrap}.nav-cta{max-width:44vw;white-space:normal}.container{max-width:100%}body{overflow-x:hidden}}
+
+
+/* Three-depth blue finish with restrained metallic highlights; preserves approved artwork. */
+:root{
+ --pc-blue-deep:#071629;
+ --pc-blue-mid:#102d50;
+ --pc-blue-baby:#9fdcff;
+ --pc-gold:#dfbd79;
+ --pc-white:#f8fbff;
+ --navy:#071629;
+ --navy2:#102d50;
+ --navy3:#1a4169;
+ --blue:#78bde9;
+}
+@media(max-width:767px){
+ .pc-launch{
+  background:radial-gradient(ellipse at 20% 0%,#2b5c86 0%,transparent 48%),
+             linear-gradient(155deg,#102d50 0%,#0b2340 43%,#071629 100%)!important;
+ }
+ .pc-launch-mark{
+  background:linear-gradient(145deg,#20486c,#102840 60%,#081a2f);
+  border-color:#e2c58b;
+  color:#f4dca6;
+  box-shadow:inset 0 1px 0 #fff5d380,0 8px 25px #0004,0 0 20px #86c9f622;
+ }
+ .pc-launch h1{color:var(--pc-white);text-shadow:0 1px 0 #ffffff24,0 3px 14px #0003}
+ .pc-launch h1 span{
+  color:var(--pc-gold);
+  background:linear-gradient(110deg,#b78c4c 0%,#fff0c5 37%,#d2a75f 66%,#f6dba0 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+ }
+ .pc-launch-tag{color:#f2d69e;text-shadow:0 1px 8px #f5dca52b}
+ .pc-launch-sub{color:#e9f4ff}
+ .pc-launch-grid a{
+  background:linear-gradient(155deg,#2b547b 0%,#173957 48%,#0d2743 100%);
+  border-color:#7db9e166;
+  box-shadow:inset 0 1px 0 #e8f7ff44,0 7px 18px #0003;
+ }
+ .pc-launch-grid a span{color:var(--pc-blue-baby);filter:drop-shadow(0 1px 4px #8bcfff66)}
+ .pc-launch-more{color:#b8e5ff}
+ .bottom-nav{background:linear-gradient(180deg,#f9fcff,#eaf4ff)!important;border-top:1px solid #a6cce5}
+ .bottom-nav a{color:#163b60!important}
+ .bottom-nav a.active,.bottom-nav a[aria-current="page"]{color:#236c9c!important}
+}
+.industry-entry{
+ background:radial-gradient(ellipse at 90% 0%,#285b83 0%,transparent 45%),linear-gradient(135deg,#102d50,#071629);
+}
+.industry-entry h2{color:#f8fbff;text-shadow:0 1px 8px #a9dfff20}
+.industry-entry .btn-primary,.nav-cta,.btn-primary{
+ background:linear-gradient(115deg,#8ec7eb,#f5fbff 45%,#9bbbd6 75%,#d8ecfa);
+ border-color:#b4d9ef;color:#102b48;
+ box-shadow:inset 0 1px 0 #fff9,0 4px 16px #0002;
+}

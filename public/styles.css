@@ -410,3 +410,25 @@ a:hover,.brand strong{color:var(--orange2)}
 button.primary,.btn-primary,.button-primary,.cta,.primary-btn{background-color:var(--orange);color:#071a35;border-color:var(--orange)}
 button.primary:hover,.btn-primary:hover,.button-primary:hover,.primary-btn:hover{background-color:var(--orange2)}
 :focus-visible{outline-color:var(--orange)}
+
+/* Superior ProConnect unified blue-and-silver layout refresh; legacy orange removed from visible UI. */
+:root{--orange:#aab9ca;--orange2:#d9e3ee;--blue:#3778bd;--ink:#142b47;--muted:#516780;--cream:#f5f8fc}
+.announcement,.site-header,.bottom-nav{background:#0b1e38}
+.sparkle,.brand strong,.desktop-nav a:hover,.footer-grid a:hover,.hero h1 em,.hero-card-bottom b,.section h2 span,.advertise h2 span,.eyebrow.orange,.eyebrow.light,.location,.step-num,.back,.plan-price,.plan-mark,.faq-items summary:after{color:#b9cadb}
+.nav-cta,.nav-cta:hover,.btn-primary,.form-submit{background:linear-gradient(135deg,#dce7f1,#aabed2);color:#102642;border-color:#c4d5e5;box-shadow:0 4px 16px #061d3625}
+.ticker{background:linear-gradient(90deg,#9db4cb,#e1eaf3)}
+.eyebrow.orange,.section .step-num,.location{color:#37618d}
+.hero h1 em,.section h2 span{color:#3b6693}
+.hero{background:linear-gradient(145deg,#f8fbff,#eaf1f9)}
+.hero-copy>p,.section-head p,.listing-body p,.profile-content p,.panel p,.steps p,.faq-items p{color:#415b78}
+.step-icon,.form-icon{background:#e5eef8;color:#315f91}
+.listing-top .featured{background:#c4d4e4;color:#102642}
+.bottom-nav a{color:#c9d9e8}
+.btn-outline{color:#184c83;border-color:#648db5}
+.industry-entry{background:#0b2443;color:#fff;padding:62px 0;scroll-margin-top:95px}
+.industry-entry-inner{display:flex;align-items:center;justify-content:space-between;gap:32px}
+.industry-entry h2{font-size:clamp(28px,3.5vw,46px);margin:12px 0}
+.industry-entry p{max-width:590px;line-height:1.65;color:#cbd9e8;margin:0}
+.industry-entry-actions{display:flex;flex-direction:column;gap:12px;min-width:225px}
+.industry-entry .btn-outline{color:#fff;border-color:#8ca8c5;background:transparent}
+@media(max-width:767px){.industry-entry-inner{flex-direction:column;align-items:stretch}.industry-entry-actions{min-width:0}.industry-entry{padding:42px 0}.industry-entry .btn{white-space:normal;text-align:center}.nav,.footer-bottom,.footer-legal{flex-wrap:wrap}.nav-cta{max-width:44vw;white-space:normal}.container{max-width:100%}body{overflow-x:hidden}}

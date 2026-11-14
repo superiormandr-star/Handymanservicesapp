@@ -485,3 +485,21 @@ button.primary:hover,.btn-primary:hover,.button-primary:hover,.primary-btn:hover
  border-color:#b4d9ef;color:#102b48;
  box-shadow:inset 0 1px 0 #fff9,0 4px 16px #0002;
 }
+
+/* Premium, compact first impression on phones; preserve navigation and functionality. */
+@media(max-width:767px){
+ .pc-launch{min-height:calc(100svh - 76px)!important;padding:22px 18px 30px!important;align-items:center}
+ .pc-launch-inner{max-width:390px;gap:13px}
+ .pc-launch-mark{width:76px;height:76px;border-radius:22px;font-size:32px}
+ .pc-launch h1{font-size:clamp(25px,7.3vw,35px);line-height:1.12;letter-spacing:.025em}
+ .pc-launch-tag{font-size:clamp(12px,3.6vw,15px);line-height:1.35;max-width:330px}
+ .pc-launch-sub{font-size:clamp(13px,3.5vw,15px);line-height:1.5;margin:0 0 3px}
+ .pc-launch-grid{gap:12px}
+ .pc-launch-grid a{min-height:103px;border-radius:17px;padding:12px 8px;font-size:14px;line-height:1.25;transition:transform .18s ease,box-shadow .18s ease}
+ .pc-launch-grid a:active{transform:scale(.98)}
+ .pc-launch-grid a span{font-size:26px}
+ .pc-launch-more{font-size:13px;margin-top:5px}
+ .bottom-nav{z-index:30}
+}
+@media(max-width:360px){.pc-launch{padding:12px 13px 22px!important}.pc-launch-mark{width:62px;height:62px}.pc-launch-grid a{min-height:88px}.pc-launch-inner{gap:9px}}
+@media(prefers-reduced-motion:reduce){.pc-launch-grid a{transition:none}}

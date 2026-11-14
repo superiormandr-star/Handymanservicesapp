@@ -55,7 +55,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
    method:'POST',signal:AbortSignal.timeout(30000),headers:{'content-type':'application/x-www-form-urlencoded'},
    body:new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,client_secret:clientSecret,redirect_uri:redirectUri,scope:scopes,...parameters})
   });
-  if(!result.ok)throw Error('Microsoft token exchange failed ('+result.status+'). Reconnect the Microsoft account.');
+  if(!result.ok){const detail=await result.json().catch(()=>({})),error=Error('Microsoft token exchange failed ('+result.status+'). Reconnect the Microsoft account.');error.authReason='token_exchange_failed';error.microsoftCode=Array.isArray(detail.error_codes)?detail.error_codes.find(Number.isSafeInteger):undefined;throw error;}
   const value=await result.json(), stored=get('tokens'),previous=parameters.grant_type==='refresh_token'&&(stored?.authority||env.MICROSOFT_TENANT_ID)===authority?stored:null;
   if(!value.access_token || !(value.refresh_token||previous?.refresh_token))throw Error('Microsoft did not return the required authorization tokens.');
   put('tokens',{access_token:value.access_token,refresh_token:value.refresh_token||previous.refresh_token,authority,expiresAt:now()+Number(value.expires_in||3600)*1000});
@@ -90,16 +90,19 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   },
   connect(accountType='business') {
    requireConfig();if(!['personal','business'].includes(accountType))throw Error('Choose a personal or business Microsoft account.');const authority=accountType==='personal'?'consumers':env.MICROSOFT_TENANT_ID;const state=crypto.randomBytes(32).toString('hex'),verifier=crypto.randomBytes(48).toString('base64url');
-   put('pending',{state,verifier,authority,expiresAt:now()+600000});
+   const pending=Object.fromEntries(Object.entries(get('pending-authorizations')||{}).filter(([,value])=>value.expiresAt>now()).slice(-9));pending[state]={state,verifier,authority,expiresAt:now()+600000};put('pending-authorizations',pending);
    const url=new URL('https://login.microsoftonline.com/'+encodeURIComponent(authority)+'/oauth2/v2.0/authorize');
    url.search=new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,response_type:'code',redirect_uri:redirectUri,response_mode:'query',scope:scopes,state,code_challenge:crypto.createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256'}).toString();
    return url.href;
   },
-  async callback(state,code) {
-   requireConfig();const pending=get('pending');
-   if(!pending||pending.expiresAt<now()||typeof state!=='string'||state.length!==pending.state.length||!crypto.timingSafeEqual(Buffer.from(state),Buffer.from(pending.state)))throw Error('Invalid or expired Microsoft authorization state.');
-   if(stateStore)stateStore.remove('pending');else fs.unlinkSync(file('pending'));
-   if(!code)throw Error('Microsoft authorization was canceled or denied.');
+  async callback(state,code,providerError=null) {
+   requireConfig();const pendingRequests=get('pending-authorizations')||{},legacy=get('pending');
+   const pending=typeof state==='string'&&/^[a-f0-9]{64}$/.test(state)?pendingRequests[state]||(legacy?.state===state?legacy:null):null;
+   if(!pending||pending.expiresAt<now()||!crypto.timingSafeEqual(Buffer.from(state),Buffer.from(pending.state))){const error=Error('Invalid or expired Microsoft authorization state.');error.authReason='invalid_or_expired_link';throw error;}
+   if(pendingRequests[state]){delete pendingRequests[state];put('pending-authorizations',pendingRequests);}
+   else if(stateStore)stateStore.remove('pending');else fs.unlinkSync(file('pending'));
+   if(providerError?.error){const error=Error('Microsoft authorization was canceled or denied.');error.authReason=['access_denied','invalid_request','unauthorized_client','login_required','interaction_required','consent_required'].includes(providerError.error)?providerError.error:'provider_error';const match=String(providerError.description||'').match(/AADSTS(\d{4,10})/);if(match)error.microsoftCode=Number(match[1]);throw error;}
+   if(!code){const error=Error('Microsoft authorization was canceled or denied.');error.authReason='missing_authorization_code';throw error;}
    return exclusive(async()=>{await token({grant_type:'authorization_code',code,code_verifier:pending.verifier},pending.authority||env.MICROSOFT_TENANT_ID);});
   },
   async backup() {

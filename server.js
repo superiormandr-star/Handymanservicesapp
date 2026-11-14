@@ -69,9 +69,9 @@ async function handle(req,res){
   save(latest);return send(res,200,{verified:result.verified,message:result.verified?'Payment verified. Your business listing still requires owner review.':'Payment is not verified yet. No paid privileges have been activated.'});
  }
  if(route==='/api/auth/microsoft/callback'&&req.method==='GET'){
-  try {await oneDrive.callback(url.searchParams.get('state'),url.searchParams.get('code'));
+  try {await oneDrive.callback(url.searchParams.get('state'),url.searchParams.get('code'),{error:url.searchParams.get('error'),description:url.searchParams.get('error_description')});
    res.writeHead(303,{'location':'/backups.html','cache-control':'no-store','referrer-policy':'no-referrer'});res.end();
-  }catch{return send(res,400,{error:'Microsoft authorization failed or expired. Start a new connection from the owner backups page.'});}
+  }catch(error){return send(res,400,{error:'Microsoft authorization could not complete. Start a new connection from the owner backups page.',reason:error.authReason||'authorization_failed',microsoftCode:error.microsoftCode?'AADSTS'+error.microsoftCode:undefined});}
   return;
  }
  if(route.startsWith('/api/admin/backups')){

@@ -59,3 +59,13 @@ test('personal OneDrive consent and token refresh use the same consumer authorit
  assert.equal(values.get('tokens').authority,'consumers');await api.backup();
  assert.equal(calls.length,2);assert.equal(values.get('tokens').authority,'consumers');
 });
+test('new consent links preserve earlier pending links and provider errors expose only safe codes',async()=>{
+ const values=new Map(),stateStore={get:k=>values.get(k),put:(k,v)=>values.set(k,v),remove:k=>values.delete(k)};
+ const env={VERCEL:'1',APP_ORIGIN:'https://superior-proconnect.vercel.app',MICROSOFT_CLIENT_ID:'app',MICROSOFT_TENANT_ID:'directory',microsoft_client_secret:'test-only',BACKUP_ENCRYPTION_KEY:'ef'.repeat(32)};
+ const api=createOneDrive({env,stateStore,readSnapshot:()=>'',request:async()=>Response.json({access_token:'test-access',refresh_token:'test-refresh',expires_in:3600})});
+ const first=new URL(api.connect('personal')),second=new URL(api.connect('personal'));
+ await api.callback(first.searchParams.get('state'),'first-code');await api.callback(second.searchParams.get('state'),'second-code');
+ await assert.rejects(api.callback(first.searchParams.get('state'),'replayed-code'),error=>error.authReason==='invalid_or_expired_link');
+ const denied=new URL(api.connect('personal'));
+ await assert.rejects(api.callback(denied.searchParams.get('state'),null,{error:'unauthorized_client',description:'AADSTS9002332: private provider diagnostics'}),error=>error.authReason==='unauthorized_client'&&error.microsoftCode===9002332&&!error.message.includes('private provider diagnostics'));
+});

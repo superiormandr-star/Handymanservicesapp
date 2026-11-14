@@ -10,7 +10,7 @@ async function availablePort(){const s=createServer();await new Promise(r=>s.lis
 async function pause(ms){return new Promise(r=>setTimeout(r,ms))}
 async function request(base,path,options={}){const res=await fetch(base+path,options);let out;try{out=await res.json()}catch{out={}}return {status:res.status,body:out}}
 const json=(data,headers={})=>({method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(data)});
-test('Handyman Services main business-directory flows',async()=>{
+test('Superior ProConnect main business-directory flows',async()=>{
  const dir=mkdtempSync(join(tmpdir(),'handyman-tests-')); const port=await availablePort();const base=`http://127.0.0.1:${port}`;
  const admin='test-secret-long-token';const proc=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env:{...process.env,PORT:String(port),DATA_FILE:join(dir,'data.json'),ADMIN_TOKEN:admin}});
  try{
@@ -27,9 +27,10 @@ test('Handyman Services main business-directory flows',async()=>{
   r=await request(base,'/api/admin/reply',json({id,reply:'Thank you for your feedback!'},headers));assert.equal(r.status,200);
   r=await request(base,'/api/reviews?profile=superior');assert.equal(r.body.total,1);assert.equal(r.body.average,5);assert.equal(r.body.reviews[0].ownerReply,'Thank you for your feedback!');
   r=await request(base,'/api/admin/reviews',{headers});assert.equal(r.body.reviews.length,1);
-  r=await request(base,'/api/join',json({business:'Test Services LLC',email:'test@example.com',city:'Austin, TX',phone:'5555550123',services:'Painting, Carpentry',coverageMode:'cities',coverageAreas:'Austin, Round Rock, Travis County'}));assert.equal(r.status,201);const requestId=r.body.requestId;
-  r=await request(base,'/api/subscription',json({requestId,subscriptionId:'I-EXAMPLE123456'}));assert.equal(r.status,200);
-  r=await request(base,'/api/admin/pending',{headers});assert.equal(r.body.intake[0].status,'pending_payment_verification');assert.deepEqual(r.body.intake[0].coverageAreas,['Austin','Round Rock','Travis County']);assert.deepEqual(r.body.intake[0].services,['Painting','Carpentry']);
+  r=await request(base,'/api/join',json({business:'Test Services LLC',email:'test@example.com',city:'Austin, TX',phone:'5555550123',services:'Painting, Carpentry',coverageMode:'cities',coverageAreas:'Austin, Round Rock, Travis County'}));assert.equal(r.status,201);const requestId=r.body.requestId;const checkoutToken=r.body.checkoutToken;
+  r=await request(base,'/api/subscription',json({requestId,subscriptionId:'I-EXAMPLE123456'}));assert.equal(r.status,409);
+  r=await request(base,'/api/paypal/verify',json({requestId,checkoutToken,subscriptionId:'I-EXAMPLE123456'}));assert.equal(r.status,503);
+  r=await request(base,'/api/admin/pending',{headers});assert.equal(r.body.intake[0].status,'interest');assert.deepEqual(r.body.intake[0].coverageAreas,['Austin','Round Rock','Travis County']);assert.deepEqual(r.body.intake[0].services,['Painting','Carpentry']);
   r=await request(base,'/api/admin/intake',json({id:requestId,status:'verified'},headers));assert.equal(r.status,200);
   r=await request(base,'/api/admin/profile',json({id:'superior',name:'Superior Maintenance and Remodeling',city:'Fontana',services:['Painting']},headers));assert.equal(r.status,200);assert.equal(r.body.profile.logo,'/superior-logo.png','profile edit retains the original Superior Maintenance and Remodeling logo');
   r=await request(base,'/api/join',json({business:'Radius Pro LLC',email:'radius@example.com',city:'Denver, CO',services:'Repairs',coverageMode:'radius',coverageZip:'80202',coverageRadius:50}));assert.equal(r.status,201);

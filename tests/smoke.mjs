@@ -10,7 +10,7 @@ async function availablePort(){const s=createServer();await new Promise(r=>s.lis
 async function pause(ms){return new Promise(r=>setTimeout(r,ms))}
 async function request(base,path,options={}){const res=await fetch(base+path,options);let out;try{out=await res.json()}catch{out={}}return {status:res.status,body:out}}
 const json=(data,headers={})=>({method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(data)});
-test('Handyman Services main business-directory flows',async()=>{
+test('Superior ProConnect main business-directory flows',async()=>{
  const dir=mkdtempSync(join(tmpdir(),'handyman-tests-')); const port=await availablePort();const base=`http://127.0.0.1:${port}`;
  const admin='test-secret-long-token';const proc=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env:{...process.env,PORT:String(port),DATA_FILE:join(dir,'data.json'),ADMIN_TOKEN:admin}});
  try{

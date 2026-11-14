@@ -1,5 +1,5 @@
-const CACHE='proconnect-v11-handyman';
-const ASSETS=['/handyman.html','/handyman.css','/automotive.html','/automotive.css','/automotive.js','/','/index.html','/styles.css','/app.js','/handyman-logo.png','/superior-logo.png','/manifest.webmanifest','/icons/icon-192.png','/icons/icon-512.png'];
+const CACHE='proconnect-v12-construction';
+const ASSETS=['/construction.html','/construction.css','/automotive.html','/automotive.css','/automotive.js','/','/index.html','/styles.css','/app.js','/handyman-logo.png','/superior-logo.png','/manifest.webmanifest','/icons/icon-192.png','/icons/icon-512.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));self.skipWaiting()});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim()});
 self.addEventListener('fetch',event=>{const req=event.request;const url=new URL(req.url);if(req.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/')||['/pro.html','/pro.js','/admin.html','/admin.js','/admin-crm.js','/command-center.html','/command-center.js','/quote.html','/backups.html','/backups.js','/membership.html','/membership.js'].includes(url.pathname))return;event.respondWith(fetch(req).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(c=>c.put(req,copy))}return response}).catch(()=>caches.match(req)))})

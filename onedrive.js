@@ -14,7 +14,7 @@ function validateBackup(text) {
  return data;
 }
 
-// Intended for a persistent Node host. Vercel needs a durable database/token store first.
+// Tokens use the durable encrypted state adapter on Vercel.
 function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), readSnapshot, stateStore=null}) {
  const origin = env.APP_ORIGIN;
  const redirectUri = origin ? new URL('/api/auth/microsoft/callback', origin).href : null;
@@ -78,7 +78,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   busy=true;try{return await action()}finally{busy=false}
  }
  const api = {
-  status() {return {configured:enabled,connected:enabled&&Boolean(get('tokens')),redirectUri,automaticBackups:enabled&&Number(env.ONEDRIVE_BACKUP_INTERVAL_MINUTES)>=5};},
+  status() {return {configured:enabled,connected:enabled&&Boolean(get('tokens')),redirectUri,automaticBackups:enabled&&Boolean(get('tokens'))&&(Boolean(env.VERCEL&&env.CRON_SECRET)||Number(env.ONEDRIVE_BACKUP_INTERVAL_MINUTES)>=5),lastBackup:enabled?get('last-backup'):null};},
   connect() {
    requireConfig();const state=crypto.randomBytes(32).toString('hex'),verifier=crypto.randomBytes(48).toString('base64url');
    put('pending',{state,verifier,expiresAt:now()+600000});

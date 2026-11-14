@@ -102,6 +102,6 @@ async function refreshBackups(){
  if(data.hasMore)$('#onedrive-status').textContent+=' Showing the first 200 items.';
 }
 $('#onedrive-refresh').onclick=()=>refreshBackups().catch(backupError);
-$('#onedrive-connect').onclick=async()=>{try{const info=await (await backupRequest('/connect','POST',{})).json();location.assign(info.authorizationUrl)}catch(error){backupError(error)}};
+$('#onedrive-connect').onclick=async()=>{try{const info=await (await backupRequest('/connect','POST',{accountType:$('#onedrive-account-type').value})).json();location.assign(info.authorizationUrl)}catch(error){backupError(error)}};
 $('#onedrive-backup').onclick=async()=>{const button=$('#onedrive-backup');button.disabled=true;$('#onedrive-status').textContent='Uploading and verifying encrypted backup…';try{await backupRequest('','POST',{});await refreshBackups()}catch(error){backupError(error)}finally{button.disabled=false}};
 })();

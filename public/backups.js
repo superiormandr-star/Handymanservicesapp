@@ -26,6 +26,6 @@ async function refresh(){
  if(result.hasMore)status.textContent+=' Showing the first 200 OneDrive items.';
 }
 document.querySelector('#access').onsubmit=event=>{event.preventDefault();token=document.querySelector('#token').value;document.querySelector('#token').value='';run(refresh)};
-document.querySelector('#connect').onclick=()=>run(async()=>{const result=await (await api('/connect','POST')).json();location.assign(result.authorizationUrl)});
+document.querySelector('#connect').onclick=()=>run(async()=>{const result=await (await api('/connect','POST',{accountType:document.querySelector('#account-type').value})).json();location.assign(result.authorizationUrl)});
 document.querySelector('#backup').onclick=()=>run(async()=>{await api('','POST');await refresh();status.textContent='Backup uploaded to OneDrive.'});
 document.querySelector('#refresh').onclick=()=>run(refresh);

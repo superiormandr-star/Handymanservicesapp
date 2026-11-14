@@ -50,21 +50,21 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   fs.writeFileSync(temp,seal(value),{mode:0o600,flag:'wx'});fs.renameSync(temp,dest);
  }
  function get(name) {if(stateStore)return stateStore.get(name);try{return unseal(fs.readFileSync(file(name),'utf8'))}catch(error){if(error.code==='ENOENT')return null;throw error}}
- async function token(parameters) {
-  const result=await request('https://login.microsoftonline.com/'+encodeURIComponent(env.MICROSOFT_TENANT_ID)+'/oauth2/v2.0/token',{
+ async function token(parameters,authority=env.MICROSOFT_TENANT_ID) {
+  const result=await request('https://login.microsoftonline.com/'+encodeURIComponent(authority)+'/oauth2/v2.0/token',{
    method:'POST',signal:AbortSignal.timeout(30000),headers:{'content-type':'application/x-www-form-urlencoded'},
    body:new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,client_secret:clientSecret,redirect_uri:redirectUri,scope:scopes,...parameters})
   });
   if(!result.ok)throw Error('Microsoft token exchange failed ('+result.status+'). Reconnect the Microsoft account.');
-  const value=await result.json(), previous=get('tokens');
+  const value=await result.json(), stored=get('tokens'),previous=parameters.grant_type==='refresh_token'&&(stored?.authority||env.MICROSOFT_TENANT_ID)===authority?stored:null;
   if(!value.access_token || !(value.refresh_token||previous?.refresh_token))throw Error('Microsoft did not return the required authorization tokens.');
-  put('tokens',{access_token:value.access_token,refresh_token:value.refresh_token||previous.refresh_token,expiresAt:now()+Number(value.expires_in||3600)*1000});
+  put('tokens',{access_token:value.access_token,refresh_token:value.refresh_token||previous.refresh_token,authority,expiresAt:now()+Number(value.expires_in||3600)*1000});
   return value.access_token;
  }
  async function accessToken() {
   const value=get('tokens');if(!value)throw Error('Connect the owner Microsoft account first.');
   if(value.expiresAt>now()+60000)return value.access_token;
-  return token({grant_type:'refresh_token',refresh_token:value.refresh_token});
+  return token({grant_type:'refresh_token',refresh_token:value.refresh_token},value.authority||env.MICROSOFT_TENANT_ID);
  }
  async function graph(resource, options={}) {
   const response=await request('https://graph.microsoft.com/v1.0/me/drive/'+resource,{
@@ -79,10 +79,19 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
  }
  const api = {
   status() {return {configured:enabled,connected:enabled&&Boolean(get('tokens')),redirectUri,automaticBackups:enabled&&Boolean(get('tokens'))&&(Boolean(env.VERCEL&&env.CRON_SECRET)||Number(env.ONEDRIVE_BACKUP_INTERVAL_MINUTES)>=5),lastBackup:enabled?get('last-backup'):null};},
-  connect() {
-   requireConfig();const state=crypto.randomBytes(32).toString('hex'),verifier=crypto.randomBytes(48).toString('base64url');
-   put('pending',{state,verifier,expiresAt:now()+600000});
-   const url=new URL('https://login.microsoftonline.com/'+encodeURIComponent(env.MICROSOFT_TENANT_ID)+'/oauth2/v2.0/authorize');
+  async diagnose() {
+   requireConfig();const access=await accessToken(),checks=[];
+   for(const resource of ['','special/approot']){
+    const response=await request('https://graph.microsoft.com/v1.0/me/drive/'+resource,{headers:{authorization:'Bearer '+access},signal:AbortSignal.timeout(25000)});
+    const check={resource:resource||'drive',status:response.status};
+    if(!response.ok){const value=await response.json().catch(()=>({}));check.code=String(value.error?.code||'unknown').slice(0,100);check.reason=String(value.error?.message||'').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[account]').slice(0,350);}
+    checks.push(check);
+   }return {checks};
+  },
+  connect(accountType='business') {
+   requireConfig();if(!['personal','business'].includes(accountType))throw Error('Choose a personal or business Microsoft account.');const authority=accountType==='personal'?'consumers':env.MICROSOFT_TENANT_ID;const state=crypto.randomBytes(32).toString('hex'),verifier=crypto.randomBytes(48).toString('base64url');
+   put('pending',{state,verifier,authority,expiresAt:now()+600000});
+   const url=new URL('https://login.microsoftonline.com/'+encodeURIComponent(authority)+'/oauth2/v2.0/authorize');
    url.search=new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,response_type:'code',redirect_uri:redirectUri,response_mode:'query',scope:scopes,state,code_challenge:crypto.createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256'}).toString();
    return url.href;
   },
@@ -91,7 +100,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
    if(!pending||pending.expiresAt<now()||typeof state!=='string'||state.length!==pending.state.length||!crypto.timingSafeEqual(Buffer.from(state),Buffer.from(pending.state)))throw Error('Invalid or expired Microsoft authorization state.');
    if(stateStore)stateStore.remove('pending');else fs.unlinkSync(file('pending'));
    if(!code)throw Error('Microsoft authorization was canceled or denied.');
-   return exclusive(async()=>{await token({grant_type:'authorization_code',code,code_verifier:pending.verifier});});
+   return exclusive(async()=>{await token({grant_type:'authorization_code',code,code_verifier:pending.verifier},pending.authority||env.MICROSOFT_TENANT_ID);});
   },
   async backup() {
    requireConfig();return exclusive(async()=>{

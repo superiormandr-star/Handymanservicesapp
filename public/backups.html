@@ -3,7 +3,7 @@
 <body><main class="container"><h1>Owner backups</h1><p><a href="/admin.html">Return to owner console</a></p>
 <form id="access"><label>Owner access token <input id="token" type="password" autocomplete="off" required></label><button>Unlock backups</button></form>
 <p id="status" role="status" aria-live="polite">Enter your owner token to check the connection.</p>
-<section id="controls" hidden><button id="connect">Connect Microsoft account</button> <button id="backup">Back up now</button> <button id="refresh">Refresh backups</button>
+<section id="controls" hidden><label>Microsoft account<select id="account-type"><option value="personal">Personal OneDrive</option><option value="business">Business OneDrive</option></select></label><button id="connect">Connect Microsoft account</button> <button id="backup">Back up now</button> <button id="refresh">Refresh backups</button>
 <p>Backups are encrypted before upload to the connected account’s OneDrive application folder. Keep the encryption key securely: it is required for recovery.</p>
 <ul id="backups"></ul><p>Recovery downloads a validated snapshot. Restoring it requires stopping the application and preserving the current data file first; downloads do not replace live records.</p></section>
 </main><script src="/backups.js"></script></body></html>

@@ -69,3 +69,21 @@ test('new consent links preserve earlier pending links and provider errors expos
  const denied=new URL(api.connect('personal'));
  await assert.rejects(api.callback(denied.searchParams.get('state'),null,{error:'unauthorized_client',description:'AADSTS9002332: private provider diagnostics'}),error=>error.authReason==='unauthorized_client'&&error.microsoftCode===9002332&&!error.message.includes('private provider diagnostics'));
 });
+test('broader OneDrive scope requires explicit selection and remains bound to consent on refresh',async()=>{
+ const values=new Map(),calls=[];let uploaded;
+ const stateStore={get:k=>values.get(k),put:(k,v)=>values.set(k,v),remove:k=>values.delete(k)};
+ const env={VERCEL:'1',APP_ORIGIN:'https://superior-proconnect.vercel.app',MICROSOFT_CLIENT_ID:'app',MICROSOFT_TENANT_ID:'directory',microsoft_client_secret:'test-only',BACKUP_ENCRYPTION_KEY:'12'.repeat(32)};
+ const request=async(url,options)=>{
+  if(url.includes('/token')){calls.push(options.body.get('scope'));return Response.json({access_token:'test-access',refresh_token:'test-refresh',expires_in:calls.length===1?1:3600});}
+  assert.ok(url.includes('/me/drive/special/approot:')||url.includes('/me/drive/items/'));
+  if(options.method==='PUT'){uploaded=options.body;return Response.json({id:'test-backup'});}
+  return new Response(uploaded);
+ };
+ const api=createOneDrive({env,stateStore,request,readSnapshot:()=>JSON.stringify({profiles:[],reviews:[],intake:[],documents:[]})});
+ assert.equal(new URL(api.connect('personal')).searchParams.get('scope'),'offline_access Files.ReadWrite.AppFolder');
+ assert.throws(()=>api.connect('personal','Files.ReadWrite.All'),/approved/);
+ const chosen=new URL(api.connect('personal','files'));assert.equal(chosen.searchParams.get('scope'),'offline_access Files.ReadWrite');
+ await api.callback(chosen.searchParams.get('state'),'test-code');await api.backup();
+ assert.deepEqual(calls,['offline_access Files.ReadWrite','offline_access Files.ReadWrite']);
+ assert.equal(values.get('tokens').scopes,'offline_access Files.ReadWrite');
+});

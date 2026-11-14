@@ -50,21 +50,21 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   fs.writeFileSync(temp,seal(value),{mode:0o600,flag:'wx'});fs.renameSync(temp,dest);
  }
  function get(name) {if(stateStore)return stateStore.get(name);try{return unseal(fs.readFileSync(file(name),'utf8'))}catch(error){if(error.code==='ENOENT')return null;throw error}}
- async function token(parameters,authority=env.MICROSOFT_TENANT_ID) {
+ async function token(parameters,authority=env.MICROSOFT_TENANT_ID,authorizedScopes=scopes) {
   const result=await request('https://login.microsoftonline.com/'+encodeURIComponent(authority)+'/oauth2/v2.0/token',{
    method:'POST',signal:AbortSignal.timeout(30000),headers:{'content-type':'application/x-www-form-urlencoded'},
-   body:new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,client_secret:clientSecret,redirect_uri:redirectUri,scope:scopes,...parameters})
+   body:new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,client_secret:clientSecret,redirect_uri:redirectUri,scope:authorizedScopes,...parameters})
   });
   if(!result.ok){const detail=await result.json().catch(()=>({})),error=Error('Microsoft token exchange failed ('+result.status+'). Reconnect the Microsoft account.');error.authReason='token_exchange_failed';error.microsoftCode=Array.isArray(detail.error_codes)?detail.error_codes.find(Number.isSafeInteger):undefined;throw error;}
   const value=await result.json(), stored=get('tokens'),previous=parameters.grant_type==='refresh_token'&&(stored?.authority||env.MICROSOFT_TENANT_ID)===authority?stored:null;
   if(!value.access_token || !(value.refresh_token||previous?.refresh_token))throw Error('Microsoft did not return the required authorization tokens.');
-  put('tokens',{access_token:value.access_token,refresh_token:value.refresh_token||previous.refresh_token,authority,expiresAt:now()+Number(value.expires_in||3600)*1000});
+  put('tokens',{access_token:value.access_token,refresh_token:value.refresh_token||previous.refresh_token,authority,scopes:authorizedScopes,expiresAt:now()+Number(value.expires_in||3600)*1000});
   return value.access_token;
  }
  async function accessToken() {
   const value=get('tokens');if(!value)throw Error('Connect the owner Microsoft account first.');
   if(value.expiresAt>now()+60000)return value.access_token;
-  return token({grant_type:'refresh_token',refresh_token:value.refresh_token},value.authority||env.MICROSOFT_TENANT_ID);
+  return token({grant_type:'refresh_token',refresh_token:value.refresh_token},value.authority||env.MICROSOFT_TENANT_ID,value.scopes||scopes);
  }
  async function graph(resource, options={}) {
   const response=await request('https://graph.microsoft.com/v1.0/me/drive/'+resource,{
@@ -88,11 +88,11 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
     checks.push(check);
    }return {checks};
   },
-  connect(accountType='business') {
-   requireConfig();if(!['personal','business'].includes(accountType))throw Error('Choose a personal or business Microsoft account.');const authority=accountType==='personal'?'consumers':env.MICROSOFT_TENANT_ID;const state=crypto.randomBytes(32).toString('hex'),verifier=crypto.randomBytes(48).toString('base64url');
-   const pending=Object.fromEntries(Object.entries(get('pending-authorizations')||{}).filter(([,value])=>value.expiresAt>now()).slice(-9));pending[state]={state,verifier,authority,expiresAt:now()+600000};put('pending-authorizations',pending);
+  connect(accountType='business',permissionMode='appFolder') {
+   requireConfig();if(!['personal','business'].includes(accountType))throw Error('Choose a personal or business Microsoft account.');if(!['appFolder','files'].includes(permissionMode))throw Error('Choose an approved OneDrive permission mode.');const authorizedScopes=permissionMode==='files'?'offline_access Files.ReadWrite':scopes;const authority=accountType==='personal'?'consumers':env.MICROSOFT_TENANT_ID;const state=crypto.randomBytes(32).toString('hex'),verifier=crypto.randomBytes(48).toString('base64url');
+   const pending=Object.fromEntries(Object.entries(get('pending-authorizations')||{}).filter(([,value])=>value.expiresAt>now()).slice(-9));pending[state]={state,verifier,authority,scopes:authorizedScopes,expiresAt:now()+600000};put('pending-authorizations',pending);
    const url=new URL('https://login.microsoftonline.com/'+encodeURIComponent(authority)+'/oauth2/v2.0/authorize');
-   url.search=new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,response_type:'code',redirect_uri:redirectUri,response_mode:'query',scope:scopes,state,code_challenge:crypto.createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256'}).toString();
+   url.search=new URLSearchParams({client_id:env.MICROSOFT_CLIENT_ID,response_type:'code',redirect_uri:redirectUri,response_mode:'query',scope:authorizedScopes,state,code_challenge:crypto.createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256'}).toString();
    return url.href;
   },
   async callback(state,code,providerError=null) {
@@ -103,7 +103,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
    else if(stateStore)stateStore.remove('pending');else fs.unlinkSync(file('pending'));
    if(providerError?.error){const error=Error('Microsoft authorization was canceled or denied.');error.authReason=['access_denied','invalid_request','unauthorized_client','login_required','interaction_required','consent_required'].includes(providerError.error)?providerError.error:'provider_error';const match=String(providerError.description||'').match(/AADSTS(\d{4,10})/);if(match)error.microsoftCode=Number(match[1]);throw error;}
    if(!code){const error=Error('Microsoft authorization was canceled or denied.');error.authReason='missing_authorization_code';throw error;}
-   return exclusive(async()=>{await token({grant_type:'authorization_code',code,code_verifier:pending.verifier},pending.authority||env.MICROSOFT_TENANT_ID);});
+   return exclusive(async()=>{await token({grant_type:'authorization_code',code,code_verifier:pending.verifier},pending.authority||env.MICROSOFT_TENANT_ID,pending.scopes||scopes);});
   },
   async backup() {
    requireConfig();return exclusive(async()=>{

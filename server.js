@@ -78,7 +78,7 @@ async function handle(req,res){
   if(!admin(req))return send(res,401,{error:'Owner access required'});
   if(route==='/api/admin/backups/status'&&req.method==='GET')return send(res,200,oneDrive.status());
   if(route==='/api/admin/backups/diagnose'&&req.method==='GET')return send(res,200,await oneDrive.diagnose());
-  if(route==='/api/admin/backups/connect'&&req.method==='POST'){const input=await body(req);return send(res,200,{authorizationUrl:oneDrive.connect(input.accountType||'business')});}
+  if(route==='/api/admin/backups/connect'&&req.method==='POST'){const input=await body(req);return send(res,200,{authorizationUrl:oneDrive.connect(input.accountType||'business',input.permissionMode||'appFolder')});}
   if(route==='/api/admin/backups'&&req.method==='POST')return send(res,201,await oneDrive.backup());
   if(route==='/api/admin/backups'&&req.method==='GET')return send(res,200,await oneDrive.list());
   if(route==='/api/admin/backups/recover'&&req.method==='POST'){

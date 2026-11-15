@@ -410,3 +410,13 @@ a:hover,.brand strong{color:var(--orange2)}
 button.primary,.btn-primary,.button-primary,.cta,.primary-btn{background-color:var(--orange);color:#071a35;border-color:var(--orange)}
 button.primary:hover,.btn-primary:hover,.button-primary:hover,.primary-btn:hover{background-color:var(--orange2)}
 :focus-visible{outline-color:var(--orange)}
+
+
+/* Superior ProConnect: prevent cramped navigation and horizontal overflow on phones. */
+@media (max-width: 767px) {
+  .pc-launch, .pc-launch-inner, .pc-launch-grid, .pc-launch-grid a { min-width: 0; }
+  .pc-launch-grid a { overflow-wrap: anywhere; text-align: center; }
+  .desktop-nav, .nav, .bottom-nav { min-width: 0; }
+  .bottom-nav a, .bottom-nav small { white-space: normal; overflow-wrap: anywhere; text-align: center; }
+  input, select, textarea { max-width: 100%; }
+}

@@ -14,7 +14,7 @@ function config() {
 }
 async function request(url, options = {}) {
   const response = await fetch(url, { ...options, signal: AbortSignal.timeout(20000) });
-  if (!response.ok) throw new Error('OneDrive request failed (' + response.status + '): ' + (await response.text()).slice(0,240));
+  if (!response.ok) throw new Error('OneDrive request failed (' + response.status + ').');
   return response;
 }
 async function token(c) {
@@ -28,9 +28,13 @@ function itemUrl(c, filename) {
   return (c.refresh ? GRAPH + '/me/drive' : GRAPH + '/drives/' + encodeURIComponent(c.drive)) + '/root:/SuperiorProConnectBackups/' + encodeURIComponent(filename) + ':/content';
 }
 async function uploadAndVerify(snapshot, { filename = 'verification-' + crypto.randomUUID() + '.json' } = {}) {
-  const bytes = Buffer.from(JSON.stringify(snapshot), 'utf8');
-  if (bytes.length > MAX_BYTES) throw new Error('Snapshot exceeds simple upload limit; implement upload sessions before use');
   const c = config();
+  const key=process.env.BACKUP_ENCRYPTION_KEY;
+  if(!/^[a-f0-9]{64}$/i.test(key||''))throw Error('Backup encryption key is not configured.');
+  const plaintext=Buffer.from(JSON.stringify(snapshot),'utf8'),iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',Buffer.from(key,'hex'),iv);
+  const encrypted=Buffer.concat([cipher.update(plaintext),cipher.final()]);
+  const bytes=Buffer.from(JSON.stringify({version:1,iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),data:encrypted.toString('base64')}),'utf8');
+  if (bytes.length > MAX_BYTES) throw new Error('Snapshot exceeds simple upload limit; implement upload sessions before use');
   const bearer = 'Bearer ' + await token(c);
   const headers = { Authorization: bearer, 'Content-Type': 'application/json' };
   // The destination folder must exist. Never delete or overwrite existing backups.
@@ -40,6 +44,10 @@ async function uploadAndVerify(snapshot, { filename = 'verification-' + crypto.r
   const downloaded = Buffer.from(await (await request((c.refresh ? GRAPH + '/me/drive' : GRAPH + '/drives/' + encodeURIComponent(c.drive)) + '/items/' + encodeURIComponent(metadata.id) + '/content', { headers: { Authorization: bearer } })).arrayBuffer());
   const expected = sha256(bytes), actual = sha256(downloaded);
   if (expected !== actual) throw new Error('OneDrive backup checksum mismatch');
+  const envelope=JSON.parse(downloaded.toString()),decipher=crypto.createDecipheriv('aes-256-gcm',Buffer.from(key,'hex'),Buffer.from(envelope.iv,'base64'));
+  decipher.setAuthTag(Buffer.from(envelope.tag,'base64'));
+  const recovered=Buffer.concat([decipher.update(Buffer.from(envelope.data,'base64')),decipher.final()]);
+  if(!recovered.equals(plaintext))throw Error('OneDrive recovery verification failed');
   return { verified: true, itemId: metadata.id, filename, bytes: bytes.length, sha256: expected, verifiedAt: new Date().toISOString() };
 }
 module.exports = { uploadAndVerify, sha256 };

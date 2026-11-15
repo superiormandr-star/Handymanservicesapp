@@ -66,7 +66,7 @@ module.exports = async function estimateRoutes(req,res,util){
     const d=db(),invoice=(d.documents||[]).find(t=>t.id===markPaid[1]&&t.type==='invoice');
     if(!invoice)return bad('Invoice not found',404);
     if(invoice.status==='paid')return bad('Invoice already marked paid',409);
-    invoice.status='paid';invoice.paidAt=new Date().toISOString();invoice.updatedAt=invoice.paidAt;
+    invoice.status='paid';invoice.payment=invoice.total;invoice.paidAt=new Date().toISOString();invoice.updatedAt=invoice.paidAt;
     save(d);send(res,200,{ok:true,invoice:formatDocument(invoice)});return true;
   }
   if(path.startsWith(publicBase)){

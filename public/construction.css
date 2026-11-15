@@ -1,0 +1,2 @@
+:root{--red:#168bd2;--green:#168bd2}.handyman-art{display:block;width:100%;height:auto;border-radius:6px}.handyman-title{font-size:clamp(28px,4vw,44px);margin-top:24px}.hero{padding-top:38px}.hero-panel{border-top-color:#168bd2}@media(max-width:720px){.hero h1{font-size:34px}.hero{padding-top:24px}}
+.handyman-art{max-height:300px;object-fit:contain;background:#080b09}

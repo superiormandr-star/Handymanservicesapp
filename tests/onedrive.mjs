@@ -75,7 +75,11 @@ test('broader OneDrive scope requires explicit selection and remains bound to co
  const env={VERCEL:'1',APP_ORIGIN:'https://superior-proconnect.vercel.app',MICROSOFT_CLIENT_ID:'app',MICROSOFT_TENANT_ID:'directory',microsoft_client_secret:'test-only',BACKUP_ENCRYPTION_KEY:'12'.repeat(32)};
  const request=async(url,options)=>{
   if(url.includes('/token')){calls.push(options.body.get('scope'));return Response.json({access_token:'test-access',refresh_token:'test-refresh',expires_in:calls.length===1?1:3600});}
-  assert.ok(url.includes('/me/drive/special/approot:')||url.includes('/me/drive/items/'));
+  if(url.endsWith('/special/approot')||url.includes('/root:/'))return new Response('',{status:404});
+  if(url.endsWith('/root/children')){assert.equal(options.method,'POST');const body=JSON.parse(options.body);assert.equal(body.name,'Superior ProConnect Backups');assert.equal(body['@microsoft.graph.conflictBehavior'],'fail');return Response.json({id:'dedicated-folder',folder:{}});}
+  if(url.endsWith('/items/dedicated-folder'))return Response.json({id:'dedicated-folder',folder:{}});
+  if(url.includes('/items/dedicated-folder/children?'))return Response.json({value:[{id:'test-backup',name:'superior-proconnect-test.json.enc'}]});
+  assert.ok(url.includes('/me/drive/items/'));
   if(options.method==='PUT'){uploaded=options.body;return Response.json({id:'test-backup'});}
   return new Response(uploaded);
  };
@@ -86,4 +90,5 @@ test('broader OneDrive scope requires explicit selection and remains bound to co
  await api.callback(chosen.searchParams.get('state'),'test-code');await api.backup();
  assert.deepEqual(calls,['offline_access Files.ReadWrite','offline_access Files.ReadWrite']);
  assert.equal(values.get('tokens').scopes,'offline_access Files.ReadWrite');
+ assert.equal((await api.list()).backups.length,1);assert.equal(await api.recover('test-backup'),JSON.stringify({profiles:[],reviews:[],intake:[],documents:[]}));
 });

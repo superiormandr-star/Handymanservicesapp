@@ -58,6 +58,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   if(!result.ok){const detail=await result.json().catch(()=>({})),error=Error('Microsoft token exchange failed ('+result.status+'). Reconnect the Microsoft account.');error.authReason='token_exchange_failed';error.microsoftCode=Array.isArray(detail.error_codes)?detail.error_codes.find(Number.isSafeInteger):undefined;throw error;}
   const value=await result.json(), stored=get('tokens'),previous=parameters.grant_type==='refresh_token'&&(stored?.authority||env.MICROSOFT_TENANT_ID)===authority?stored:null;
   if(!value.access_token || !(value.refresh_token||previous?.refresh_token))throw Error('Microsoft did not return the required authorization tokens.');
+  if(parameters.grant_type==='authorization_code'&&get('backup-folder')){if(stateStore)stateStore.remove('backup-folder');else fs.unlinkSync(file('backup-folder'));}
   put('tokens',{access_token:value.access_token,refresh_token:value.refresh_token||previous.refresh_token,authority,scopes:authorizedScopes,grantedFilePermissions:typeof value.scope==='string'?value.scope.split(/\s+/).map(scope=>scope.replace('https://graph.microsoft.com/','')).filter(scope=>['Files.ReadWrite','Files.ReadWrite.AppFolder','Files.Read','Files.Read.All','Files.ReadWrite.All'].includes(scope)):[],expiresAt:now()+Number(value.expires_in||3600)*1000});
   return value.access_token;
  }
@@ -70,8 +71,22 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   const response=await request('https://graph.microsoft.com/v1.0/me/drive/'+resource,{
    ...options,signal:AbortSignal.timeout(30000),headers:{...options.headers,authorization:'Bearer '+await accessToken()}
   });
-  if(!response.ok)throw Error('OneDrive request failed ('+response.status+').');
+  if(!response.ok){const error=Error('OneDrive request failed ('+response.status+').');error.graphStatus=response.status;throw error;}
   return response;
+ }
+ async function backupFolder() {
+  if(!String(get('tokens')?.scopes||'').split(/\s+/).includes('Files.ReadWrite'))return 'special/approot';
+  const cached=get('backup-folder');
+  if(cached?.id){try{const item=await (await graph('items/'+encodeURIComponent(cached.id))).json();if(item.folder)return 'items/'+encodeURIComponent(item.id);}catch(error){if(error.graphStatus!==404)throw error;}}
+  let item;
+  try{item=await (await graph('special/approot')).json();}catch(error){if(error.graphStatus!==404)throw error;}
+  if(!item){
+   const name='Superior ProConnect Backups',resource='root:/'+encodeURIComponent(name);
+   try{item=await (await graph(resource)).json();}catch(error){if(error.graphStatus!==404)throw error;}
+   if(!item){try{item=await (await graph('root/children',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,folder:{},'@microsoft.graph.conflictBehavior':'fail'})})).json();}catch(error){if(error.graphStatus!==409)throw error;item=await (await graph(resource)).json();}}
+  }
+  if(!item?.id||!item.folder)throw Error('The ProConnect backup destination is not a folder. No existing item was replaced.');
+  put('backup-folder',{id:item.id});return 'items/'+encodeURIComponent(item.id);
  }
  async function exclusive(action) {
   if(busy)throw Error('A Microsoft backup operation is already running.');
@@ -114,7 +129,8 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
     const text=readSnapshot();validateBackup(text);
     const name='superior-proconnect-'+new Date(now()).toISOString().replace(/[:.]/g,'-')+'-'+crypto.randomUUID()+'.json.enc';
     const contents=seal({version:1,createdAt:new Date(now()).toISOString(),sha256:crypto.createHash('sha256').update(text).digest('hex'),snapshot:text});
-    const result=await graph('special/approot:/'+name+':/content',{method:'PUT',headers:{'content-type':'application/octet-stream'},body:contents});
+    const destination=await backupFolder();
+    const result=await graph(destination+':/'+name+':/content',{method:'PUT',headers:{'content-type':'application/octet-stream'},body:contents});
     const item=await result.json();
     if(!item.id)throw Error('OneDrive did not confirm an uploaded item.');
     const downloaded=await (await graph('items/'+encodeURIComponent(item.id)+'/content')).text();
@@ -126,7 +142,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   },
   async list() {
    requireConfig();return exclusive(async()=>{
-    const result=await (await graph('special/approot/children?$top=200&$select=id,name,size,lastModifiedDateTime')).json();
+    const destination=await backupFolder();const result=await (await graph(destination+'/children?$top=200&$select=id,name,size,lastModifiedDateTime')).json();
     return {backups:(result.value||[]).filter(item=>/^superior-proconnect-.*\.json\.enc$/.test(item.name)),hasMore:Boolean(result['@odata.nextLink'])};
    });
   },
@@ -134,7 +150,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
    requireConfig();if(!/^[a-zA-Z0-9!_-]{1,200}$/.test(id||''))throw Error('Invalid backup ID.');
    return exclusive(async()=>{
     // Resolve within the app folder, never an arbitrary user-controlled URL.
-    const listing=await (await graph('special/approot/children?$top=200&$select=id,name')).json();
+    const destination=await backupFolder();const listing=await (await graph(destination+'/children?$top=200&$select=id,name')).json();
     if(!(listing.value||[]).some(item=>item.id===id&&/^superior-proconnect-.*\.json\.enc$/.test(item.name)))throw Error('Backup not found in the application folder.');
     const response=await graph('items/'+encodeURIComponent(id)+'/content');
     const backup=unseal(await response.text());

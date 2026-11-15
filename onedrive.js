@@ -58,7 +58,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   if(!result.ok){const detail=await result.json().catch(()=>({})),error=Error('Microsoft token exchange failed ('+result.status+'). Reconnect the Microsoft account.');error.authReason='token_exchange_failed';error.microsoftCode=Array.isArray(detail.error_codes)?detail.error_codes.find(Number.isSafeInteger):undefined;throw error;}
   const value=await result.json(), stored=get('tokens'),previous=parameters.grant_type==='refresh_token'&&(stored?.authority||env.MICROSOFT_TENANT_ID)===authority?stored:null;
   if(!value.access_token || !(value.refresh_token||previous?.refresh_token))throw Error('Microsoft did not return the required authorization tokens.');
-  put('tokens',{access_token:value.access_token,refresh_token:value.refresh_token||previous.refresh_token,authority,scopes:authorizedScopes,expiresAt:now()+Number(value.expires_in||3600)*1000});
+  put('tokens',{access_token:value.access_token,refresh_token:value.refresh_token||previous.refresh_token,authority,scopes:authorizedScopes,grantedFilePermissions:typeof value.scope==='string'?value.scope.split(/\s+/).map(scope=>scope.replace('https://graph.microsoft.com/','')).filter(scope=>['Files.ReadWrite','Files.ReadWrite.AppFolder','Files.Read','Files.Read.All','Files.ReadWrite.All'].includes(scope)):[],expiresAt:now()+Number(value.expires_in||3600)*1000});
   return value.access_token;
  }
  async function accessToken() {
@@ -78,7 +78,11 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   busy=true;try{return await action()}finally{busy=false}
  }
  const api = {
-  status() {return {configured:enabled,connected:enabled&&Boolean(get('tokens')),redirectUri,automaticBackups:enabled&&Boolean(get('tokens'))&&(Boolean(env.VERCEL&&env.CRON_SECRET)||Number(env.ONEDRIVE_BACKUP_INTERVAL_MINUTES)>=5),lastBackup:enabled?get('last-backup'):null,connectedAccountType:enabled&&get('tokens')?(get('tokens').authority==='consumers'?'personal':'business'):null,authorizationPending:enabled&&[...Object.values(get('pending-authorizations')||{}),get('pending')].some(value=>value&&value.expiresAt>now())};},
+  status() {return {configured:enabled,connected:enabled&&Boolean(get('tokens')),redirectUri,automaticBackups:enabled&&Boolean(get('tokens'))&&(Boolean(env.VERCEL&&env.CRON_SECRET)||Number(env.ONEDRIVE_BACKUP_INTERVAL_MINUTES)>=5),lastBackup:enabled?get('last-backup'):null,permissionMode:enabled&&get('tokens')?(String(get('tokens').scopes||'').split(/\s+/).includes('Files.ReadWrite')?'files':'appFolder'):null,grantedFilePermissions:enabled?get('tokens')?.grantedFilePermissions||null:null,connectedAccountType:enabled&&get('tokens')?(get('tokens').authority==='consumers'?'personal':'business'):null,authorizationPending:enabled&&[...Object.values(get('pending-authorizations')||{}),get('pending')].some(value=>value&&value.expiresAt>now())};},
+  async refreshAuthorization() {
+   requireConfig();const previous=get('tokens');if(!previous?.refresh_token)throw Error('Connect Microsoft before refreshing authorization.');
+   await token({grant_type:'refresh_token',refresh_token:previous.refresh_token},previous.authority||env.MICROSOFT_TENANT_ID,previous.scopes||scopes);return api.status();
+  },
   async diagnose() {
    requireConfig();const access=await accessToken(),checks=[];
    for(const resource of ['','special/approot']){

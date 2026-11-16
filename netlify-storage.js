@@ -1,4 +1,5 @@
 'use strict';
+const crypto=require('node:crypto');
 // Netlify Blobs holds only AES-GCM encrypted state, never customer plaintext.
 // Atomic ETag conditions prevent concurrent writes overwriting paid memberships.
 function createNetlifyRPC({namespace='production',getStore}={}){
@@ -19,6 +20,9 @@ function createNetlifyRPC({namespace='production',getStore}={}){
   if(typeof input.revision!=='string'||!input.revision)throw collision();
   const previous=await read();
   if(previous.revision!==input.revision)throw collision();
+  // Save immutable ciphertext before attempting the compare-and-swap.
+  const history=await store.set(namespace+'/history/'+crypto.randomUUID()+'.json.enc',previous.payload,{onlyIfNew:true});
+  if(!history?.modified)throw Error('Encrypted history could not be preserved');
   const saved=await store.set(key,input.payload,{onlyIfMatch:input.revision});
   if(!saved?.modified||!saved.etag)throw collision();
   return {revision:saved.etag};

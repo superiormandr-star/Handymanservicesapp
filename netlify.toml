@@ -2,7 +2,7 @@
 # Production launch is blocked until verified import and environment setup are complete.
 [build]
   publish = "public"
-  command = "npm install --no-audit --no-fund"
+  command = "npm test"
 
 [functions]
   directory = "netlify/functions"

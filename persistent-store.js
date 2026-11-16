@@ -3,14 +3,15 @@ const crypto=require('node:crypto');
 const {AsyncLocalStorage}=require('node:async_hooks');
 const {validateBackup}=require('./onedrive');
 const context=new AsyncLocalStorage();
-function createStore({env=process.env,request=fetch,blobSDK}={}){
+function createStore({env=process.env,request=fetch,blobSDK,netlifyGetStore}={}){
  const backend=env.SPC_STORAGE_BACKEND||'d1';
  const enabled=Boolean(/^[a-f0-9]{64}$/i.test(env.BACKUP_ENCRYPTION_KEY||'')&&(backend==='blob'?env.BLOB_READ_WRITE_TOKEN:backend==='d1'?env.SPC_STORAGE_URL&&env.SPC_STORAGE_PRIVATE_KEY:backend==='netlify'?env.NETLIFY&&env.SPC_MIGRATION_VERIFIED==='true':false));
- const namespace=env.SPC_STORAGE_NAMESPACE||(env.VERCEL_ENV==='preview'?'preview-'+String(env.VERCEL_GIT_COMMIT_SHA||'development').slice(0,20):'production');
+ const netlifyPreview=Boolean(env.NETLIFY&&env.CONTEXT!=='production');
+ const namespace=env.SPC_STORAGE_NAMESPACE||(netlifyPreview?'preview-'+String(env.DEPLOY_ID||'development').replace(/[^a-z0-9_-]/gi,'_').slice(0,60):env.VERCEL_ENV==='preview'?'preview-'+String(env.VERCEL_GIT_COMMIT_SHA||'development').slice(0,20):'production');
  const writesEnabled=env.SPC_WRITES_ENABLED==='true'&&env.SPC_PERSISTENCE_VERIFIED==='true'&&(backend!=='netlify'||env.SPC_MIGRATION_VERIFIED==='true');
- const isolated=!env.VERCEL||env.VERCEL_ENV==='production'||namespace.startsWith('preview-');
+ const isolated=(!env.VERCEL||env.VERCEL_ENV==='production'||namespace.startsWith('preview-'))&&(!netlifyPreview||namespace.startsWith('preview-'));
  const blobRPC=enabled&&backend==='blob'?require('./blob-storage').createBlobRPC({env,sdk:blobSDK,namespace}):null;
- const netlifyRPC=enabled&&backend==='netlify'?require('./netlify-storage').createNetlifyRPC({namespace}):null;
+ const netlifyRPC=enabled&&backend==='netlify'?require('./netlify-storage').createNetlifyRPC({namespace,getStore:netlifyGetStore}):null;
  function seal(value){
   const iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',Buffer.from(env.BACKUP_ENCRYPTION_KEY,'hex'),iv);
   const bytes=Buffer.concat([cipher.update(JSON.stringify(value)),cipher.final()]);

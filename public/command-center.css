@@ -62,3 +62,15 @@ input:focus,textarea:focus,select:focus{border-color:#c6a256}
 .signature{color:#777}.signature span{border-top-color:#aaa}
 .footer{background:#131313;color:#cecece}
 @media print{.print-area{border-top:7px solid #c6a256!important}}
+
+/* Mobile owner dashboard: cards must never force horizontal panning or truncate text. */
+@media screen and (max-width: 600px) {
+  #workspace, .metrics, .tool-grid, .section-panel { min-width: 0; max-width: 100%; }
+  .metrics { grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .metrics article { min-width: 0; width: 100%; padding: 16px 18px; gap: 5px; }
+  .metrics small { font-size: 12px; letter-spacing: .07em; overflow-wrap: anywhere; }
+  .metrics strong { font-size: clamp(26px,7vw,38px); line-height: 1.15; overflow-wrap: anywhere; }
+  .metrics span { font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+  .tool-card { width: 100%; }
+  .tool-card > span:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
+}

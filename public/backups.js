@@ -63,5 +63,5 @@ document.querySelector('#connect-standard').onclick=()=>run(async()=>{
  const result=await (await api('/connect','POST',{accountType:'personal',permissionMode:'files'})).json();
  location.assign(result.authorizationUrl);
 });
-document.querySelector('#backup').onclick=()=>run(async()=>{backupButton.disabled=true;try{await api('','POST');await refresh();status.textContent='Encrypted record backup uploaded, downloaded and checksum verified.';}finally{backupButton.disabled=false}});
+document.querySelector('#backup').onclick=()=>run(async()=>{backupButton.disabled=true;try{await api('','POST');await refresh();status.textContent='Encrypted record backup uploaded, downloaded and checksum verified.';}catch(error){await refresh().catch(()=>{});throw error;}});
 document.querySelector('#refresh').onclick=()=>run(refresh);

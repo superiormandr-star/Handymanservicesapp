@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "checkoutEnabled": false,
   "activationEnabled": false,
   "plans": [
@@ -17,10 +17,10 @@
         "Directory visibility and access to available leads. No guaranteed leads or revenue."
       ],
       "featuresStatus": "retained-existing-directory-copy; complete-industry-definition-pending",
-      "checkoutUrl": null,
-      "paypalPlanId": null,
+      "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8HA54058MH7212436NL5EX3Q",
+      "paypalPlanId": "P-8HA54058MH7212436NL5EX3Q",
       "checkoutEnabled": false,
-      "verificationStatus": "missing-subscription-link",
+      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -28,8 +28,8 @@
       "missingApprovedDetails": [
         "Complete service description",
         "Customer eligibility and restrictions",
-        "Verified recurring PayPal checkout URL and plan ID",
-        "Complete industry-specific package definition and usage limits"
+        "Complete industry-specific package definition and usage limits",
+        "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ]
     },
     {
@@ -46,10 +46,10 @@
         "Enhanced business profile, one-click contact and up to 10 AI-assisted estimate drafts per month for review."
       ],
       "featuresStatus": "retained-existing-directory-copy; complete-industry-definition-pending",
-      "checkoutUrl": null,
-      "paypalPlanId": null,
+      "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-1VM79900PL768641SNL5E7KA",
+      "paypalPlanId": "P-1VM79900PL768641SNL5E7KA",
       "checkoutEnabled": false,
-      "verificationStatus": "missing-subscription-link",
+      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -57,8 +57,8 @@
       "missingApprovedDetails": [
         "Complete service description",
         "Customer eligibility and restrictions",
-        "Verified recurring PayPal checkout URL and plan ID",
-        "Complete industry-specific package definition and usage limits"
+        "Complete industry-specific package definition and usage limits",
+        "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ]
     },
     {
@@ -73,10 +73,10 @@
       "regularPrice": "149.00",
       "features": [],
       "featuresStatus": "missing-approved-definition",
-      "checkoutUrl": null,
-      "paypalPlanId": null,
+      "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-1JG93932CP734950ANL5F2DI",
+      "paypalPlanId": "P-1JG93932CP734950ANL5F2DI",
       "checkoutEnabled": false,
-      "verificationStatus": "missing-subscription-link",
+      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -84,9 +84,9 @@
       "missingApprovedDetails": [
         "Complete service description",
         "Customer eligibility and restrictions",
-        "Verified recurring PayPal checkout URL and plan ID",
         "Included features and benefits",
-        "Estimate and usage limits"
+        "Estimate and usage limits",
+        "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ]
     },
     {
@@ -101,10 +101,10 @@
       "regularPrice": "39.99",
       "features": [],
       "featuresStatus": "missing-approved-definition",
-      "checkoutUrl": null,
-      "paypalPlanId": null,
+      "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-2K759018XE8664423NL5GR2I",
+      "paypalPlanId": "P-2K759018XE8664423NL5GR2I",
       "checkoutEnabled": false,
-      "verificationStatus": "missing-subscription-link",
+      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -112,9 +112,9 @@
       "missingApprovedDetails": [
         "Complete service description",
         "Customer eligibility and restrictions",
-        "Verified recurring PayPal checkout URL and plan ID",
         "Included features and benefits",
-        "Estimate and usage limits"
+        "Estimate and usage limits",
+        "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ]
     },
     {
@@ -129,10 +129,10 @@
       "regularPrice": "80.00",
       "features": [],
       "featuresStatus": "missing-approved-definition",
-      "checkoutUrl": null,
-      "paypalPlanId": null,
+      "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-38662930HA324233RNL5GVMI",
+      "paypalPlanId": "P-38662930HA324233RNL5GVMI",
       "checkoutEnabled": false,
-      "verificationStatus": "missing-subscription-link",
+      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -140,9 +140,9 @@
       "missingApprovedDetails": [
         "Complete service description",
         "Customer eligibility and restrictions",
-        "Verified recurring PayPal checkout URL and plan ID",
         "Included features and benefits",
-        "Estimate and usage limits"
+        "Estimate and usage limits",
+        "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ]
     },
     {
@@ -157,10 +157,10 @@
       "regularPrice": "149.00",
       "features": [],
       "featuresStatus": "missing-approved-definition",
-      "checkoutUrl": null,
-      "paypalPlanId": null,
+      "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8WL58047SB8224218NL5GUEI",
+      "paypalPlanId": "P-8WL58047SB8224218NL5GUEI",
       "checkoutEnabled": false,
-      "verificationStatus": "missing-subscription-link",
+      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -168,9 +168,9 @@
       "missingApprovedDetails": [
         "Complete service description",
         "Customer eligibility and restrictions",
-        "Verified recurring PayPal checkout URL and plan ID",
         "Included features and benefits",
-        "Estimate and usage limits"
+        "Estimate and usage limits",
+        "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ]
     }
   ],

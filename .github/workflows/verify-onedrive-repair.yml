@@ -1,0 +1,23 @@
+name: Verify OneDrive folder repair
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [fix/onedrive-appfolder-404-20261116]
+
+jobs:
+  one-drive-repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax validation
+        run: |
+          node --check server.js
+          node --check onedrive.js
+          node --check public/backups.js
+      - name: OneDrive mock Graph regression tests
+        run: node --test tests/onedrive-appfolder-repair.mjs

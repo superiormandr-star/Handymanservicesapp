@@ -45,6 +45,9 @@ async function handle(req,res,{db,save,send}){
  if(req.url?.split('?')[0]!=='/api/paypal/webhook')return false;
  if(req.method!=='POST'){send(res,405,{error:'Method not allowed'});return true;}
  if(!configReady()){send(res,503,{error:'PayPal webhook not configured'});return true;}
+ // Never grant access through non-durable local-file writes or email-only account matches.
+ // A new implementation must use a verified checkout-issued applicant binding and atomic persistence.
+ send(res,503,{error:'Automatic membership activation requires transactional storage and verified account association'});return true;
  let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>65536){send(res,413,{error:'Webhook too large'});return true;}}
  let event;try{event=JSON.parse(raw)}catch{send(res,400,{error:'Invalid JSON'});return true;}
  if(!event||!/^WH-[\w-]+$/.test(String(event.id||''))){send(res,400,{error:'Invalid event'});return true;}
@@ -60,7 +63,8 @@ async function handle(req,res,{db,save,send}){
   const plan=planFor(subscription.plan_id);
   if(!plan||subscription.id!==id){send(res,202,{ok:true,unmatched:true});return true;}
   let rec=d.intake.find(r=>r.paypalSubscriptionId===id);
-  if(!rec)rec=matchApplication(d.intake,subscription,plan);
+  // Email addresses alone do not establish ownership of a subscription.
+  // Only an applicant explicitly bound during an authenticated checkout may be updated.
   if(!rec||rec.industry!==plan.industry||rec.membership!==plan.package){send(res,202,{ok:true,pendingOwnerReview:true});return true;}
   if(rec.paypalSubscriptionId&&rec.paypalSubscriptionId!==id){send(res,409,{error:'Subscription association conflict'});return true;}
   if(event.event_type==='PAYMENT.SALE.COMPLETED'&&subscription.status==='ACTIVE'&&String(event.resource?.state||'completed').toLowerCase()==='completed'){

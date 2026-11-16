@@ -153,15 +153,15 @@
       "currency": "USD",
       "interval": "MONTH",
       "intervalCount": 1,
-      "foundingPrice": "99.00",
+      "foundingPrice": "100.00",
       "regularPrice": "149.00",
       "features": [],
       "featuresStatus": "missing-approved-definition",
       "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8WL58047SB8224218NL5GUEI",
       "paypalPlanId": "P-8WL58047SB8224218NL5GUEI",
       "checkoutEnabled": false,
-      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
-      "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
+      "verificationStatus": "owner-screenshot-verified-name-plan-id-and-current-100-monthly-price; subscription-lifecycle-pending",
+      "priceSource": "Owner-supplied PayPal dashboard screenshot confirms Automotive Elite plan is On at $100.00 USD monthly (2026-11-15); regular price remains unverified",
       "description": null,
       "eligibility": null,
       "usageLimits": null,
@@ -170,7 +170,7 @@
         "Customer eligibility and restrictions",
         "Included features and benefits",
         "Estimate and usage limits",
-        "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
+        "Confirm founding eligibility, regular tier pricing, and verified server-side payment activation"
       ]
     }
   ],

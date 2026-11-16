@@ -540,3 +540,59 @@ html,body{max-width:100%;overflow-x:clip}
  .proconnect-branding .ticker-inner{font-size:9px!important;gap:9px!important;overflow:hidden!important}
  .proconnect-branding .ticker-inner span{font-size:10px!important;letter-spacing:.04em!important}
 }
+
+/* Compact customer-first access: no change to the approved logos or color palette. */
+.customer-shortcut{background:#f4f6f9;border-bottom:1px solid #d8dde5;padding:10px 0}
+.customer-shortcut-inner{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.customer-shortcut-inner>span{font-size:12px;font-weight:800;color:#203754;margin-right:3px}
+.customer-shortcut-link{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 13px;border:1px solid #c7b182;border-radius:9px;background:white;color:#162d4c;font-size:12px;font-weight:800;text-align:center}
+.customer-shortcut-link.customer-first{background:#c7a354;border-color:#b28d44;color:#071a35}
+.customer-workspace{background:#f5f7fa;color:#1c304a;min-width:0}
+.customer-workspace .container{width:min(800px,calc(100% - 28px));max-width:100%;margin-inline:auto}
+.customer-workspace .app-back{font-size:12px}
+.customer-page-heading{margin:14px 0 16px}
+.customer-kicker{font-size:10px;font-weight:900;letter-spacing:.1em;color:#997734;margin:0 0 6px}
+.customer-page-heading h2{font-size:clamp(24px,4vw,34px)!important;line-height:1.1!important;margin:0 0 6px;color:#172f52}
+.customer-page-heading p:last-child{font-size:13px;line-height:1.45;color:#5a697b;margin:0}
+.customer-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 16px}
+.customer-actions .btn-outline{background:#fff;border:1px solid #d2c19c;color:#173552;min-width:0;min-height:41px;max-width:100%;white-space:normal;overflow-wrap:anywhere;font-size:12px;font-weight:800;padding:10px 8px;text-align:center;justify-content:center;box-shadow:none}
+.customer-form-panel{background:white;border:1px solid #d7e0e8;box-shadow:0 6px 20px #10284a0a;border-radius:15px;padding:20px;max-width:100%;min-width:0}
+.customer-form-heading h3{font:800 23px Outfit,Arial,sans-serif;margin:0 0 6px;color:#18365a}
+.customer-form-heading p{font-size:12px;line-height:1.45;color:#64748b;margin:0 0 14px}
+.customer-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.customer-form-panel label{display:block;min-width:0;font-size:12px;font-weight:800;color:#2d425c;margin:0 0 11px}
+.customer-form-panel input:not([type=checkbox]),.customer-form-panel select,.customer-form-panel textarea{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;margin:5px 0 0;padding:10px 11px;font-size:14px;background:#fff;color:#1d324a}
+.customer-form-panel textarea{resize:vertical;min-height:88px}
+.customer-form-panel .customer-note{font-size:11px;line-height:1.5;color:#5a697b;margin:0 0 12px}
+.customer-form-panel label.customer-consent{display:flex;align-items:flex-start;gap:9px;font-weight:500;line-height:1.45;margin:8px 0 14px}
+.customer-consent input{width:17px;height:17px;flex:0 0 17px;margin:2px 0 0;accent-color:#b99348}
+.customer-consent a{color:#72551f;text-decoration:underline}
+.customer-submit{width:100%;max-width:100%;justify-content:center;text-align:center;font-size:13px;min-height:43px;white-space:normal}
+.customer-submit:disabled{opacity:.5;cursor:not-allowed}
+.customer-workspace .form-status{min-height:18px;margin:9px 0 0;font-size:12px}
+@media (max-width:767px){
+ .customer-shortcut{padding:9px 0}
+ .customer-shortcut-inner{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .customer-shortcut-inner>span{grid-column:1/-1;text-align:center;font-size:11px}
+ .customer-shortcut-link{min-height:34px;font-size:11px;padding:7px 5px}
+ .proconnect-branding .customer-workspace{padding:12px 0 84px!important}
+ .customer-workspace .customer-page-heading{margin:12px 0}
+ .customer-workspace .customer-page-heading h2{font-size:26px!important}
+ .customer-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:12px}
+ .customer-actions a:first-child{grid-column:1/-1}
+ .customer-actions .btn-outline{min-height:38px;font-size:11px;padding:9px 7px}
+ .customer-form-panel{padding:14px;border-radius:12px}
+ .customer-form-heading h3{font-size:20px}
+ .customer-fields{grid-template-columns:minmax(0,1fr);gap:0}
+ .customer-form-panel label{margin-bottom:9px}
+ .customer-form-panel input:not([type=checkbox]),.customer-form-panel select,.customer-form-panel textarea{font-size:14px;padding:9px 10px}
+ /* Keep the public home screen compact instead of a giant phone hero. */
+ .proconnect-branding .hero h1{font-size:clamp(27px,7.5vw,34px)!important;margin:12px 0!important;line-height:1.1!important}
+ .proconnect-branding .hero-copy>p{font-size:14px!important;line-height:1.45!important}
+ .proconnect-branding .hero-grid{padding:18px 0 25px!important;gap:12px!important}
+ .proconnect-branding .hero-actions{margin:14px 0!important;gap:8px!important}
+ .proconnect-branding .hero-actions .btn{font-size:12px!important;padding:11px 13px!important}
+ .proconnect-branding .hero-feature .hero-card{max-width:235px!important;padding:9px!important}
+ .proconnect-branding .network-hero-emblem{min-height:125px!important;padding:10px!important}
+ .proconnect-branding .hero-card-label,.proconnect-branding .hero-card-bottom{font-size:9px!important}
+}

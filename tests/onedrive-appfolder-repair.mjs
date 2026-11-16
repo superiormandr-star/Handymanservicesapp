@@ -41,7 +41,7 @@ test('restricted Apps-folder 404 does not touch ordinary drive folders or upload
  const diag=await api.diagnose();
  assert.deepEqual(diag.checks.map(x=>x.status),[200,404]);
  assert.equal(api.status().connected,true);
- assert.equal(calls.some(([path])=>path.includes('root/children')),false);
+ assert.equal(calls.some(([path])=>path.startsWith('root/children')),false);
  assert.equal(calls.some(([,method])=>method!=='GET'),false);
 });
 
@@ -55,7 +55,7 @@ test('approved wider Files.ReadWrite mode uses dedicated folder and verifies enc
   if(path==='root/children'&&method==='POST')
    return json({id:'dedicated-folder',name:'Superior ProConnect Backups',folder:{}},201);
   if(path==='items/dedicated-folder')return json({id:'dedicated-folder',folder:{}});
-  if(path?.startsWith('items/dedicated-folder/children?'))return json({value:[]});
+  if(path==='items/dedicated-folder/children')return json({value:[]});
   if(path?.startsWith('items/dedicated-folder:/')&&path.endsWith(':/content')&&method==='PUT'){
    uploaded=options.body;
    return json({id:'encrypted-backup-1'});

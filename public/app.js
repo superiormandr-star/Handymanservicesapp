@@ -35,7 +35,7 @@ constructionIntro.innerHTML=`
   <img class="approved-logo" src="/logos/Superior_Construction_Network.jpg" alt="Superior ProConnect Construction Network logo" width="132" height="132"/>
   <div><p class="construction-kicker">Superior ProConnect • Construction</p><h3>Find help for your next project.</h3><p>Connect with local construction and home-service professionals. Browse available profiles, review service areas and customer feedback, and request quotes directly from listed businesses.</p></div>
  </div>
- <div class="construction-actions"><a class="btn btn-primary" href="#pros">Find Construction Professionals</a><a class="btn btn-outline" href="#advertise">Join as a Construction Pro</a></div>
+ <div class="construction-actions"><a class="btn btn-primary" href="#post-construction-job">Post Construction Job / Estimate</a><a class="btn btn-primary" href="#pros">Find Construction Professionals</a><a class="btn btn-outline" href="#advertise">Join as a Construction Pro</a></div>
  <h3 class="construction-subheading">Explore construction services</h3>
  <div class="construction-services">
   <span>Remodeling</span><span>Kitchen &amp; Bathroom</span><span>Flooring</span><span>Drywall</span><span>Painting</span><span>Home Repairs</span><span>Patios &amp; Decks</span><span>Property Maintenance</span>
@@ -52,7 +52,7 @@ automotiveIntro.innerHTML=`
   <img class="approved-logo" src="/logos/Superior_Automotive_Network.jpg" alt="Superior ProConnect Automotive Network logo" width="132" height="132"/>
   <div><p class="construction-kicker">Superior ProConnect • Automotive</p><h3>Connect with automotive service professionals.</h3><p>Browse listed automotive businesses, check their service areas and published reviews, and request a quote directly from a provider.</p></div>
  </div>
- <div class="construction-actions"><a class="btn btn-primary" href="#pros">Find Automotive Professionals</a><a class="btn btn-outline" href="#advertise">Join as an Automotive Pro</a></div>
+ <div class="construction-actions"><a class="btn btn-primary" href="#post-automotive-job">Post Automotive Job / Estimate</a><a class="btn btn-primary" href="#pros">Find Automotive Professionals</a><a class="btn btn-outline" href="#advertise">Join as an Automotive Pro</a></div>
  <h3 class="construction-subheading">Explore automotive services</h3>
  <div class="construction-services">
   <span>Diagnostics</span><span>Engine Repair</span><span>Brakes</span><span>Suspension</span><span>Maintenance</span><span>Electrical</span><span>Detailing</span><span>Body &amp; Paint</span>
@@ -62,7 +62,7 @@ automotiveIntro.innerHTML=`
 `;
 automotiveView.querySelector('.container').insertBefore(automotiveIntro,automotivePlans);
 const appScreens={
- home:['#home','.ticker','#how','.faq'],
+ home:['#home','.ticker','#post-job','#how','.faq'],
  pros:['#pros'],
  how:['#how','.faq'],
  advertise:['#advertise'],
@@ -77,6 +77,8 @@ function route(){
  let screen=isProfile?'profile':hash.slice(1);
  if(screen==='construction-memberships')screen='construction';
  if(screen==='automotive-memberships')screen='automotive';
+ const jobNetwork=screen==='post-construction-job'?'construction':screen==='post-automotive-job'?'automotive':null;
+ if(screen==='post-job'||jobNetwork)screen='home';
  if(!Object.hasOwn(appScreens,screen))screen='home';
  const profile=$('#profile');
  for(const section of appMain.querySelectorAll(':scope > section'))section.hidden=true;
@@ -94,7 +96,12 @@ function route(){
   link.classList.toggle('active',active);
   if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
  });
- window.scrollTo({top:0,behavior:'instant'});
+ if(jobNetwork){
+  const industrySelect=document.querySelector('#customer-job-form [name=industry]');
+  if(industrySelect)industrySelect.value=jobNetwork;
+  document.querySelector('#post-job')?.scrollIntoView({block:'start',behavior:'instant'});
+ } else if(hash==='#post-job')document.querySelector('#post-job')?.scrollIntoView({block:'start',behavior:'instant'});
+ else window.scrollTo({top:0,behavior:'instant'});
 }
 
 $('#search').addEventListener('input',directory);
@@ -104,6 +111,19 @@ coverageMode.addEventListener('change',syncCoverage);syncCoverage();
 document.addEventListener('click',e=>{const b=e.target.closest('[data-stars]');if(!b)return;selectedStars=Number(b.dataset.stars);document.querySelectorAll('[data-stars]').forEach(el=>{el.classList.toggle('active',Number(el.dataset.stars)<=selectedStars);el.setAttribute('aria-pressed',String(Number(el.dataset.stars)===selectedStars))})});
 document.addEventListener('submit',async e=>{if(e.target.id!=='review-form')return;e.preventDefault();const form=e.target,status=$('#review-status'),submit=form.querySelector('[type=submit]');status.textContent='Submitting…';status.classList.remove('error');submit.disabled=true;try{const fd=new FormData(form);const data={profileId:selected,stars:selectedStars,name:fd.get('name'),comment:fd.get('comment'),website:fd.get('website')};const r=await api('/api/reviews',{method:'POST',body:JSON.stringify(data)});status.textContent=r.message||'Review submitted for moderation.';form.reset();selectedStars=5;document.querySelectorAll('[data-stars]').forEach(el=>el.classList.toggle('active',Number(el.dataset.stars)<=5))}catch(err){status.textContent=err.message;status.classList.add('error')}finally{submit.disabled=false}});
 document.addEventListener('submit',async e=>{if(e.target.id!=='quote-form')return;e.preventDefault();const form=e.target,button=form.querySelector('button'),status=$('#quote-status');button.disabled=true;status.textContent='Sending your request…';status.classList.remove('error');try{const values=Object.fromEntries(new FormData(form));const out=await api('/api/inquiries',{method:'POST',body:JSON.stringify({...values,profileId:selected,consent:form.elements.consent.checked})});form.reset();status.textContent=out.message}catch(e){status.textContent=e.message;status.classList.add('error')}finally{button.disabled=false}});
+document.querySelector('#customer-job-form')?.addEventListener('submit',async e=>{
+ e.preventDefault();
+ const form=e.currentTarget,status=document.querySelector('#customer-job-status'),button=form.querySelector('[type=submit]');
+ status.textContent='Submitting securely…';status.classList.remove('error');button.disabled=true;
+ try{
+  const values=Object.fromEntries(new FormData(form).entries());
+  values.customerConsent=form.elements.customerConsent.checked;
+  const result=await api('/api/customer-jobs',{method:'POST',body:JSON.stringify(values)});
+  status.textContent=result.message||'Job received for private review.';
+  form.reset();
+ }catch(error){status.textContent=error.message;status.classList.add('error')}
+ finally{button.disabled=false}
+});
 $('#join-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.target,status=$('#join-status'),submit=form.querySelector('[type=submit]');status.classList.remove('error');status.textContent='Submitting your business details…';submit.disabled=true;try{const fd=new FormData(form);const data=Object.fromEntries(fd.entries());await api('/api/join',{method:'POST',body:JSON.stringify(data)});status.textContent='Application received. Membership enrollment is being finalized. No payment has been taken and no founding-member spot is reserved.'}catch(err){status.textContent=err.message;status.classList.add('error')}finally{submit.disabled=false}});
 (async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
 })();

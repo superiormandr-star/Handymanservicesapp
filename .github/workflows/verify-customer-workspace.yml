@@ -1,0 +1,23 @@
+name: Verify customer workspace
+on:
+  push:
+    branches: [launch/customer-entry-and-quote-request-20261116]
+  pull_request:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check browser and server JavaScript syntax
+        run: |
+          node --check public/app.js
+          node --check crm-routes.js
+          node --check server.js
+      - name: Test customer entry and quote path
+        run: node --test tests/customer-workspace-check.mjs
+      - name: Full existing regression tests
+        run: npm test

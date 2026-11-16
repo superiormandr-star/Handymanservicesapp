@@ -23,3 +23,25 @@ test('matching account must be unique and in correct industry and tier',()=>{
 test('webhook activation remains unconfigured without PayPal credentials',()=>{
  if(!process.env.PAYPAL_CLIENT_ID||!process.env.PAYPAL_CLIENT_SECRET||!process.env.PAYPAL_WEBHOOK_ID)assert.equal(paypal.configReady(),false);
 });
+
+test('verified credentials alone cannot enable membership before durable account association', async()=>{
+ const original={id:process.env.PAYPAL_CLIENT_ID,secret:process.env.PAYPAL_CLIENT_SECRET,webhook:process.env.PAYPAL_WEBHOOK_ID};
+ process.env.PAYPAL_CLIENT_ID='test-client';
+ process.env.PAYPAL_CLIENT_SECRET='test-secret';
+ process.env.PAYPAL_WEBHOOK_ID='test-webhook';
+ try{
+  let response;
+  const done=await paypal.handle({url:'/api/paypal/webhook',method:'POST'}, {}, {
+   db(){throw Error('Must not access local storage')},
+   save(){throw Error('Must not write local storage')},
+   send(_res,status,payload){response={status,payload}}
+  });
+  assert.equal(done,true);
+  assert.equal(response.status,503);
+  assert.match(response.payload.error,/transactional storage/);
+ }finally{
+  for(const [key,value] of Object.entries({PAYPAL_CLIENT_ID:original.id,PAYPAL_CLIENT_SECRET:original.secret,PAYPAL_WEBHOOK_ID:original.webhook})){
+   if(value===undefined)delete process.env[key];else process.env[key]=value;
+  }
+ }
+});

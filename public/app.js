@@ -162,7 +162,7 @@ $('#customer-job-form').addEventListener('submit',async event=>{
  if(!fields.email&&!fields.phone){jobMessage('Enter a phone or email to receive a response.',true);return;}
  button.disabled=true;jobMessage('Posting your job…');
  try{
-  const response=await api('/api/jobs',{method:'POST',body:JSON.stringify({...fields,consent:form.elements.consent.checked})});
+  const response=await api('/api/jobs',{method:'POST',body:JSON.stringify({...fields,consent:form.elements.consent.checked,rulesAccepted:form.elements.rulesAccepted.checked})});
   if(!response.jobId||!response.customerKey)throw Error('Job link was not returned. Please contact the owner before posting again.');
   form.reset();location.hash='#my-job/'+response.jobId+'/'+response.customerKey;
   jobMessage('Posted. Save your private job link.');

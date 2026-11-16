@@ -420,3 +420,16 @@ button.primary:hover,.btn-primary:hover,.button-primary:hover,.primary-btn:hover
   .bottom-nav a, .bottom-nav small { white-space: normal; overflow-wrap: anywhere; text-align: center; }
   input, select, textarea { max-width: 100%; }
 }
+
+/* Original approved artwork: preserve the full image at every viewport. */
+img.approved-logo{object-fit:contain;object-position:center;padding:0!important;border:0!important;border-radius:0!important;background:none!important;box-sizing:border-box}
+.network-hero-logo{display:block;width:100%;height:auto;max-width:420px;aspect-ratio:1}
+.network-hero-emblem{padding:0!important;min-height:0!important;border:0;background:none}
+.network-entries{display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+.network-entries a{display:flex;flex-direction:column;align-items:center;gap:8px;color:#e5c879;text-decoration:none;font-weight:700}
+.network-entry-logo{display:block;max-width:100%;height:auto;aspect-ratio:1}
+footer .footer-brand img.approved-logo{display:block!important}
+@media(max-width:767px){
+ img.pc-launch-mark{width:112px;height:112px;flex-shrink:0}
+ .pc-launch-grid .network-entry-logo{width:80px;height:80px}
+}

@@ -8,33 +8,46 @@
 <main id="main"><section class="customer-shortcut" id="customer-shortcut" aria-label="Choose how to use ProConnect"><div class="container customer-shortcut-inner"><span>What brings you here?</span><a href="#customers" class="customer-shortcut-link customer-first">I need a service</a><a href="#advertise" class="customer-shortcut-link">I'm a professional</a></div></section><section class="pc-launch" id="pc-launch" aria-label="Superior ProConnect quick access"><div class="pc-launch-inner"><img class="pc-launch-mark approved-logo" src="/logos/Superior_ProConnect_Master.jpg" alt="Superior ProConnect network" width="112" height="112"/><h1>SUPERIOR <span>PROCONNECT</span></h1><p class="pc-launch-tag">Where Resources Find Their Source.</p><p class="pc-launch-sub">Customers Find Solutions.<br/>Professionals Find Opportunities.</p><div class="pc-launch-grid"><a href="#construction" data-pc-open="construction"><img class="network-entry-logo approved-logo" src="/logos/Superior_Construction_Network.jpg" alt="Superior ProConnect Construction Network" width="80" height="80"/>Construction</a><a href="#automotive" data-pc-open="automotive"><img class="network-entry-logo approved-logo" src="/logos/Superior_Automotive_Network.jpg" alt="Superior ProConnect Automotive Network" width="80" height="80"/>Automotive</a><a href="#customers" data-pc-open="customers"><span aria-hidden="true">⌕</span>For Customers</a><a href="#advertise" data-pc-open="advertise"><span aria-hidden="true">＋</span>I'm a Pro</a></div><a class="pc-launch-more" href="#how">How it works &amp; more resources →</a></div></section>
 
 <section id="customers" class="app-network-view customer-workspace" aria-labelledby="customer-heading" hidden>
- <div class="container">
-  <a class="app-back" href="#home">← Back to Home</a>
-  <div class="customer-page-heading"><div><p class="customer-kicker">SUPERIOR PROCONNECT · CUSTOMER SERVICES</p><h2 id="customer-heading">Find a professional.</h2><p>Tell a listed business what you need. No membership is required for customers.</p></div></div>
-  <div class="customer-actions"><a class="btn btn-outline" href="#pros">Browse business listings</a><a class="btn btn-outline" href="#construction">Construction Network</a><a class="btn btn-outline" href="#automotive">Automotive Network</a></div>
-  <section class="customer-form-panel" aria-labelledby="customer-request-heading">
-   <div class="customer-form-heading"><h3 id="customer-request-heading">Request a quote</h3><p>Choose a listed professional to receive your request. Your contact details stay private to that business and the directory owner.</p></div>
-   <form id="customer-request-form">
-    <div class="customer-fields">
-     <label>Type of service<select id="customer-industry" name="industry" required><option value="construction">Construction &amp; home services</option><option value="automotive">Automotive</option></select></label>
-     <label>Choose a business<select id="customer-provider" name="profileId" required disabled><option value="">Loading businesses…</option></select></label>
-    </div>
-    <p id="customer-provider-note" class="customer-note" aria-live="polite">Only currently listed businesses can receive requests.</p>
-    <div class="customer-fields">
-     <label>Your name<input name="name" required minlength="2" maxlength="100" autocomplete="name" placeholder="Full name"/></label>
-     <label>Job city or ZIP<input name="location" required minlength="2" maxlength="150" autocomplete="address-level2" placeholder="City or ZIP code"/></label>
-     <label>Phone<input name="phone" type="tel" maxlength="40" autocomplete="tel" placeholder="Phone number"/></label>
-     <label>Email<input name="email" type="email" maxlength="180" autocomplete="email" placeholder="Email address"/></label>
-    </div>
-    <label>What work do you need?<textarea name="description" rows="4" required minlength="15" maxlength="3000" placeholder="Describe the project or vehicle issue, measurements, and preferred timing."></textarea></label>
-    <p class="customer-note">Enter at least one way to reach you: phone or email. Quotes, appointments and final prices are arranged with the business. Private bidding is not active yet.</p>
-    <label class="customer-consent"><input type="checkbox" name="consent" required/> I agree to share my request and contact information with the selected business and the directory owner. <a href="/privacy.html" target="_blank" rel="noopener">Privacy information</a></label>
-    <input class="honey" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"/>
-    <button class="btn btn-primary customer-submit" type="submit" disabled>Send request to selected business</button>
-    <p id="customer-request-status" class="form-status" role="status" aria-live="polite"></p>
-   </form>
-  </section>
- </div>
+<div class="container">
+ <a class="app-back" href="#home">← Back to Home</a>
+ <div class="customer-page-heading"><p class="customer-kicker">SUPERIOR PROCONNECT · CUSTOMER JOB BOARD</p><h2 id="customer-heading">Post a job. Compare estimates.</h2><p>Free for customers. You choose how many estimates to receive, and your private contact information stays hidden until you select a professional.</p></div>
+ <div class="customer-actions"><a class="btn btn-outline" href="#pros">Browse listed professionals</a><a class="btn btn-outline" href="#construction">Construction Network</a><a class="btn btn-outline" href="#automotive">Automotive Network</a></div>
+ <section id="customer-post-area" class="customer-form-panel" aria-labelledby="customer-post-heading">
+  <div class="customer-form-heading"><h3 id="customer-post-heading">Post your job</h3><p>Only approved professionals with private workspace access can see the job summary. Never put your phone, email or street address in public job details.</p></div>
+  <form id="customer-job-form">
+   <div class="customer-fields">
+    <label>Network<select id="customer-industry" name="industry" required><option value="construction">Construction / home services</option><option value="automotive">Automotive</option></select></label>
+    <label>Number of estimates<select name="bidLimit" required><option value="1">1 estimate</option><option value="2">2 estimates</option><option value="3" selected>3 estimates</option></select></label>
+    <label>Job title<input name="title" required minlength="5" maxlength="100" placeholder="e.g. Repair kitchen drywall"></label>
+    <label>Job category<input name="category" maxlength="70" placeholder="e.g. Painting, brakes"></label>
+    <label>City / general area<input name="city" required minlength="2" maxlength="100" placeholder="City, state (not street address)" autocomplete="address-level2"></label>
+   </div>
+   <label>Describe the job<textarea name="description" required minlength="20" maxlength="2200" rows="4" placeholder="Describe the work, approximate dimensions, and preferred timing. No personal contact details here."></textarea></label>
+   <h3 class="customer-form-subheading">Private customer details</h3>
+   <div class="customer-fields">
+    <label>Your name<input name="name" required minlength="2" maxlength="100" autocomplete="name"></label>
+    <label>Email<input name="email" type="email" maxlength="180" autocomplete="email"></label>
+    <label>Phone<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
+    <label>Exact job address (optional)<input name="address" maxlength="180" placeholder="Shared only with your selected pro" autocomplete="street-address"></label>
+   </div>
+   <p class="customer-note">Enter either a phone number or email. Job posting does not require payment. You may choose an estimate limit of one, two or three; no fourth is allowed unless you explicitly authorize one after three slots fill.</p>
+   <label class="customer-consent"><input name="consent" type="checkbox" required>I consent to Superior ProConnect saving this job and showing its general details to eligible network professionals. My contact information stays private until I choose a professional. <a href="/privacy.html" target="_blank" rel="noopener">Privacy information</a></label>
+   <input name="website" type="text" class="honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+   <button class="btn btn-primary customer-submit" type="submit">Post job for free</button>
+   <p id="customer-job-status" class="form-status" role="status" aria-live="polite"></p>
+  </form>
+ </section>
+ <section id="customer-job-dashboard" class="customer-form-panel" aria-labelledby="customer-job-dashboard-heading" hidden>
+  <h3 id="customer-job-dashboard-heading">My private job</h3>
+  <p id="customer-job-summary"></p>
+  <label>Your private management link<input id="customer-private-link" type="text" readonly aria-label="Your private job management link"></label>
+  <button class="btn btn-outline" id="copy-customer-job" type="button">Copy my private link</button>
+  <p class="customer-note">Keep this link safe. Anyone with it can manage your job. A recovery email has not been sent. Do not share this link with professionals.</p>
+  <div id="customer-job-bids" aria-live="polite"></div>
+  <div class="customer-actions"><button class="btn btn-outline" id="customer-job-refresh" type="button">Refresh estimates</button><button class="btn btn-outline" id="customer-job-fourth" type="button" hidden>Allow one fourth estimate</button><button class="btn btn-outline" id="customer-job-close" type="button">Close my job</button></div>
+  <p id="customer-dashboard-status" class="form-status" role="status"></p>
+ </section>
+</div>
 </section>
 <section class="hero" id="home"><div class="container hero-grid"><div class="hero-copy"><div class="eyebrow"><span class="bullet"></span> CONSTRUCTION • AUTOMOTIVE • CONNECTIONS</div><h1>Customers find solutions.<br/><em>Professionals find opportunities.</em></h1><p>Superior ProConnect brings customers and skilled professionals together across Construction and Automotive. One connected network, built around real opportunities.</p><div class="hero-actions"><a class="btn btn-primary" href="#customers">Find help or request a quote <span>→</span></a><a class="btn btn-outline" href="#advertise">I'm a Service Pro</a></div><div class="trustline"><div class="trust-icon">⌂</div><span><strong>One network. More possibilities.</strong><small>Where the community is the network.</small></span></div></div><div class="hero-feature"><div class="hero-glow"></div><div class="hero-card"><div class="hero-card-label"><span class="dot"></span> SEARCH • CONNECT • GET IT DONE</div><div class="network-hero-emblem"><img class="network-hero-logo approved-logo" src="/logos/Superior_ProConnect_Master.jpg" alt="Superior ProConnect network emblem" width="1536" height="1536"/></div><div class="hero-card-bottom network-entries"><a href="#construction"><img class="network-entry-logo approved-logo" src="/logos/Superior_Construction_Network.jpg" alt="Superior ProConnect Construction Network" width="100" height="100"/><span>Construction</span></a><a href="#automotive"><img class="network-entry-logo approved-logo" src="/logos/Superior_Automotive_Network.jpg" alt="Superior ProConnect Automotive Network" width="100" height="100"/><span>Automotive</span></a></div></div><div class="float-card"><span class="float-icon">✓</span><div><b>Good work starts here</b><small>Find a fit for your next project</small></div></div></div></div></section>
 <section class="ticker" aria-label="Services"><div class="container ticker-inner"><span>PAINTING</span><i>✦</i><span>FLOORING</span><i>✦</i><span>HOME REPAIRS</span><i>✦</i><span>KITCHENS</span><i>✦</i><span>BATHROOMS</span><i>✦</i><span>REMODELING</span></div></section>

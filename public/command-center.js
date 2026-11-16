@@ -16,7 +16,13 @@ async function request(method='GET',payload){
  const route=method==='GET'||estimate?'/api/command/estimates':'/api/admin/documents';
  if(estimate)payload={...payload,deposit:payload.payment};
  const response=await fetch(route,{method,headers:{'Content-Type':'application/json','X-Admin-Token':token},body:payload?JSON.stringify(payload):undefined,cache:'no-store'});
- const data=await response.json();if(!response.ok)throw Error(data.error||'Request failed');return data;
+ const contentType=response.headers.get('content-type')||'';
+ if(!contentType.includes('application/json')){
+  if(response.status===404)throw Error('Command Center service is not connected (HTTP 404). Your token has not been verified. Please do not create or edit customer records until the backend is restored.');
+  throw Error('Command Center service returned an unexpected response (HTTP '+response.status+'). Your token has not been verified.');
+ }
+ let data;try{data=await response.json()}catch{throw Error('Command Center returned invalid JSON. No changes were saved.');}
+ if(!response.ok)throw Error(data.error||'Command Center request failed (HTTP '+response.status+').');return data;
 }
 function showShare(doc){
  if(!doc?.approvalToken)return;

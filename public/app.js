@@ -33,14 +33,14 @@ constructionIntro.className='construction-overview';
 constructionIntro.innerHTML=`
  <div class="construction-lead">
   <img class="approved-logo" src="/logos/Superior_Construction_Network.jpg" alt="Superior ProConnect Construction Network logo" width="132" height="132"/>
-  <div><p class="construction-kicker">Superior ProConnect • Construction</p><h3>Find help for your next project.</h3><p>Connect with local construction and home-service professionals. Browse available profiles, review service areas and customer feedback, and request quotes directly from listed businesses.</p></div>
+  <div><p class="construction-kicker">Superior ProConnect • Construction</p><h3>Find help for your next project.</h3><p>Post a construction or home-service job, receive the private estimates you authorize, and choose whom to hire. You can also browse listed professional profiles and published reviews.</p></div>
  </div>
  <div class="construction-actions"><a class="btn btn-primary" href="#customers">Post a Construction Job</a><a class="btn btn-outline" href="#advertise">Join as a Construction Pro</a></div>
  <h3 class="construction-subheading">Explore construction services</h3>
  <div class="construction-services">
   <span>Remodeling</span><span>Kitchen &amp; Bathroom</span><span>Flooring</span><span>Drywall</span><span>Painting</span><span>Home Repairs</span><span>Patios &amp; Decks</span><span>Property Maintenance</span>
  </div>
- <div class="construction-how"><h3>How the construction network works</h3><p><strong>Customers:</strong> Find a business, review its profile and service area, then contact the professional to discuss the project and request a quote.</p><p><strong>Professionals:</strong> Apply to be listed, choose your service territory and membership tier, and manage customer inquiries through your professional workspace.</p><p class="construction-note">Business availability and services vary. The membership checkout and any future customer job-posting or bidding features are separate from the live directory.</p></div>
+ <div class="construction-how"><h3>How the construction network works</h3><p><strong>Customers:</strong> Post a job for free, select one to three private estimates, review verified responses, and choose your professional. Your private contact information stays hidden until selection.</p><p><strong>Professionals:</strong> Apply to be listed, choose your service territory and membership tier, and manage customer inquiries through your professional workspace.</p><p class="construction-note">Services vary by professional. Private job posting is available; new recurring membership checkout remains disabled until PayPal lifecycle verification is complete.</p></div>
  <h3 class="construction-subheading">Construction memberships and estimates</h3>
 `;
 constructionView.querySelector('.container').insertBefore(constructionIntro,constructionPlans);
@@ -50,14 +50,14 @@ automotiveIntro.className='construction-overview';
 automotiveIntro.innerHTML=`
  <div class="construction-lead">
   <img class="approved-logo" src="/logos/Superior_Automotive_Network.jpg" alt="Superior ProConnect Automotive Network logo" width="132" height="132"/>
-  <div><p class="construction-kicker">Superior ProConnect • Automotive</p><h3>Connect with automotive service professionals.</h3><p>Browse listed automotive businesses, check their service areas and published reviews, and request a quote directly from a provider.</p></div>
+  <div><p class="construction-kicker">Superior ProConnect • Automotive</p><h3>Connect with automotive service professionals.</h3><p>Post an automotive service request for free, choose how many private estimates to receive, and select a professional. Business profiles and published reviews remain available.</p></div>
  </div>
  <div class="construction-actions"><a class="btn btn-primary" href="#customers">Post an Automotive Job</a><a class="btn btn-outline" href="#advertise">Join as an Automotive Pro</a></div>
  <h3 class="construction-subheading">Explore automotive services</h3>
  <div class="construction-services">
   <span>Diagnostics</span><span>Engine Repair</span><span>Brakes</span><span>Suspension</span><span>Maintenance</span><span>Electrical</span><span>Detailing</span><span>Body &amp; Paint</span>
  </div>
- <div class="construction-how"><h3>How the automotive network works</h3><p><strong>Customers:</strong> Find and review available businesses, then contact a professional about your vehicle and requested service.</p><p><strong>Professionals:</strong> Apply for a listing, choose your membership and service area, and manage incoming inquiries in your professional workspace.</p><p class="construction-note">Available services vary by business. The monthly membership and per-estimate payment are separate. Customer job-posting and private bidding are not yet available.</p></div>
+ <div class="construction-how"><h3>How the automotive network works</h3><p><strong>Customers:</strong> Post an automotive job, receive verified private estimates up to your chosen limit, and decide which professional to contact.</p><p><strong>Professionals:</strong> Apply for a listing, choose your membership and service area, and manage incoming inquiries in your professional workspace.</p><p class="construction-note">Available services vary by business. Private estimates require verified professional eligibility; new subscription checkout is disabled pending PayPal lifecycle verification.</p></div>
  <h3 class="construction-subheading">Automotive memberships and estimates</h3>
 `;
 automotiveView.querySelector('.container').insertBefore(automotiveIntro,automotivePlans);

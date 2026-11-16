@@ -24,7 +24,7 @@ async function handle(req,res){
  const url=new URL(req.url,'http://localhost');const route=url.pathname;
  if(route==='/api/documents')req.url='/api/command/estimates'+url.search;
  if(route==='/api/auth/microsoft/callback'&&req.method==='GET'){
-  try {await oneDrive.callback(url.searchParams.get('state'),url.searchParams.get('code'));
+  try {await oneDrive.callback(url.searchParams.get('state'),url.searchParams.get('code'),{error:url.searchParams.get('error'),description:url.searchParams.get('error_description')});
    res.writeHead(303,{'location':'/backups.html','cache-control':'no-store','referrer-policy':'no-referrer'});res.end();
   }catch{return send(res,400,{error:'Microsoft authorization failed or expired. Start a new connection from the owner backups page.'});}
   return;
@@ -32,7 +32,7 @@ async function handle(req,res){
  if(route.startsWith('/api/admin/backups')){
   if(!admin(req))return send(res,401,{error:'Owner access required'});
   if(route==='/api/admin/backups/status'&&req.method==='GET')return send(res,200,oneDrive.status());
-  if(route==='/api/admin/backups/connect'&&req.method==='POST')return send(res,200,{authorizationUrl:oneDrive.connect()});
+  if(route==='/api/admin/backups/connect'&&req.method==='POST'){const x=await body(req);return send(res,200,{authorizationUrl:oneDrive.connect(x.accountType||'personal',x.permissionMode||'appFolder')});}
   if(route==='/api/admin/backups'&&req.method==='POST')return send(res,201,await oneDrive.backup());
   if(route==='/api/admin/backups'&&req.method==='GET')return send(res,200,await oneDrive.list());
   if(route==='/api/admin/backups/recover'&&req.method==='POST'){

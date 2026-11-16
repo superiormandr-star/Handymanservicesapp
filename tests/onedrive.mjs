@@ -42,3 +42,53 @@ test('Microsoft state, PKCE, encrypted backup, refresh and authenticated recover
   assert.equal(blocked.status().configured,false);assert.throws(()=>blocked.connect(),/durable/);
  }finally{rmSync(dir,{recursive:true,force:true})}
 });
+
+test('personal OneDrive consent and token refresh use the same consumer authority',async()=>{
+ const values=new Map(),calls=[];let uploaded;
+ const stateStore={get:k=>values.get(k),put:(k,v)=>values.set(k,v),remove:k=>values.delete(k)};
+ const env={VERCEL:'1',APP_ORIGIN:'https://superior-proconnect.vercel.app',MICROSOFT_CLIENT_ID:'app',MICROSOFT_TENANT_ID:'business-directory',microsoft_client_secret:'test-only',BACKUP_ENCRYPTION_KEY:'cd'.repeat(32)};
+ const request=async(url,options)=>{
+  if(url.includes('/token')){calls.push(url);assert.ok(url.includes('/consumers/'));return Response.json({access_token:'test-access',refresh_token:'test-refresh',expires_in:calls.length===1?1:3600});}
+  if(options.method==='PUT'){uploaded=options.body;return Response.json({id:'test-file'});}
+  return new Response(uploaded);
+ };
+ const api=createOneDrive({env,request,stateStore,readSnapshot:()=>JSON.stringify({profiles:[],reviews:[],intake:[],documents:[]})});
+ assert.throws(()=>api.connect('untrusted-directory'),/Choose/);
+ const url=new URL(api.connect('personal'));assert.ok(url.pathname.startsWith('/consumers/'));
+ await api.callback(url.searchParams.get('state'),'test-code');
+ assert.equal(values.get('tokens').authority,'consumers');await api.backup();
+ assert.equal(calls.length,2);assert.equal(values.get('tokens').authority,'consumers');
+});
+test('new consent links preserve earlier pending links and provider errors expose only safe codes',async()=>{
+ const values=new Map(),stateStore={get:k=>values.get(k),put:(k,v)=>values.set(k,v),remove:k=>values.delete(k)};
+ const env={VERCEL:'1',APP_ORIGIN:'https://superior-proconnect.vercel.app',MICROSOFT_CLIENT_ID:'app',MICROSOFT_TENANT_ID:'directory',microsoft_client_secret:'test-only',BACKUP_ENCRYPTION_KEY:'ef'.repeat(32)};
+ const api=createOneDrive({env,stateStore,readSnapshot:()=>'',request:async()=>Response.json({access_token:'test-access',refresh_token:'test-refresh',expires_in:3600})});
+ const first=new URL(api.connect('personal')),second=new URL(api.connect('personal'));
+ await api.callback(first.searchParams.get('state'),'first-code');await api.callback(second.searchParams.get('state'),'second-code');
+ await assert.rejects(api.callback(first.searchParams.get('state'),'replayed-code'),error=>error.authReason==='invalid_or_expired_link');
+ const denied=new URL(api.connect('personal'));
+ await assert.rejects(api.callback(denied.searchParams.get('state'),null,{error:'unauthorized_client',description:'AADSTS9002332: private provider diagnostics'}),error=>error.authReason==='unauthorized_client'&&error.microsoftCode===9002332&&!error.message.includes('private provider diagnostics'));
+});
+test('broader OneDrive scope requires explicit selection and remains bound to consent on refresh',async()=>{
+ const values=new Map(),calls=[];let uploaded;
+ const stateStore={get:k=>values.get(k),put:(k,v)=>values.set(k,v),remove:k=>values.delete(k)};
+ const env={VERCEL:'1',APP_ORIGIN:'https://superior-proconnect.vercel.app',MICROSOFT_CLIENT_ID:'app',MICROSOFT_TENANT_ID:'directory',microsoft_client_secret:'test-only',BACKUP_ENCRYPTION_KEY:'12'.repeat(32)};
+ const request=async(url,options)=>{
+  if(url.includes('/token')){calls.push(options.body.get('scope'));return Response.json({access_token:'test-access',refresh_token:'test-refresh',expires_in:calls.length===1?1:3600});}
+  if(url.endsWith('/special/approot')||url.includes('/root:/'))return new Response('',{status:404});
+  if(url.endsWith('/root/children')){assert.equal(options.method,'POST');const body=JSON.parse(options.body);assert.equal(body.name,'Superior ProConnect Backups');assert.equal(body['@microsoft.graph.conflictBehavior'],'fail');return Response.json({id:'dedicated-folder',folder:{}});}
+  if(url.endsWith('/items/dedicated-folder'))return Response.json({id:'dedicated-folder',folder:{}});
+  if(url.includes('/items/dedicated-folder/children?'))return Response.json({value:[{id:'test-backup',name:'superior-proconnect-test.json.enc'}]});
+  assert.ok(url.includes('/me/drive/items/'));
+  if(options.method==='PUT'){uploaded=options.body;return Response.json({id:'test-backup'});}
+  return new Response(uploaded);
+ };
+ const api=createOneDrive({env,stateStore,request,readSnapshot:()=>JSON.stringify({profiles:[],reviews:[],intake:[],documents:[]})});
+ assert.equal(new URL(api.connect('personal')).searchParams.get('scope'),'offline_access Files.ReadWrite.AppFolder');
+ assert.throws(()=>api.connect('personal','Files.ReadWrite.All'),/approved/);
+ const chosen=new URL(api.connect('personal','files'));assert.equal(chosen.searchParams.get('scope'),'offline_access Files.ReadWrite');
+ await api.callback(chosen.searchParams.get('state'),'test-code');await api.backup();
+ assert.deepEqual(calls,['offline_access Files.ReadWrite','offline_access Files.ReadWrite']);
+ assert.equal(values.get('tokens').scopes,'offline_access Files.ReadWrite');
+ assert.equal((await api.list()).backups.length,1);assert.equal(await api.recover('test-backup'),JSON.stringify({profiles:[],reviews:[],intake:[],documents:[]}));
+});

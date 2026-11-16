@@ -35,7 +35,7 @@ constructionIntro.innerHTML=`
   <img class="approved-logo" src="/logos/Superior_Construction_Network.jpg" alt="Superior ProConnect Construction Network logo" width="132" height="132"/>
   <div><p class="construction-kicker">Superior ProConnect • Construction</p><h3>Find help for your next project.</h3><p>Connect with local construction and home-service professionals. Browse available profiles, review service areas and customer feedback, and request quotes directly from listed businesses.</p></div>
  </div>
- <div class="construction-actions"><a class="btn btn-primary" href="#pros">Find Construction Professionals</a><a class="btn btn-outline" href="#advertise">Join as a Construction Pro</a></div>
+ <div class="construction-actions"><a class="btn btn-primary" href="#customers">Post a Construction Job</a><a class="btn btn-outline" href="#advertise">Join as a Construction Pro</a></div>
  <h3 class="construction-subheading">Explore construction services</h3>
  <div class="construction-services">
   <span>Remodeling</span><span>Kitchen &amp; Bathroom</span><span>Flooring</span><span>Drywall</span><span>Painting</span><span>Home Repairs</span><span>Patios &amp; Decks</span><span>Property Maintenance</span>
@@ -52,7 +52,7 @@ automotiveIntro.innerHTML=`
   <img class="approved-logo" src="/logos/Superior_Automotive_Network.jpg" alt="Superior ProConnect Automotive Network logo" width="132" height="132"/>
   <div><p class="construction-kicker">Superior ProConnect • Automotive</p><h3>Connect with automotive service professionals.</h3><p>Browse listed automotive businesses, check their service areas and published reviews, and request a quote directly from a provider.</p></div>
  </div>
- <div class="construction-actions"><a class="btn btn-primary" href="#pros">Find Automotive Professionals</a><a class="btn btn-outline" href="#advertise">Join as an Automotive Pro</a></div>
+ <div class="construction-actions"><a class="btn btn-primary" href="#customers">Post an Automotive Job</a><a class="btn btn-outline" href="#advertise">Join as an Automotive Pro</a></div>
  <h3 class="construction-subheading">Explore automotive services</h3>
  <div class="construction-services">
   <span>Diagnostics</span><span>Engine Repair</span><span>Brakes</span><span>Suspension</span><span>Maintenance</span><span>Electrical</span><span>Detailing</span><span>Body &amp; Paint</span>
@@ -75,7 +75,8 @@ $('#pc-launch')?.setAttribute('hidden','');
 function route(){
  const hash=decodeURIComponent(location.hash||'#home');
  const isProfile=hash.startsWith('#profile/');
- let screen=isProfile?'profile':hash.slice(1);
+ const isPrivateJob=hash.startsWith('#my-job/');
+ let screen=isProfile?'profile':isPrivateJob?'customers':hash.slice(1);
  if(screen==='construction-memberships')screen='construction';
  if(screen==='automotive-memberships')screen='automotive';
  if(!Object.hasOwn(appScreens,screen))screen='home';
@@ -95,6 +96,11 @@ function route(){
   link.classList.toggle('active',active);
   if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
  });
+ if(screen==='customers'){
+  $('#customer-post-area').hidden=isPrivateJob;
+  $('#customer-job-dashboard').hidden=!isPrivateJob;
+  if(isPrivateJob)showPrivateJob();
+ }
  window.scrollTo({top:0,behavior:'instant'});
 }
 
@@ -106,50 +112,88 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-stars]');i
 document.addEventListener('submit',async e=>{if(e.target.id!=='review-form')return;e.preventDefault();const form=e.target,status=$('#review-status'),submit=form.querySelector('[type=submit]');status.textContent='Submitting…';status.classList.remove('error');submit.disabled=true;try{const fd=new FormData(form);const data={profileId:selected,stars:selectedStars,name:fd.get('name'),comment:fd.get('comment'),website:fd.get('website')};const r=await api('/api/reviews',{method:'POST',body:JSON.stringify(data)});status.textContent=r.message||'Review submitted for moderation.';form.reset();selectedStars=5;document.querySelectorAll('[data-stars]').forEach(el=>el.classList.toggle('active',Number(el.dataset.stars)<=5))}catch(err){status.textContent=err.message;status.classList.add('error')}finally{submit.disabled=false}});
 document.addEventListener('submit',async e=>{if(e.target.id!=='quote-form')return;e.preventDefault();const form=e.target,button=form.querySelector('button'),status=$('#quote-status');button.disabled=true;status.textContent='Sending your request…';status.classList.remove('error');try{const values=Object.fromEntries(new FormData(form));const out=await api('/api/inquiries',{method:'POST',body:JSON.stringify({...values,profileId:selected,consent:form.elements.consent.checked})});form.reset();status.textContent=out.message}catch(e){status.textContent=e.message;status.classList.add('error')}finally{button.disabled=false}});
 
-/* Customer requests go to an existing listed business's private lead inbox. */
-const customerIndustry=$('#customer-industry'),customerProvider=$('#customer-provider');
-const customerProviderNote=$('#customer-provider-note'),customerSubmit=$('#customer-request-form button[type="submit"]');
-function updateCustomerProviders(){
- const kind=customerIndustry.value;
- const construction=/home|remodel|construct|drywall|floor|paint|plumb|electric|roof|kitchen|bath|patio|handyman|property|maintenance|window|deck|repair/i;
- const automotive=/auto|mechanic|vehicle|car|engine|brake|tire|diagnos|transmission|body shop|detail|oil change|smog|suspension/i;
- const options=profiles.filter(p=>{
-  const explicit=String(p.industry||p.category||'').toLowerCase();
-  if(explicit==='automotive'||explicit==='construction')return explicit===kind;
-  const services=[p.name,...(p.services||[])].join(' ');
-  return kind==='automotive'?automotive.test(services):p.id==='superior'||construction.test(services);
- });
- const previous=customerProvider.value;
- customerProvider.replaceChildren(new Option(options.length?'Choose a listed business':'No businesses listed in this network',''));
- options.forEach(p=>customerProvider.add(new Option(p.name+' · '+p.city,p.id)));
- if(options.some(p=>p.id===previous))customerProvider.value=previous;
- customerProvider.disabled=!options.length;
- customerSubmit.disabled=!options.length;
- customerProviderNote.textContent=options.length
-  ?'Choose the business that should receive your private request. Sending a request does not guarantee availability or a quote.'
-  :'There are no matching listed professionals for this network yet. No request has been sent. Try browsing current listings or check back later.';
-}
-customerIndustry.addEventListener('change',updateCustomerProviders);
-$('#customer-request-form').addEventListener('submit',async e=>{
- e.preventDefault();
- const form=e.currentTarget,submit=form.querySelector('[type="submit"]'),status=$('#customer-request-status');
- const fields=Object.fromEntries(new FormData(form).entries());
- if(!profiles.some(p=>p.id===fields.profileId)){status.textContent='Select a listed business first.';status.classList.add('error');return;}
- if(!fields.email&&!fields.phone){status.textContent='Enter an email or phone number so the business can contact you.';status.classList.add('error');return;}
- submit.disabled=true;
- status.classList.remove('error');status.textContent='Sending your request…';
- try{
-  const result=await api('/api/inquiries',{method:'POST',body:JSON.stringify({
-   profileId:fields.profileId,name:fields.name,email:fields.email,
-   phone:fields.phone,location:fields.location,description:fields.description,
-   consent:form.elements.consent.checked,website:fields.website||''
-  })});
-  form.reset();updateCustomerProviders();
-  status.textContent=result.message||'Your request has been saved for the selected business.';
- }catch(error){status.classList.add('error');status.textContent=error.message;}
- finally{submit.disabled=customerProvider.disabled;}
-});
 
+/* Customers post their own jobs; no direct provider selection or client-side contact release. */
+const jobMessage=(text,error=false,id='#customer-job-status')=>{
+ const box=$(id);box.textContent=text;box.classList.toggle('error',error);
+};
+const privateJobPath=()=>location.hash.match(/^#my-job\/([0-9a-f-]{36})\/([a-f0-9]{64})$/i);
+async function ownJobRequest(path,key,data){
+ const response=await fetch(path,{method:data?'POST':'GET',cache:'no-store',
+  headers:{'content-type':'application/json','x-customer-key':key},
+  body:data?JSON.stringify(data):undefined});
+ const out=await response.json();
+ if(!response.ok)throw Error(out.error||'Job request failed.');
+ return out;
+}
+async function showPrivateJob(){
+ const match=privateJobPath();
+ if(!match)return jobMessage('Your private management link is incomplete.',true,'#customer-dashboard-status');
+ const [raw,id,key]=match;
+ const ownUrl=location.origin+location.pathname+'#my-job/'+id+'/'+key;
+ const link=$('#customer-private-link');link.value=ownUrl;
+ jobMessage('Loading your private job…',false,'#customer-dashboard-status');
+ try{
+  const item=await ownJobRequest('/api/jobs/'+encodeURIComponent(id),key);
+  if(location.hash!=='#my-job/'+id+'/'+key)return;
+  $('#customer-job-summary').textContent=item.title+' · '+item.city+' · '+item.industry+
+   ' · '+item.bids.length+' verified estimates · '+
+   item.remainingSlots+' slot(s) available or reserved · '+item.status.toUpperCase();
+  const node=$('#customer-job-bids');
+  if(item.bids.length){
+   node.innerHTML='<h4>Private estimates</h4>'+item.bids.map(b=>'<article class="customer-bid-card"><h4>'+
+    escapeHtml(b.professional.name)+'</h4><p>'+escapeHtml(b.professional.city||'')+'</p><strong>'+
+    new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(b.amount)+'</strong><p>'+
+    escapeHtml(b.scope)+'</p>'+((item.status==='open')?'<button type="button" class="btn btn-primary" data-select-private-bid="'+escapeHtml(b.id)+'">Select this professional</button>':'')+'</article>').join('');
+  }else node.innerHTML='<p class="customer-note">No verified estimates yet. Pending payment requests are not delivered as bids. Check back using this private link.</p>';
+  if(item.selectedProfessional)node.innerHTML+='<p class="customer-selected"><strong>You selected: '+escapeHtml(item.selectedProfessional.name)+'</strong><br>'+
+   escapeHtml(item.selectedProfessional.phone||'No phone listed')+'<br>'+
+   (item.selectedProfessional.website?'<a href="'+escapeHtml(item.selectedProfessional.website)+'" rel="noopener noreferrer" target="_blank">Professional website</a>':'')+
+   '<br>Your private contact details were released to this selected professional only.</p>';
+  $('#customer-job-fourth').hidden=!(item.status==='open'&&item.bidLimit===3&&!item.fourthApproved&&item.bids.length>=3);
+  $('#customer-job-close').hidden=item.status!=='open';
+  jobMessage('Job information loaded. Share only the public job description, never your private management link.',false,'#customer-dashboard-status');
+ }catch(err){jobMessage(err.message,true,'#customer-dashboard-status')}
+}
+$('#customer-job-form').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const form=event.currentTarget,button=form.querySelector('[type="submit"]');
+ const fields=Object.fromEntries(new FormData(form));
+ if(!fields.email&&!fields.phone){jobMessage('Enter a phone or email to receive a response.',true);return;}
+ button.disabled=true;jobMessage('Posting your job…');
+ try{
+  const response=await api('/api/jobs',{method:'POST',body:JSON.stringify({...fields,consent:form.elements.consent.checked})});
+  if(!response.jobId||!response.customerKey)throw Error('Job link was not returned. Please contact the owner before posting again.');
+  form.reset();location.hash='#my-job/'+response.jobId+'/'+response.customerKey;
+  jobMessage('Posted. Save your private job link.');
+ }catch(err){jobMessage(err.message,true)}
+ finally{button.disabled=false}
+});
+$('#copy-customer-job').addEventListener('click',async()=>{
+ const input=$('#customer-private-link');
+ try{await navigator.clipboard.writeText(input.value);jobMessage('Private link copied. Store it securely.',false,'#customer-dashboard-status')}
+ catch{input.select();jobMessage('Select and copy this private link.',false,'#customer-dashboard-status')}
+});
+$('#customer-job-refresh').addEventListener('click',()=>showPrivateJob());
+$('#customer-job-bids').addEventListener('click',async e=>{
+ const bid=e.target.closest('[data-select-private-bid]');
+ if(!bid||!confirm('Select this professional and release your private contact information to them? Other professionals will not receive it.'))return;
+ const match=privateJobPath();if(!match)return;
+ try{await ownJobRequest('/api/jobs/'+match[1]+'/select',match[2],{bidId:bid.dataset.selectPrivateBid});await showPrivateJob();}
+ catch(err){jobMessage(err.message,true,'#customer-dashboard-status')}
+});
+$('#customer-job-close').addEventListener('click',async()=>{
+ if(!confirm('Close this job to new bids? You will not be able to reopen it here.'))return;
+ const match=privateJobPath();if(!match)return;
+ try{await ownJobRequest('/api/jobs/'+match[1]+'/close',match[2],{});await showPrivateJob();}
+ catch(err){jobMessage(err.message,true,'#customer-dashboard-status')}
+});
+$('#customer-job-fourth').addEventListener('click',async()=>{
+ if(!confirm('You have received three verified estimates. Authorize exactly ONE additional (fourth) estimate? This is optional.'))return;
+ const match=privateJobPath();if(!match)return;
+ try{await ownJobRequest('/api/jobs/'+match[1]+'/fourth',match[2],{approveFourth:true});await showPrivateJob();}
+ catch(err){jobMessage(err.message,true,'#customer-dashboard-status')}
+});
 $('#join-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.target,status=$('#join-status'),submit=form.querySelector('[type=submit]');status.classList.remove('error');status.textContent='Submitting your business details…';submit.disabled=true;try{const fd=new FormData(form);const data=Object.fromEntries(fd.entries());await api('/api/join',{method:'POST',body:JSON.stringify(data)});status.textContent='Application received. Membership enrollment is being finalized. No payment has been taken and no founding-member spot is reserved.'}catch(err){status.textContent=err.message;status.classList.add('error')}finally{submit.disabled=false}});
-(async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory();updateCustomerProviders()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>';updateCustomerProviders()}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
+(async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
 })();

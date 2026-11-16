@@ -1,0 +1,23 @@
+name: Verify Private Job Bidding
+on:
+  push:
+    branches: [feature/private-job-bidding-20261116]
+  pull_request:
+    branches: [main]
+jobs:
+  private-bidding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check code syntax
+        run: |
+          node --check job-routes.js
+          node --check server.js
+          node --check public/app.js
+          node --check public/pro.js
+          node --check public/admin-jobs.js
+      - name: Run all application regressions
+        run: npm test

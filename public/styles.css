@@ -596,3 +596,23 @@ html,body{max-width:100%;overflow-x:clip}
  .proconnect-branding .network-hero-emblem{min-height:125px!important;padding:10px!important}
  .proconnect-branding .hero-card-label,.proconnect-branding .hero-card-bottom{font-size:9px!important}
 }
+
+/* Private job marketplace — compact customer cards, preserve approved blue/gold/silver. */
+.customer-form-subheading{font-size:16px;color:#173352;margin:12px 0}
+.customer-form-panel h3{overflow-wrap:anywhere}
+.customer-bid-card{border:1px solid #d8e1eb;border-radius:12px;padding:15px;margin:11px 0;background:#f9fbfd;overflow-wrap:anywhere}
+.customer-bid-card h4{margin:0 0 5px;font-size:16px;color:#162e50}
+.customer-bid-card strong{display:block;font-size:19px;color:#87652d}
+.customer-bid-card p{font-size:13px;line-height:1.5;white-space:pre-wrap;margin:7px 0}
+.customer-selected{padding:14px;background:#e9f1f8;border:1px solid #cad8e9;border-radius:10px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+#customer-job-summary{font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+#customer-private-link{font-size:12px;letter-spacing:0;min-width:0;width:100%}
+#customer-job-dashboard .customer-actions{margin:14px 0 0}
+#customer-job-dashboard .customer-actions button{color:#173452;background:#fff;border:1px solid #d2c19c;min-width:0;font-size:12px;white-space:normal;padding:10px}
+#customer-job-dashboard [hidden]{display:none!important}
+@media(max-width:767px){
+ .customer-page-heading h2{font-size:clamp(23px,6vw,28px)!important}
+ .customer-bid-card{padding:12px}
+ #customer-job-dashboard .customer-actions{grid-template-columns:minmax(0,1fr)}
+ #customer-job-dashboard .customer-actions button{width:100%}
+}

@@ -7,3 +7,21 @@ a:hover,.brand strong{color:var(--orange2)}
 button.primary,.btn-primary,.button-primary,.cta,.primary-btn{background-color:var(--orange);color:#071a35;border-color:var(--orange)}
 button.primary:hover,.btn-primary:hover,.button-primary:hover,.primary-btn:hover{background-color:var(--orange2)}
 :focus-visible{outline-color:var(--orange)}
+
+/* ProConnect private jobs — compact, touch-friendly, no orange branding. */
+.pro-brand{display:inline-flex;align-items:center;gap:9px;flex-wrap:wrap}
+.pro-brand img{width:42px;height:42px;object-fit:contain;border-radius:8px}
+.pro-brand strong{color:#e5c879}
+.marketplace-panel{background:#f8fbff}
+.marketplace-panel>.muted{max-width:780px}
+.marketplace-job{padding:16px;margin:12px 0;background:#fff;min-width:0;overflow-wrap:anywhere}
+.marketplace-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.marketplace-job h3{font-size:1.1rem}
+.marketplace-job p{font-size:.88rem;line-height:1.45}
+.marketplace-job input,.marketplace-job textarea{max-width:100%;min-width:0}
+.marketplace-job .button{margin:8px 0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center}
+.marketplace-actions{display:flex;gap:8px;flex-wrap:wrap}
+.marketplace-consent{display:flex;align-items:flex-start;gap:9px;font-weight:500;line-height:1.4}
+.marketplace-consent input{flex:0 0 18px;width:18px;height:18px;margin:3px 0 0;accent-color:#ae8a4c}
+.selected-contact{border:1px solid #cad9e8;border-radius:10px;padding:12px;background:#ebf2fa}
+@media(max-width:720px){main{padding:16px 12px 76px}.card{padding:14px}.marketplace-job{padding:12px}.marketplace-actions{display:grid;grid-template-columns:1fr}.marketplace-actions button{margin:4px 0}.pro-brand{font-size:13px}}

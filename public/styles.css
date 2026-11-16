@@ -454,3 +454,4 @@ footer .footer-brand img.approved-logo{display:block!important}
 @media(max-width:767px){.proconnect-branding .network-memberships h3{color:#172b43}}
 .proconnect-branding .package-missing{margin-top:12px;border-top:1px solid #d3bd91;padding-top:12px;font-size:12px;line-height:1.5;color:#43546b}.proconnect-branding .package-missing ul{padding-left:18px;margin:8px 0}.proconnect-branding .package-missing p{margin:8px 0}
 .proconnect-branding .estimate-payment{padding:18px;margin:18px 0;border:1px solid #d3bd91;border-radius:16px;background:#f6f8fb;color:#172b47}.proconnect-branding .estimate-payment h4{margin:0 0 10px}.proconnect-branding .estimate-payment p{font-size:13px;line-height:1.6;color:#43546b}.proconnect-branding .estimate-payment a{white-space:normal}
+.proconnect-branding .founder-plan .package-missing>strong{display:block;font-size:13px;line-height:1.5;color:#43546b}

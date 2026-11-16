@@ -28,6 +28,22 @@ function createNetworkView(id,heading,plans){
  return view;
 }
 const constructionView=createNetworkView('construction','Construction Network',constructionPlans);
+const constructionIntro=document.createElement('div');
+constructionIntro.className='construction-overview';
+constructionIntro.innerHTML=`
+ <div class="construction-lead">
+  <img class="approved-logo" src="/logos/Superior_Construction_Network.jpg" alt="Superior ProConnect Construction Network logo" width="132" height="132"/>
+  <div><p class="construction-kicker">Superior ProConnect • Construction</p><h3>Find help for your next project.</h3><p>Connect with local construction and home-service professionals. Browse available profiles, review service areas and customer feedback, and request quotes directly from listed businesses.</p></div>
+ </div>
+ <div class="construction-actions"><a class="btn btn-primary" href="#pros">Find Construction Professionals</a><a class="btn btn-outline" href="#advertise">Join as a Construction Pro</a></div>
+ <h3 class="construction-subheading">Explore construction services</h3>
+ <div class="construction-services">
+  <span>Remodeling</span><span>Kitchen &amp; Bathroom</span><span>Flooring</span><span>Drywall</span><span>Painting</span><span>Home Repairs</span><span>Patios &amp; Decks</span><span>Property Maintenance</span>
+ </div>
+ <div class="construction-how"><h3>How the construction network works</h3><p><strong>Customers:</strong> Find a business, review its profile and service area, then contact the professional to discuss the project and request a quote.</p><p><strong>Professionals:</strong> Apply to be listed, choose your service territory and membership tier, and manage customer inquiries through your professional workspace.</p><p class="construction-note">Business availability and services vary. The membership checkout and any future customer job-posting or bidding features are separate from the live directory.</p></div>
+ <h3 class="construction-subheading">Construction memberships and estimates</h3>
+`;
+constructionView.querySelector('.container').insertBefore(constructionIntro,constructionPlans);
 const automotiveView=createNetworkView('automotive','Automotive Network',automotivePlans);
 const appScreens={
  home:['#home','.ticker','#how','.faq'],

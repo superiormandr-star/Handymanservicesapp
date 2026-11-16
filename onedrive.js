@@ -78,13 +78,13 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   if(!String(get('tokens')?.scopes||'').split(/\s+/).includes('Files.ReadWrite'))return 'special/approot';
   const cached=get('backup-folder');
   if(cached?.id){try{const item=await (await graph('items/'+encodeURIComponent(cached.id))).json();if(item.folder)return 'items/'+encodeURIComponent(item.id);}catch(error){if(error.graphStatus!==404)throw error;}}
+  // The wider permission mode uses only a dedicated normal folder. Do not
+  // retry special/approot here: that endpoint caused the original 404 for
+  // personal OneDrive accounts, even after successful Microsoft consent.
+  const name='Superior ProConnect Backups',resource='root:/'+encodeURIComponent(name);
   let item;
-  try{item=await (await graph('special/approot')).json();}catch(error){if(error.graphStatus!==404)throw error;}
-  if(!item){
-   const name='Superior ProConnect Backups',resource='root:/'+encodeURIComponent(name);
-   try{item=await (await graph(resource)).json();}catch(error){if(error.graphStatus!==404)throw error;}
-   if(!item){try{item=await (await graph('root/children',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,folder:{},'@microsoft.graph.conflictBehavior':'fail'})})).json();}catch(error){if(error.graphStatus!==409)throw error;item=await (await graph(resource)).json();}}
-  }
+  try{item=await (await graph(resource)).json();}catch(error){if(error.graphStatus!==404)throw error;}
+  if(!item){try{item=await (await graph('root/children',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,folder:{},'@microsoft.graph.conflictBehavior':'fail'})})).json();}catch(error){if(error.graphStatus!==409)throw error;item=await (await graph(resource)).json();}}
   if(!item?.id||!item.folder)throw Error('The ProConnect backup destination is not a folder. No existing item was replaced.');
   put('backup-folder',{id:item.id});return 'items/'+encodeURIComponent(item.id);
  }

@@ -45,6 +45,22 @@ constructionIntro.innerHTML=`
 `;
 constructionView.querySelector('.container').insertBefore(constructionIntro,constructionPlans);
 const automotiveView=createNetworkView('automotive','Automotive Network',automotivePlans);
+const automotiveIntro=document.createElement('div');
+automotiveIntro.className='construction-overview';
+automotiveIntro.innerHTML=`
+ <div class="construction-lead">
+  <img class="approved-logo" src="/logos/Superior_Automotive_Network.jpg" alt="Superior ProConnect Automotive Network logo" width="132" height="132"/>
+  <div><p class="construction-kicker">Superior ProConnect • Automotive</p><h3>Connect with automotive service professionals.</h3><p>Browse listed automotive businesses, check their service areas and published reviews, and request a quote directly from a provider.</p></div>
+ </div>
+ <div class="construction-actions"><a class="btn btn-primary" href="#pros">Find Automotive Professionals</a><a class="btn btn-outline" href="#advertise">Join as an Automotive Pro</a></div>
+ <h3 class="construction-subheading">Explore automotive services</h3>
+ <div class="construction-services">
+  <span>Diagnostics</span><span>Engine Repair</span><span>Brakes</span><span>Suspension</span><span>Maintenance</span><span>Electrical</span><span>Detailing</span><span>Body &amp; Paint</span>
+ </div>
+ <div class="construction-how"><h3>How the automotive network works</h3><p><strong>Customers:</strong> Find and review available businesses, then contact a professional about your vehicle and requested service.</p><p><strong>Professionals:</strong> Apply for a listing, choose your membership and service area, and manage incoming inquiries in your professional workspace.</p><p class="construction-note">Available services vary by business. The monthly membership and per-estimate payment are separate. Customer job-posting and private bidding are not yet available.</p></div>
+ <h3 class="construction-subheading">Automotive memberships and estimates</h3>
+`;
+automotiveView.querySelector('.container').insertBefore(automotiveIntro,automotivePlans);
 const appScreens={
  home:['#home','.ticker','#how','.faq'],
  pros:['#pros'],

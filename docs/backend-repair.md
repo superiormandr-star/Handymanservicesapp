@@ -27,4 +27,18 @@ The existing GitHub OneDrive verification workflow uploads only synthetic verifi
 ## Validation and remaining limits
 Local tests cover HTTP authentication, no Vercel filesystem initialization, synthetic document approval and replay rejection, generated invoice payment, CRM business isolation, file restart/restore, encrypted D1 compare-and-swap, private Blob ETag conflicts/instance recreation, missing/corrupt state, namespace isolation, and mocked Microsoft token refresh/upload/download/recovery. Blob and Microsoft tests use controlled substitutes, not production services. Membership test syntax, escaped URL regex and stale assertions were repaired: static PayPal links stay unchanged, automatic activation stays disabled, forged callbacks cannot activate memberships.
 
-No logo, theme, page construction, PayPal link or independent Superior Maintenance hosting/database/authentication was changed. Its Command Center link is explicitly labeled as an independent business. Browser/mobile print testing, actual Blob inventory/persistence across deployments, primary record reconciliation, real OneDrive connection and scheduled backup/recovery remain release blockers.
+No logo, theme, page construction, PayPal link or independent Superior Maintenance hosting/database/authentication was changed. Its Command Center link is explicitly labeled as an independent business. Browser checks on the preview at 390px and 1440px found no horizontal overflow or JavaScript page errors in network/construction/automotive, Command Center and backups. A local Chromium workflow with synthetic records verified owner sign-in, estimate creation, customer approval, exactly one invoice totaling $125, and PDF export. Actual Blob inventory/persistence across deployments, primary record reconciliation, real OneDrive connection and scheduled backup/recovery remain release blockers.
+
+## Preview deployment evidence
+- Draft PR: https://github.com/superiormandr-star/Handymanservicesapp/pull/13
+- Preview: https://superior-proconnect-f77s7pfux-superiormandr-star.vercel.app/
+- Deployment: dpl_7zVd3PZ5t9GLP7tjAauTyb8Hjskn, READY, Node HTTP handler, code commit 84d88049af9375f0d745aa9243587bd4f21a4d9e. Build completed in 3 seconds.
+- /api/documents, /api/command/estimates and /api/admin/documents each return JSON HTTP 401 without an owner token. /api/health returns JSON HTTP 503 because preview durable storage is unconfigured. This confirms routed function behavior, not working primary storage. Homepage, Command Center and backup HTML return 200.
+- Runtime error/fatal log query found no entries in the checked window. Expected handled 401/503 responses are verified by HTTP checks.
+- Production was not promoted, merged, initialized or written. It remains on its existing commit and retains the original backend failures until storage release gates pass.
+
+## Files changed
+Backend: server.js, api/index.js, persistent-store.js, blob-storage.js, estimate-routes.js, onedrive.js.
+Configuration and recovery: vercel.json, .env.example, .gitignore, package.json, package-lock.json, scripts/import-blob.cjs, storage-worker.mjs, storage-schema.sql.
+Existing interface: public/command-center.html, public/command-center.js, public/service-worker.js; recovered public/backups.html and public/backups.js.
+Validation: tests/memberships.mjs, tests/documents.mjs, tests/onedrive.mjs, tests/persistent-store.mjs, tests/blob-storage.mjs, tests/vercel.mjs; this report.

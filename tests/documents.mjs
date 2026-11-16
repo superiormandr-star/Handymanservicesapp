@@ -23,6 +23,11 @@ test('customer approval creates one invoice, rejects replay, and owner records p
   assert.equal((await api(approval+'/decision',{decision:'approved',signer:'Test Customer',agreed:false})).status,400);
   assert.equal((await api(approval+'/decision',{decision:'approved',signer:'Test Customer',agreed:true})).status,200);
   assert.equal((await api(approval+'/decision',{decision:'approved',signer:'Test Customer',agreed:true})).status,409);
+  assert.equal((await api('/api/documents')).status,401);
+  const alias=await api('/api/documents',null,true);assert.equal(alias.status,200);
+  assert.equal(alias.body.documents.length,2);
+  assert.equal((await api('/api/command/estimates',{...input,id:estimate.body.document.id},true)).status,409);
+  assert.equal((await api('/api/admin/documents',{...input,id:estimate.body.document.id,type:'estimate',discount:0,payment:0},true)).status,409);
   const documents=(await api('/api/command/estimates',null,true)).body.documents;
   const invoices=documents.filter(v=>v.type==='invoice');assert.equal(invoices.length,1);assert.equal(invoices[0].total,220);
   const paid=await api('/api/command/estimates/'+invoices[0].id+'/paid',{},true);assert.equal(paid.body.invoice.payment,220);assert.equal(paid.body.invoice.status,'paid');

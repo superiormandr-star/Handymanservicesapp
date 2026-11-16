@@ -436,3 +436,14 @@ footer .footer-brand img.approved-logo{display:block!important}
 .proconnect-branding .package-missing{margin-top:12px;border-top:1px solid #d3bd91;padding-top:12px;font-size:12px;line-height:1.5;color:#43546b}.proconnect-branding .package-missing ul{padding-left:18px;margin:8px 0}.proconnect-branding .package-missing p{margin:8px 0}
 .proconnect-branding .estimate-payment{padding:18px;margin:18px 0;border:1px solid #d3bd91;border-radius:16px;background:#f6f8fb;color:#172b47}.proconnect-branding .estimate-payment h4{margin:0 0 10px}.proconnect-branding .estimate-payment p{font-size:13px;line-height:1.6;color:#43546b}.proconnect-branding .estimate-payment a{white-space:normal}
 .proconnect-branding .founder-plan .package-missing>strong{display:block;font-size:13px;line-height:1.5;color:#43546b}
+
+/* Superior ProConnect: distinct application screens rather than one-page scrolling. */
+.app-network-view{padding:36px 0 100px;min-height:65vh;background:#f8fafc}
+.app-network-view h2{font-size:clamp(26px,5vw,38px);color:#10294b;margin:16px 0}
+.app-network-view .network-memberships{width:100%;margin-top:28px}
+.app-network-view .network-memberships h3{color:#172b43}
+.app-back{display:inline-flex;align-items:center;padding:12px 16px;border:1px solid #d3bd91;border-radius:12px;background:#fff;color:#122a47;font-weight:700}
+.desktop-nav a.active{color:#e5c879}
+.bottom-nav a.active{color:#e5c879}
+#pc-launch[hidden]{display:none!important}
+@media(max-width:767px){.app-network-view{padding:18px 0 110px}.app-network-view>.container{width:calc(100% - 28px)}.bottom-nav{display:flex;justify-content:space-around;gap:0}.bottom-nav a{flex:1;min-width:0;padding:8px 2px;font-size:17px}.bottom-nav small{font-size:9px;line-height:1.2;display:block}}

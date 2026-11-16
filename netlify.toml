@@ -1,0 +1,19 @@
+# Staging configuration for a commercially permitted free Netlify plan.
+# Production launch is blocked until verified import and environment setup are complete.
+[build]
+  publish = "public"
+  command = "npm install --no-audit --no-fund"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["@netlify/blobs"]
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    X-Content-Type-Options = "nosniff"

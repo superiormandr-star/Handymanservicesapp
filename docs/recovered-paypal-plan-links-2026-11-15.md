@@ -2,7 +2,7 @@
 
 These are **owner-supplied URLs**, recovered from chat. This file is a source inventory, **not authorization to activate checkouts**. Preserve all existing accounts, customers and subscriptions.
 
-## Six distinct recurring subscription plan links (package mapping NOT verified)
+## Six distinct recurring subscription plan links (now mapped using owner screenshots; billing verification outstanding)
 
 1. https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-38662930HA324233RNL5GVMI
 2. https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-2K759018XE8664423NL5GR2I
@@ -27,7 +27,7 @@ The first five plan URLs were checked and reach PayPal sign-in, which does not p
 | Automotive | Professional | $60 | $80 | Missing verification |
 | Automotive | Elite | $99 | $149 | Missing verification |
 
-All **six distinct plan URLs are recovered**; all six package-to-link mappings still require authoritative verification. Founding versus regular price eligibility must also be verified. Do not assign, enable, or charge based solely on this file.
+All six plan URLs were recovered. Subsequent PayPal administration screenshots identify the package mappings below; amount and payment lifecycle verification are still outstanding. Founding versus regular price eligibility must also be verified. Do not assign, enable, or charge based solely on this file.
 
 ## Separate owner-approved one-time estimate links (already implemented in network sections)
 
@@ -43,3 +43,18 @@ Keep these outside membership cards. They must be placed in their relevant const
 - Do not reuse old Handyman Services one-time payment links or either estimate checkout as a subscription.
 - Only enable paid membership activation through validated server-side PayPal lifecycle verification, not client-provided IDs.
 - Test each link on desktop/mobile and verify cancellation, renewal, failure and approval; mark unverified parts as blocked, not complete.
+
+## Owner screenshot verification — plan mapping (latest)
+
+The owner supplied screenshots from PayPal's subscription administration UI. These identify the following **ON** plans:
+
+| Website tier | PayPal plan ID | Screenshot plan name | PayPal status |
+|---|---|---|---|
+| Construction Essential | P-8HA54058MH7212436NL5EX3Q | Essential | ON |
+| Construction Professional | P-1VM79900PL768641SNL5E7KA | Construction pro | ON |
+| Construction Elite | P-1JG93932CP734950ANL5F2DI | Elite (construction-product grouping) | ON |
+| Automotive Essential | P-2K759018XE8664423NL5GR2I | Automotive essential | ON |
+| Automotive Professional | P-38662930HA324233RNL5GVMI | Automotive pro | ON; screenshot shows $60 per month |
+| Automotive Elite | P-8WL58047SB8224218NL5GUEI | Automotive elite | ON |
+
+Note: The same Construction product list also includes additional OFF legacy plans; those were not mapped to new checkout slots. All six links are in `public/subscription-plans.json` with **checkoutEnabled=false**. The screenshot confirms names, grouping and ON status, but does not establish all six plan amounts, founding/regular billing eligibility, working webhooks or server-side entitlement activation. Existing subscriber records were not modified.

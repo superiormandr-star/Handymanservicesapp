@@ -10,6 +10,7 @@ These are **owner-supplied URLs**, recovered from chat. This file is a source in
 4. https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-1VM79900PL768641SNL5E7KA
 5. https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8HA54058MH7212436NL5EX3Q
 6. https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8WL58047SB8224218NL5GUEI
+   - Owner identified this as the **"hundred dollar one"** (approximately $100). This is consistent with the $99 Elite founding price, but exact PayPal amount, billing interval, and **Construction versus Automotive** package have not yet been verified. Do not activate either Elite checkout on this evidence alone.
 
 An earlier pasted message repeated plan 1; subsequently, the owner supplied plan 6 as a sixth distinct URL. https://www.paypal.com/billing/recurring-payment is a PayPal management page, **not** a subscription checkout.
 

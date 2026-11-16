@@ -433,3 +433,11 @@ footer .footer-brand img.approved-logo{display:block!important}
  img.pc-launch-mark{width:112px;height:112px;flex-shrink:0}
  .pc-launch-grid .network-entry-logo{width:80px;height:80px}
 }
+
+/* Keep existing controls within the approved palette and clear of the logos. */
+.proconnect-branding .nav-cta{background:#d5b57c!important;border-color:#e5c879!important;box-shadow:none!important;color:#071a35!important}
+.proconnect-branding .listing-top .featured{background:#e5c879;color:#071a35}
+.proconnect-branding .location,.proconnect-branding .step-num{color:#84652b}
+.proconnect-branding .step-icon,.proconnect-branding .form-icon{color:#84652b;background:#f3ead7}
+.proconnect-branding .hero-feature{flex-direction:column;align-items:center}
+.proconnect-branding .hero-feature .float-card{position:static;transform:none;margin:16px 0 0;max-width:100%}

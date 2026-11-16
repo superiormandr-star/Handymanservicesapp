@@ -40,6 +40,16 @@ module.exports=async function jobRoutes(req,res,ctx){
  const when=Date.now(),timestamp=new Date(when).toISOString();
  const data=db();
  const jobs=Array.isArray(data.jobs)?data.jobs:[];
+ const entitlements=Array.isArray(data.jobEntitlements)?data.jobEntitlements:[];
+ const billingMonth=timestamp.slice(0,7);
+ const entitlementFor=profileId=>entitlements.find(e=>e.profileId===profileId&&e.period===billingMonth&&e.verified===true)||null;
+ const creditsFor=profileId=>{
+  const entitlement=entitlementFor(profileId);
+  if(!entitlement)return null;
+  const allowed={basic:0,pro:2,elite:5}[entitlement.tier]||0;
+  const used=jobs.flatMap(j=>j.bids||[]).filter(b=>b.profileId===profileId&&b.creditUsed===true&&b.creditPeriod===billingMonth&&['verified','selected','pending'].includes(b.status)).length;
+  return {tier:entitlement.tier,allowed,used,remaining:Math.max(0,allowed-used)};
+ };
  const secureCustomer=job=>{
   const key=req.headers['x-customer-key'];
   if(typeof key!=='string'||!/^[a-f0-9]{64}$/i.test(key))return false;
@@ -108,7 +118,7 @@ module.exports=async function jobRoutes(req,res,ctx){
   }
   if(command==='fourth'){
    if(job.bidLimit!==3||job.fourthApproved)return fail('A fourth estimate can only be authorized once after choosing a three-estimate limit.',409);
-   if(validCount(job,when)<3)return fail('The first three estimate slots must be filled before a fourth can be authorized.',409);
+   if(currentBids(job).length<3)return fail('The customer must receive three verified estimates before authorizing a fourth.',409);
    const input=await body(req);
    if(input.approveFourth!==true)return fail('Explicit approval is required for a fourth estimate.');
    job.bidLimit=4;job.fourthApproved=true;job.updatedAt=timestamp;save(data);
@@ -120,7 +130,7 @@ module.exports=async function jobRoutes(req,res,ctx){
   const profile=pro();if(!profile)return fail('Professional access required.',401);
   if(route==='/api/pro/jobs'&&req.method==='GET'){
    const own=jobs.filter(j=>matchingIndustry(profile,j.industry)&&!(j.passes||[]).includes(profile.id));
-   return reply(200,{professional:{id:profile.id,name:profile.name},jobs:own.map(j=>{
+   return reply(200,{professional:{id:profile.id,name:profile.name},credits:creditsFor(profile.id),jobs:own.map(j=>{
     const ownBid=j.bids.find(b=>b.profileId===profile.id&&active(b,when));
     const selectedForMe=j.status==='selected'&&j.selectedBidId===ownBid?.id;
     return {...info(j,when),ownBid:ownBid?{id:ownBid.id,status:ownBid.status,amount:ownBid.amount,
@@ -148,26 +158,42 @@ module.exports=async function jobRoutes(req,res,ctx){
    return reply(200,{ok:true,message:'Payment reference recorded for manual owner verification. The estimate remains private until payment is verified.'});
   }
   if(job.status!=='open')return fail('This job is no longer open for estimates.',409);
+  const credits=creditsFor(profile.id);
+  if(!credits)return fail('Your estimate credits and billing eligibility must be verified by the owner first. This prevents double charges.',403);
   if((job.passes||[]).includes(profile.id))return fail('You passed on this job.',409);
   if(job.bids.some(b=>b.profileId===profile.id && active(b,when)))return fail('You already hold an estimate slot for this job.',409);
   if(validCount(job,when)>=job.bidLimit)return fail('The customer estimate limit has been reached. No extra bid was accepted.',409);
   const input=await body(req),amount=Number(input.amount),scope=clean(input.scope,1800);
   if(!Number.isFinite(amount)||amount<=0||amount>100000000||scope.length<15)return fail('Enter a positive estimate amount and at least 15 characters of scope.');
   if(input.feeAcknowledged!==true)return fail('Review and acknowledge the per-estimate fee first.');
-  const bid={id:crypto.randomUUID(),profileId:profile.id,amount:currency(amount),scope,status:'pending',
-   fee:fee[job.industry],paymentReference:null,createdAt:timestamp,updatedAt:timestamp,expiresAt:expires(30,when)};
+  const included=credits.remaining>0;
+  const bid={id:crypto.randomUUID(),profileId:profile.id,amount:currency(amount),scope,
+   status:included?'verified':'pending',creditUsed:included,creditPeriod:included?billingMonth:null,
+   verifiedAt:included?timestamp:null,fee:included?0:fee[job.industry],
+   paymentReference:null,createdAt:timestamp,updatedAt:timestamp,expiresAt:included?null:expires(30,when)};
   job.bids.push(bid);job.updatedAt=timestamp;save(data);
-  return reply(201,{ok:true,bidId:bid.id,fee:bid.fee,paymentLink:paymentLinks[job.industry],
-   expiresAt:bid.expiresAt,
-   message:'Estimate slot reserved for 30 minutes. Pay the listed one-time fee and submit the receipt transaction ID. The estimate is not delivered to the customer until the owner verifies payment.'});
+  return reply(201,{ok:true,bidId:bid.id,fee:bid.fee,paymentLink:included?null:paymentLinks[job.industry],
+   expiresAt:bid.expiresAt,creditApplied:included,
+   message:included?'One included monthly estimate credit was used. Your private estimate is now available to the customer.':
+   'Estimate slot reserved for 30 minutes. Pay the listed one-time fee and submit the receipt transaction ID. The estimate stays private until the owner verifies payment.'});
  }
  if(route==='/api/admin/jobs'||route.startsWith('/api/admin/jobs/')){
   if(!admin(req))return fail('Owner access required.',401);
   if(route==='/api/admin/jobs'&&req.method==='GET'){
-   return reply(200,{jobs:jobs.map(job=>({
+   return reply(200,{entitlements,profiles:data.profiles.map(p=>({id:p.id,name:p.name,city:p.city})),jobs:jobs.map(job=>({
     ...info(job,when),customer:job.customer,selectedBidId:job.selectedBidId,
     bids:job.bids.map(b=>({...b,professional:data.profiles.find(p=>p.id===b.profileId)?.name||'Unknown'}))
    }))});
+  }
+  if(route==='/api/admin/jobs/entitlements'&&req.method==='POST'){
+   const input=await body(req);
+   const profile=data.profiles.find(p=>p.id===input.profileId),tier=clean(input.tier,10);
+   if(!profile)return fail('Listed professional not found.',404);
+   if(!['basic','pro','elite'].includes(tier))return fail('Choose Basic, Pro or Elite.');
+   if(input.confirmedInPayPal!==true)return fail('The owner must independently verify this membership and billing period before granting credits.');
+   data.jobEntitlements=entitlements.filter(e=>e.profileId!==profile.id||e.period!==billingMonth);
+   data.jobEntitlements.push({profileId:profile.id,tier,period:billingMonth,verified:true,verifiedAt:timestamp});
+   save(data);return reply(200,{ok:true,message:'Current-month '+tier+' entitlement verified for '+profile.name+'.'});
   }
   const match=route.match(/^\/api\/admin\/jobs\/([0-9a-f-]{36})\/bids\/([0-9a-f-]{36})\/(verify|reject)$/i);
   if(!match||req.method!=='POST')return fail('Method not allowed.',405);

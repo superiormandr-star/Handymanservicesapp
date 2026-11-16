@@ -447,3 +447,21 @@ footer .footer-brand img.approved-logo{display:block!important}
 .bottom-nav a.active{color:#e5c879}
 #pc-launch[hidden]{display:none!important}
 @media(max-width:767px){.app-network-view{padding:18px 0 110px}.app-network-view>.container{width:calc(100% - 28px)}.bottom-nav{display:flex;justify-content:space-around;gap:0}.bottom-nav a{flex:1;min-width:0;padding:8px 2px;font-size:17px}.bottom-nav small{font-size:9px;line-height:1.2;display:block}}
+
+/* Construction network landing screen: customer and pro paths alongside pricing. */
+.construction-overview{margin:24px 0 32px}
+.construction-lead{display:flex;align-items:center;gap:24px;background:#102744;color:#fff;border-radius:20px;padding:24px}
+.construction-lead img{width:132px;height:132px;flex:0 0 132px}
+.construction-lead h3{font-size:clamp(22px,4vw,30px);margin:6px 0 10px;color:#f1d49b}
+.construction-lead p{line-height:1.65;margin:0;color:#eef3f9}
+.construction-kicker{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.construction-actions{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 26px}
+.construction-actions .btn{min-height:48px}
+.construction-subheading{font-size:21px!important;color:#142c4d!important;margin:25px 0 14px}
+.construction-services{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.construction-services span{display:flex;align-items:center;min-height:58px;padding:12px;background:white;border:1px solid #d5dfeb;border-radius:12px;font-weight:700;color:#183454}
+.construction-how{margin-top:26px;background:#eef3fa;border-radius:16px;padding:22px;color:#203753}
+.construction-how h3{font-size:21px!important;color:#142c4d!important}
+.construction-how p{line-height:1.65}
+.construction-note{font-size:12px;color:#526579}
+@media(max-width:767px){.construction-lead{flex-direction:column;align-items:flex-start;padding:20px}.construction-lead img{width:106px;height:106px;flex-basis:auto}.construction-services{grid-template-columns:repeat(2,minmax(0,1fr))}.construction-actions{flex-direction:column}.construction-actions .btn{width:100%;justify-content:center}}

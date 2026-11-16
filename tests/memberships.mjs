@@ -15,6 +15,16 @@ test('six separate packages cannot start checkout or activate from a forged call
  try{
   let ready=false;for(let n=0;n<60;n++){try{if((await fetch(base+'/api/health')).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,100))}assert.ok(ready);
   assert.equal(catalog.plans.length,6);assert.equal(new Set(catalog.plans.map(p=>p.key)).size,6);
+  // Only the six approved recurring plan IDs and two one-time estimate payment links may appear in checkout configuration.
+  const allowedPayPalUrls=new Set([
+   ...catalog.plans.map(p=>p.checkoutUrl),
+   ...catalog.estimatePayments.map(p=>p.url)
+  ]);
+  assert.equal(allowedPayPalUrls.size,8);
+  const publicMarkup=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+  for(const match of publicMarkup.matchAll(/https:\/\/www\.paypal\.com\/[^"'<>\\s]+/g)){
+   assert.ok(allowedPayPalUrls.has(match[0]),'Unapproved PayPal URL in homepage: '+match[0]);
+  }
   assert.equal(new Set(catalog.plans.map(p=>p.paypalPlanId)).size,6);
   for(const plan of catalog.plans){
    assert.equal(plan.checkoutEnabled,false);assert.match(plan.checkoutUrl,/^https:\/\/www\.paypal\.com\/webapps\/billing\/plans\/subscribe\?plan_id=P-[A-Z0-9]+$/);assert.equal(new URL(plan.checkoutUrl).searchParams.get('plan_id'),plan.paypalPlanId);assert.equal(plan.interval,'MONTH');

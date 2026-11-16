@@ -155,7 +155,9 @@ async function handle(req,res){
 }
 async function dispatch(req,res){
  const route=new URL(req.url,'https://localhost').pathname;
+ if(route.startsWith('/api/setup/'))return require('./storage-setup').storageSetup(req,res,{send});
  if((route.startsWith('/api/admin/')||route.startsWith('/api/command/')||route==='/api/documents')&&!admin(req))return send(res,401,{error:'Owner access required'});
+ if(route==='/api/admin/preview-fixture')return require('./preview-fixture').previewFixture(req,res,{send});
  if(req.url.startsWith('/api/')&&(process.env.VERCEL||persistentStore.enabled))return persistentStore.run(req,res,seed,handle);return handle(req,res);}
 module.exports=dispatch;
 if(require.main===module)http.createServer(dispatch).listen(port,'0.0.0.0',()=>console.log(`Superior ProConnect running on port ${port}`));

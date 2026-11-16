@@ -67,6 +67,7 @@ function renderMarketplace(verified){
      '<label>Price of your estimate ($)<input name="amount" type="number" min="0.01" max="100000000" step="0.01" required></label>'+
      '<label>Detailed scope and inclusions<textarea name="scope" minlength="15" maxlength="1800" required placeholder="Write your own estimate. Superior does not prepare or modify this bid."></textarea></label>'+
      '<label class="marketplace-consent"><input type="checkbox" name="feeAcknowledged" required> I understand my verified plan credits are used first. After they are exhausted, this estimate has a one-time '+money(job.industry==='automotive'?10:18)+' fee before it reaches the customer.</label>'+
+     '<label class="marketplace-consent"><input type="checkbox" name="rulesAccepted" required> I agree to the <a href="/standards.html" target="_blank" rel="noopener">Rules &amp; Regulations</a> and <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a> (2026-11-16).</label>'+ 
      '<div class="marketplace-actions"><button type="submit">Submit private estimate / reserve slot</button>'+
      '<button type="button" class="secondary" data-marketplace-pass="'+safe(job.id)+'">Pass on job</button></div></form>';
   }else if(job.status==='open'&&job.remainingSlots>0&&!verified){
@@ -92,7 +93,7 @@ $('#marketplace-jobs').addEventListener('submit',async e=>{
   const values=Object.fromEntries(new FormData(f));
   if(f.dataset.marketplaceBid){
    await api('/api/pro/jobs/'+f.dataset.marketplaceBid+'/bids',{
-    amount:Number(values.amount),scope:values.scope,feeAcknowledged:f.elements.feeAcknowledged.checked
+    amount:Number(values.amount),scope:values.scope,feeAcknowledged:f.elements.feeAcknowledged.checked,rulesAccepted:f.elements.rulesAccepted.checked
    });
    message('Estimate submitted or reserved. Review the payment/credit status below.');
   }else{

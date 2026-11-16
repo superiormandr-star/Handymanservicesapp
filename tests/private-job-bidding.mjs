@@ -34,13 +34,13 @@ const makeFixture=()=>{
    description:'Patch and repaint the damaged walls after plumbing repairs.',
    category:'Drywall',city:'Fontana, CA',name:'Private Customer',
    email:customerEmail,phone:customerPhone,address:'123 Example Street, Fontana',
-   bidLimit:limit,consent:true});
+   bidLimit:limit,consent:true,rulesAccepted:true});
  }
  async function authorize(profileIndex,tier='pro'){
   return request('POST','/api/admin/jobs/entitlements',{profileId:records.profiles[profileIndex].id,tier,confirmedInPayPal:true},{'x-admin-token':admin});
  }
  async function bid(profileIndex,id,amount=850){
-  return request('POST','/api/pro/jobs/'+id+'/bids',{amount,scope:'Complete a careful drywall repair with labor and materials.',feeAcknowledged:true},
+  return request('POST','/api/pro/jobs/'+id+'/bids',{amount,scope:'Complete a careful drywall repair with labor and materials.',feeAcknowledged:true,rulesAccepted:true},
     {'x-pro-token':proTokens[profileIndex]});
  }
  return {request,postJob,authorize,bid,records:()=>records};
@@ -52,10 +52,14 @@ test('Public job requires privacy, consent, 1–3 customer-controlled estimate s
   name:'Private Person',email:customerEmail,bidLimit:1,consent:true});
  assert.equal(invalid.httpStatus,400);
  const tooMany=await f.postJob(4);assert.equal(tooMany.httpStatus,400);
+ const missingRules=await f.request('POST','/api/jobs',{industry:'construction',title:'Drywall job',description:'Repair wall in the kitchen after pipe repair.',city:'Fontana, CA',name:'Customer',email:customerEmail,bidLimit:2,consent:true});
+ assert.equal(missingRules.httpStatus,400);
  const posted=await f.postJob(2);assert.equal(posted.httpStatus,201);
  assert.match(posted.customerKey,/^[a-f0-9]{64}$/);
  assert.equal(f.records().jobs[0].customerKeyHash,hash(posted.customerKey));
  assert.equal(f.records().jobs[0].customerKey,undefined);
+ assert.equal(f.records().jobs[0].customerRulesVersion,'2026-11-16');
+ assert.ok(f.records().jobs[0].customerRulesAcceptedAt);
  const wrong=await f.request('GET','/api/jobs/'+posted.jobId,{}, {'x-customer-key':fakeKey});
  assert.equal(wrong.httpStatus,404);
  const privateView=await f.request('GET','/api/jobs/'+posted.jobId,{}, {'x-customer-key':posted.customerKey});
@@ -79,6 +83,7 @@ test('Credits require owner verification, apply before any PayPal charge, and en
  assert.equal(pro.credits.remaining,2);
  const first=await f.bid(0,posted.jobId);assert.equal(first.httpStatus,201);
  assert.equal(first.creditApplied,true);assert.equal(first.fee,0);assert.equal(first.paymentLink,null);
+ assert.equal(f.records().jobs[0].bids[0].professionalRulesVersion,'2026-11-16');
  const customerView=await f.request('GET','/api/jobs/'+posted.jobId,{}, {'x-customer-key':posted.customerKey});
  assert.equal(customerView.bids.length,1);assert.equal(customerView.filledSlots,1);
  assert.equal((await f.authorize(1,'basic')).httpStatus,200);

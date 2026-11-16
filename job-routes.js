@@ -5,6 +5,7 @@ const paymentLinks={
  automotive:'https://www.paypal.com/ncp/payment/SCXVVGDZU6LE2'
 };
 const fee={construction:18,automotive:10};
+const rulesVersion='2026-11-16';
 const uid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const digest=s=>crypto.createHash('sha256').update(s).digest('hex');
 const currency=n=>Math.round(n*100)/100;
@@ -75,9 +76,10 @@ module.exports=async function jobRoutes(req,res,ctx){
   if((email&&!validEmail(email))||(!validEmail(email)&&phone.replace(/\D/g,'').length<7))return fail('Enter a valid email or telephone number.');
   if(identifyingText(title+' '+description+' '+city))return fail('Remove phone numbers, email addresses and street addresses from public job details. Use the private contact fields.');
   if(input.consent!==true)return fail('Consent to storing your job and sending details to eligible network professionals is required.');
+  if(input.rulesAccepted!==true)return fail('Accept the Rules & Regulations and Terms of Use before posting.');
   const customerKey=crypto.randomBytes(32).toString('hex');
   const job={id:crypto.randomUUID(),industry,title,description,category,city,customer:{name,email,phone,address},
-   customerKeyHash:digest(customerKey),bidLimit:limit,fourthApproved:false,status:'open',selectedBidId:null,
+   customerKeyHash:digest(customerKey),customerRulesVersion:rulesVersion,customerRulesAcceptedAt:timestamp,bidLimit:limit,fourthApproved:false,status:'open',selectedBidId:null,
    bids:[],passes:[],createdAt:timestamp,updatedAt:timestamp};
   data.jobs=jobs;data.jobs.push(job);save(data);
   return reply(201,{ok:true,jobId:job.id,customerKey,job:info(job,when),
@@ -166,9 +168,11 @@ module.exports=async function jobRoutes(req,res,ctx){
   const input=await body(req),amount=Number(input.amount),scope=clean(input.scope,1800);
   if(!Number.isFinite(amount)||amount<=0||amount>100000000||scope.length<15)return fail('Enter a positive estimate amount and at least 15 characters of scope.');
   if(input.feeAcknowledged!==true)return fail('Review and acknowledge the per-estimate fee first.');
+  if(input.rulesAccepted!==true)return fail('Accept the Rules & Regulations and Terms of Use before submitting a private estimate.');
   const included=credits.remaining>0;
   const bid={id:crypto.randomUUID(),profileId:profile.id,amount:currency(amount),scope,
    status:included?'verified':'pending',creditUsed:included,creditPeriod:included?billingMonth:null,
+   professionalRulesVersion:rulesVersion,professionalRulesAcceptedAt:timestamp,
    verifiedAt:included?timestamp:null,fee:included?0:fee[job.industry],
    paymentReference:null,createdAt:timestamp,updatedAt:timestamp,expiresAt:included?null:expires(30,when)};
   job.bids.push(bid);job.updatedAt=timestamp;save(data);

@@ -26,7 +26,7 @@ async function handle(req,res){
  if(route==='/api/auth/microsoft/callback'&&req.method==='GET'){
   try {await oneDrive.callback(url.searchParams.get('state'),url.searchParams.get('code'),{error:url.searchParams.get('error'),description:url.searchParams.get('error_description')});
    res.writeHead(303,{'location':'/backups.html','cache-control':'no-store','referrer-policy':'no-referrer'});res.end();
-  }catch{return send(res,400,{error:'Microsoft authorization failed or expired. Start a new connection from the owner backups page.'});}
+  }catch(error){const report=require('./microsoft-authorization-error').describeAuthorizationError(error);console.warn('Microsoft authorization callback failed',JSON.stringify({reason:report.reason,...(report.microsoftCode?{microsoftCode:report.microsoftCode}:{})}));return send(res,400,report);}
   return;
  }
  if(route.startsWith('/api/admin/backups')){

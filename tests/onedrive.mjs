@@ -92,3 +92,16 @@ test('broader OneDrive scope requires explicit selection and remains bound to co
  assert.equal(values.get('tokens').scopes,'offline_access Files.ReadWrite');
  assert.equal((await api.list()).backups.length,1);assert.equal(await api.recover('test-backup'),JSON.stringify({profiles:[],reviews:[],intake:[],documents:[]}));
 });
+
+
+test('authorization diagnostics expose only allowlisted codes and redact provider messages',async()=>{
+ const {describeAuthorizationError}=createRequire(import.meta.url)('../microsoft-authorization-error');
+ const raw=Object.assign(new Error('private-client-secret private-auth-code owner@example.com'),{authReason:'token_exchange_failed',microsoftCode:7000215});
+ const report=describeAuthorizationError(raw);assert.equal(report.reason,'token_exchange_failed');assert.equal(report.microsoftCode,7000215);assert.match(report.error,/rejected the app client secret/);assert.ok(!JSON.stringify(report).includes('private-'));assert.ok(!JSON.stringify(report).includes('@'));
+ assert.deepEqual(describeAuthorizationError({authReason:'private-value',microsoftCode:'private-secret'}),{error:'The Microsoft connection could not be completed. Start a new connection from Backups. (authorization_failed)',reason:'authorization_failed'});
+ const values=new Map(),stateStore={get:k=>values.get(k),put:(k,v)=>values.set(k,v),remove:k=>values.delete(k)};
+ const env={VERCEL:'1',APP_ORIGIN:'https://superior-proconnect.vercel.app',MICROSOFT_CLIENT_ID:'app',MICROSOFT_TENANT_ID:'directory',microsoft_client_secret:'test-only',BACKUP_ENCRYPTION_KEY:'34'.repeat(32)};
+ const api=createOneDrive({env,stateStore,request:async()=>Response.json({error:'invalid_client',error_description:'private-client-secret',error_codes:[7000215]},{status:401}),readSnapshot:()=>''});
+ const auth=new URL(api.connect('personal'));
+ await assert.rejects(api.callback(auth.searchParams.get('state'),'test-code'),error=>{assert.equal(describeAuthorizationError(error).microsoftCode,7000215);return true;});assert.equal(api.status().connected,false);
+});

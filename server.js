@@ -5,10 +5,12 @@ const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),
 const base=path.join(__dirname,'public'),dataFile=process.env.DATA_FILE||path.join(__dirname,'data','database.json'),port=Number(process.env.PORT||3000);
 const membershipCatalog=require('./public/subscription-plans.json');
 const ADMIN_TOKEN=process.env.ADMIN_TOKEN||'';
+const persistentStore=require('./persistent-store').createStore();
+const oneDrive=require('./onedrive').createOneDrive({readSnapshot:()=>JSON.stringify(db()),stateStore:persistentStore.enabled?persistentStore.stateStore:null});
 const seed={profiles:[{id:'superior',name:'Superior Maintenance and Remodeling',tagline:'From an idea to a finished improvement.',city:'Fontana',area:'Fontana, California — contact for service coverage',coverageMode:'cities',coverageAreas:[],coverageZip:'',coverageRadius:null,phone:'909-352-3627',website:'https://superior-maintenance-remodeling.indigotune5.chatgpt.site',logo:'/superior-logo.png',description:'Residential and commercial maintenance, painting and remodeling. Contact Superior to discuss the scope, estimate, and availability for your next project.',services:['Painting','Drywall & repairs','Flooring','Kitchens & bathrooms','Doors & windows','Patios & decks','General maintenance','Remodeling'],verified:false,featured:true,createdAt:'2026-11-01T00:00:00.000Z'}],reviews:[],intake:[],documents:[]};
-function db(){try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...structuredClone(seed),...val}}catch(e){if(e.code==='ENOENT')return structuredClone(seed);throw new Error('Stored data could not be read. Contact the owner; existing records have not been replaced.')}}
-function save(x){fs.mkdirSync(path.dirname(dataFile),{recursive:true});const tmp=dataFile+'.'+process.pid+'.tmp';fs.writeFileSync(tmp,JSON.stringify(x,null,2),{mode:0o600});fs.renameSync(tmp,dataFile)}
-if(!fs.existsSync(dataFile))save(seed);
+function db(){const transaction=persistentStore.context.getStore();if(transaction)return structuredClone(transaction.value.records);if(process.env.VERCEL)throw Error('Durable storage context required');try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...structuredClone(seed),...val}}catch(e){if(e.code==='ENOENT')return structuredClone(seed);throw new Error('Stored data could not be read. Contact the owner; existing records have not been replaced.')}}
+function save(x){const transaction=persistentStore.context.getStore();if(transaction){transaction.value.records=x;transaction.dirty=true;return;}if(process.env.VERCEL)throw Error('Durable storage context required');fs.mkdirSync(path.dirname(dataFile),{recursive:true});const tmp=dataFile+'.'+process.pid+'.tmp';fs.writeFileSync(tmp,JSON.stringify(x,null,2),{mode:0o600});fs.renameSync(tmp,dataFile)}
+if(!process.env.VERCEL&&!persistentStore.enabled&&!fs.existsSync(dataFile))save(seed);
 function send(res,status,payload){res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin'});res.end(JSON.stringify(payload))}
 function body(req){return new Promise((resolve,reject)=>{let size=0,chunks=[];req.on('data',chunk=>{size+=chunk.length;if(size>16*1024){reject(new Error('Request too large'));req.destroy()}else chunks.push(chunk)});req.on('end',()=>{try{resolve(JSON.parse(Buffer.concat(chunks).toString()||'{}'))}catch{reject(new Error('Invalid JSON'))}});req.on('error',reject)})}
 const visits=new Map();
@@ -17,12 +19,38 @@ function admin(req){if(!ADMIN_TOKEN)return false;const token=req.headers['x-admi
 function clean(v,max){return String(v??'').trim().replace(/[<>]/g,'').slice(0,max)}
 function fail(res,e){send(res,e.message==='Request too large'?413:400,{error:e.message||'Invalid request'})}
 const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.jpg':'image/jpeg','.json':'application/json; charset=utf-8','.png':'image/png','.webmanifest':'application/manifest+json','.ico':'image/x-icon','.svg':'image/svg+xml'};
-http.createServer(async (req,res)=>{
+async function handle(req,res){
  try {
  const url=new URL(req.url,'http://localhost');const route=url.pathname;
+ if(route==='/api/documents')req.url='/api/command/estimates'+url.search;
+ if(route==='/api/auth/microsoft/callback'&&req.method==='GET'){
+  try {await oneDrive.callback(url.searchParams.get('state'),url.searchParams.get('code'));
+   res.writeHead(303,{'location':'/backups.html','cache-control':'no-store','referrer-policy':'no-referrer'});res.end();
+  }catch{return send(res,400,{error:'Microsoft authorization failed or expired. Start a new connection from the owner backups page.'});}
+  return;
+ }
+ if(route.startsWith('/api/admin/backups')){
+  if(!admin(req))return send(res,401,{error:'Owner access required'});
+  if(route==='/api/admin/backups/status'&&req.method==='GET')return send(res,200,oneDrive.status());
+  if(route==='/api/admin/backups/connect'&&req.method==='POST')return send(res,200,{authorizationUrl:oneDrive.connect()});
+  if(route==='/api/admin/backups'&&req.method==='POST')return send(res,201,await oneDrive.backup());
+  if(route==='/api/admin/backups'&&req.method==='GET')return send(res,200,await oneDrive.list());
+  if(route==='/api/admin/backups/recover'&&req.method==='POST'){
+   const input=await body(req),snapshot=await oneDrive.recover(input.id);
+   // Download only: never replace live records while the application is running.
+   res.writeHead(200,{'content-type':'application/json','content-disposition':'attachment; filename="superior-proconnect-recovery.json"','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(snapshot);return;
+  }
+  return send(res,404,{error:'Not found'});
+ }
+ if(route==='/api/admin/export'&&req.method==='GET'){if(!admin(req))return send(res,401,{error:'Owner access required'});return send(res,200,db());}
+ if(route==='/api/cron/backup'&&req.method==='GET'){
+ const actual=Buffer.from(req.headers.authorization||''),expected=Buffer.from('Bearer '+(process.env.CRON_SECRET||''));
+ if(!process.env.CRON_SECRET||actual.length!==expected.length||!crypto.timingSafeEqual(actual,expected))return send(res,401,{error:'Scheduled backup authorization required'});
+ return send(res,200,await oneDrive.backup());
+ }
  if(await crmRoutes(req,res,{db,save,send,body,admin,clean,limited}))return;
  if(await estimateRoutes(req,res,{db,save,send,body,admin,clean}))return;
- if(route==='/api/health'&&req.method==='GET')return send(res,200,{ok:true,persistence:process.env.DATA_FILE?'configured data file':'local file (configure persistent storage before public launch)',payments:'PayPal plan details must be verified'});
+ if(route==='/api/health'&&req.method==='GET')return send(res,200,{ok:true,persistence:persistentStore.enabled?'encrypted durable '+persistentStore.backend+' (read verified)':'local development file',writesEnabled:persistentStore.enabled?process.env.SPC_WRITES_ENABLED==='true'&&process.env.SPC_PERSISTENCE_VERIFIED==='true':!process.env.VERCEL,payments:'PayPal plan details must be verified'});
  if(route==='/api/profiles'&&req.method==='GET')return send(res,200,{profiles:db().profiles});
  if(route==='/api/reviews'&&req.method==='GET'){const profile=clean(url.searchParams.get('profile')||'superior',80);const x=db().reviews.filter(r=>r.profileId===profile&&r.status==='approved').sort((a,b)=>b.createdAt.localeCompare(a.createdAt));return send(res,200,{reviews:x,total:x.length,average:x.length?Math.round(10*x.reduce((a,b)=>a+b.stars,0)/x.length)/10:null})}
  if(route==='/api/reviews'&&req.method==='POST'){
@@ -100,6 +128,8 @@ http.createServer(async (req,res)=>{
   const id=clean(x.id,80),index=id?d.documents.findIndex(doc=>doc.id===id):-1;
   if(id&&index<0)return send(res,404,{error:'Document not found.'});
   const prior=index>=0?d.documents[index]:null,now=new Date().toISOString();
+  if(prior&&(prior.sourceEstimateId||['approved','declined'].includes(prior.status)))return send(res,409,{error:'Approved or declined estimates and generated invoices cannot be rewritten.'});
+  if(prior&&prior.type!==type)return send(res,409,{error:'A saved document cannot change type.'});
   const count=d.documents.filter(doc=>doc.type===type).length+1;
   const defaultNo=(type==='estimate'?'EST':'INV')+'-'+new Date().getFullYear()+'-'+String(count).padStart(4,'0');
   const record={
@@ -117,82 +147,15 @@ http.createServer(async (req,res)=>{
  }
 
 
- // Owner-only estimates with a private customer-approval link.
- if(route==='/api/command/estimates'&&req.method==='GET'){
-  if(!admin(req))return send(res,401,{error:'Owner access required'});
-  return send(res,200,{documents:(db().documents||[]).slice().sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))});
- }
- if(route==='/api/command/estimates'&&req.method==='POST'){
-  if(!admin(req))return send(res,401,{error:'Owner access required'});
-  const x=await body(req),client=clean(x.client,120),id=clean(x.id,80);
-  if(client.length<2)return send(res,400,{error:'Enter customer name.'});
-  if(!Array.isArray(x.items)||x.items.length<1||x.items.length>35)return send(res,400,{error:'Provide 1–35 line items.'});
-  const items=x.items.map(v=>({description:clean(v.description,250),category:['Labor','Materials','Other'].includes(v.category)?v.category:'Labor',unit:clean(v.unit,25)||'ea',qty:Number(v.qty),rate:Number(v.rate)}));
-  if(items.some(v=>!v.description||!Number.isFinite(v.qty)||v.qty<=0||v.qty>1e5||!Number.isFinite(v.rate)||v.rate<0||v.rate>1e7))return send(res,400,{error:'Check item descriptions, quantities and rates.'});
-  const markup=Number(x.markup)||0,discount=Number(x.discount)||0,taxRate=Number(x.taxRate)||0,deposit=Number(x.deposit)||0;
-  if(![markup,discount,taxRate,deposit].every(Number.isFinite)||markup<0||markup>1e7||discount<0||taxRate<0||taxRate>100||deposit<0)return send(res,400,{error:'Check markup, discount, tax and deposit.'});
-  const subtotal=Math.round(items.reduce((t,v)=>t+v.qty*v.rate,0)*100)/100;
-  if(discount>subtotal+markup)return send(res,400,{error:'Discount cannot exceed subtotal plus markup.'});
-  const tax=Math.round((subtotal+markup-discount)*taxRate)/100,total=Math.round((subtotal+markup-discount+tax)*100)/100;
-  if(deposit>total)return send(res,400,{error:'Requested deposit cannot exceed estimate total.'});
-  const d=db();d.documents=Array.isArray(d.documents)?d.documents:[];
-  const index=id?d.documents.findIndex(r=>r.id===id):-1;
-  if(id&&index<0)return send(res,404,{error:'Estimate not found.'});
-  const prior=index>=0?d.documents[index]:null;
-  if(prior&&prior.type!=='estimate')return send(res,400,{error:'Only estimates can be edited here.'});
-  if(prior&&['approved','declined'].includes(prior.status))return send(res,409,{error:'An accepted or declined estimate cannot be changed. Create a new one.'});
-  const now=new Date().toISOString(),count=d.documents.filter(v=>v.type==='estimate').length+1;
-  const rec={id:prior?.id||crypto.randomUUID(),type:'estimate',number:clean(x.number,45)||prior?.number||'EST-'+new Date().getFullYear()+'-'+String(count).padStart(4,'0'),
-   status:'ready',approvalToken:prior?.approvalToken||crypto.randomBytes(32).toString('hex'),
-   client,clientPhone:clean(x.clientPhone,60),clientEmail:clean(x.clientEmail,150),clientAddress:clean(x.clientAddress,250),
-   project:clean(x.project,150),projectAddress:clean(x.projectAddress,250),scope:clean(x.scope,1800),
-   date:clean(x.date,10),dueDate:clean(x.dueDate,10),items,subtotal,markup,discount,taxRate,tax,total,
-   deposit,payment:deposit,notes:clean(x.notes,1500),terms:clean(x.terms,1000),license:clean(x.license,80),
-   createdAt:prior?.createdAt||now,updatedAt:now};
-  if(index>=0)d.documents[index]=rec;else d.documents.push(rec);
-  save(d);return send(res,200,{ok:true,document:rec});
- }
- if(route.startsWith('/api/command/estimates/')&&route.endsWith('/paid')&&req.method==='POST'){
-  if(!admin(req))return send(res,401,{error:'Owner access required'});
-  const id=route.slice('/api/command/estimates/'.length,-'/paid'.length);
-  const d=db(),rec=(d.documents||[]).find(v=>v.id===id);
-  if(!rec||rec.type!=='invoice')return send(res,404,{error:'Invoice not found.'});
-  if(rec.status!=='unpaid')return send(res,409,{error:'Only unpaid invoices may be marked paid.'});
-  rec.status='paid';rec.payment=rec.total;rec.updatedAt=new Date().toISOString();save(d);
-  return send(res,200,{ok:true,document:rec});
- }
- // Unlisted tokenized customer estimate access, not indexable or owner-token accessible.
- if(route.startsWith('/api/public-estimates/')){
-  const parts=route.split('/').filter(Boolean),share=parts[2]||'';
-  if(!/^[a-f0-9]{64}$/.test(share))return send(res,404,{error:'Estimate not found.'});
-  const d=db(),rec=(d.documents||[]).find(v=>v.type==='estimate'&&v.approvalToken===share);
-  if(!rec)return send(res,404,{error:'Estimate not found.'});
-  if(parts.length===3&&req.method==='GET'){
-   const {id,type,number,client,clientAddress,project,projectAddress,scope,date,dueDate,items,subtotal,markup,discount,tax,total,deposit,notes,terms,status}=rec;
-   return send(res,200,{document:{id,type,number,client,clientAddress,project,projectAddress,scope,date,dueDate,items,subtotal,markup,discount,tax,total,deposit,notes,terms,status}});
-  }
-  if(parts.length===4&&parts[3]==='decision'&&req.method==='POST'){
-   if(limited(req))return send(res,429,{error:'Too many requests. Try later.'});
-   if(rec.status!=='ready')return send(res,409,{error:'This estimate already has a decision.'});
-   const x=await body(req),decision=clean(x.decision,10),signer=clean(x.signer,100);
-   if(!['approved','declined'].includes(decision))return send(res,400,{error:'Invalid decision.'});
-   if(decision==='approved'&&(signer.length<2||x.agreed!==true))return send(res,400,{error:'Full name and acceptance are required.'});
-   rec.status=decision;rec.decisionSigner=signer;rec.decisionReason=clean(x.reason,700);rec.decidedAt=new Date().toISOString();rec.updatedAt=rec.decidedAt;
-   if(decision==='approved'){
-    const count=d.documents.filter(v=>v.type==='invoice').length+1,now=new Date(),due=new Date(now);due.setDate(due.getDate()+14);
-    const invoice={...rec,id:crypto.randomUUID(),type:'invoice',
-     number:'INV-'+now.getFullYear()+'-'+String(count).padStart(4,'0'),approvalToken:null,
-     status:'unpaid',sourceEstimateId:rec.id,deposit:0,payment:0,
-     date:now.toISOString().slice(0,10),dueDate:due.toISOString().slice(0,10),createdAt:rec.decidedAt,updatedAt:rec.decidedAt};
-    d.documents.push(invoice);
-   }
-   save(d);return send(res,200,{ok:true,document:{status:rec.status,number:rec.number}});
-  }
- }
-
  if(route.startsWith('/api/'))return send(res,404,{error:'Not found'});
  if(!['GET','HEAD'].includes(req.method))return send(res,405,{error:'Method not allowed'});
  const filepath=path.resolve(base,'.'+(route==='/'?'/index.html':route));if(!filepath.startsWith(base+path.sep))return send(res,403,{error:'Forbidden'});
  fs.stat(filepath,(err,stat)=>{if(err||!stat.isFile()){res.writeHead(404);res.end('Not found');return}res.writeHead(200,{'content-type':mime[path.extname(filepath)]||'application/octet-stream','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin','x-frame-options':'SAMEORIGIN','cache-control':route==='/service-worker.js'?'no-cache':'public, max-age=120'});if(req.method==='HEAD')return res.end();fs.createReadStream(filepath).pipe(res)});
  }catch(e){fail(res,e)}
-}).listen(port,'0.0.0.0',()=>console.log(`Superior ProConnect running on port ${port}`));
+}
+async function dispatch(req,res){
+ const route=new URL(req.url,'https://localhost').pathname;
+ if((route.startsWith('/api/admin/')||route.startsWith('/api/command/')||route==='/api/documents')&&!admin(req))return send(res,401,{error:'Owner access required'});
+ if(req.url.startsWith('/api/')&&(process.env.VERCEL||persistentStore.enabled))return persistentStore.run(req,res,seed,handle);return handle(req,res);}
+module.exports=dispatch;
+if(require.main===module)http.createServer(dispatch).listen(port,'0.0.0.0',()=>console.log(`Superior ProConnect running on port ${port}`));

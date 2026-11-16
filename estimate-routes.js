@@ -22,7 +22,7 @@ module.exports = async function estimateRoutes(req,res,util){
     d.documents = Array.isArray(d.documents)?d.documents:[];
     const id=clean(x.id,80),old=id?d.documents.find(o=>o.id===id && o.type==='estimate'):null;
     if(id && !old)return bad('Estimate not found',404);
-    if(old && old.status==='approved')return bad('Approved estimates cannot be changed. Make a new estimate.',409);
+    if(old && ['approved','declined'].includes(old.status))return bad('Approved or declined estimates cannot be changed. Make a new estimate.',409);
     const client=clean(x.client,120),email=clean(x.clientEmail,150),phone=clean(x.clientPhone,50);
     if(client.length<2)return bad('Customer name required');
     if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return bad('Enter a valid customer email');
@@ -66,7 +66,7 @@ module.exports = async function estimateRoutes(req,res,util){
     const d=db(),invoice=(d.documents||[]).find(t=>t.id===markPaid[1]&&t.type==='invoice');
     if(!invoice)return bad('Invoice not found',404);
     if(invoice.status==='paid')return bad('Invoice already marked paid',409);
-    invoice.status='paid';invoice.paidAt=new Date().toISOString();invoice.updatedAt=invoice.paidAt;
+    invoice.payment=invoice.total;invoice.status='paid';invoice.paidAt=new Date().toISOString();invoice.updatedAt=invoice.paidAt;
     save(d);send(res,200,{ok:true,invoice:formatDocument(invoice)});return true;
   }
   if(path.startsWith(publicBase)){

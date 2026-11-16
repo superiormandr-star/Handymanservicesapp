@@ -503,3 +503,40 @@ html,body{max-width:100%;overflow-x:clip}
  .proconnect-branding .construction-services span{min-width:0;overflow-wrap:anywhere;font-size:12px;padding:9px}
  .proconnect-branding .fields{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
 }
+
+
+/* Correct the five-tab phone navigation; never wrap into a second row. */
+@media (max-width:767px){
+ body.proconnect-branding{padding-bottom:calc(63px + env(safe-area-inset-bottom))!important}
+ .proconnect-branding .bottom-nav{
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  grid-template-rows:1fr!important;align-items:center!important;justify-items:stretch!important;
+  gap:0!important;flex-wrap:nowrap!important;width:100%!important;
+  padding:5px 2px max(5px,env(safe-area-inset-bottom))!important;
+  min-height:57px!important;max-height:calc(68px + env(safe-area-inset-bottom))!important;
+ }
+ .proconnect-branding .bottom-nav a{
+  width:100%!important;min-width:0!important;min-height:45px!important;
+  padding:3px 1px!important;gap:3px!important;flex:initial!important;
+  font-size:18px!important;line-height:1!important;overflow:hidden!important;
+ }
+ .proconnect-branding .bottom-nav small{
+  font-size:clamp(8px,2.3vw,10px)!important;line-height:1.1!important;
+  white-space:normal!important;word-break:normal!important;overflow-wrap:normal!important;
+  letter-spacing:-.02em!important;
+ }
+ .proconnect-branding .hero-feature .float-card{
+  width:min(100%,275px)!important;max-width:275px!important;
+  padding:9px 12px!important;gap:9px!important;margin:10px auto 0!important;
+ }
+ .proconnect-branding .hero-feature .float-card .float-icon{
+  width:31px!important;height:31px!important;flex:0 0 31px!important;font-size:20px!important;
+ }
+ .proconnect-branding .float-card b{font-size:12px!important;line-height:1.2!important}
+ .proconnect-branding .float-card small{font-size:11px!important;line-height:1.2!important}
+ .proconnect-branding .hero-card{width:min(100%,310px)!important;padding:10px!important}
+ .proconnect-branding .hero-grid{gap:16px!important;padding:26px 0 34px!important}
+ .proconnect-branding .section h2{font-size:clamp(23px,6.6vw,29px)!important;line-height:1.12!important}
+ .proconnect-branding .ticker-inner{font-size:9px!important;gap:9px!important;overflow:hidden!important}
+ .proconnect-branding .ticker-inner span{font-size:10px!important;letter-spacing:.04em!important}
+}

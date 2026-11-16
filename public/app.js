@@ -35,7 +35,7 @@ constructionIntro.innerHTML=`
   <img class="approved-logo" src="/logos/Superior_Construction_Network.jpg" alt="Superior ProConnect Construction Network logo" width="132" height="132"/>
   <div><p class="construction-kicker">Superior ProConnect • Construction</p><h3>Find help for your next project.</h3><p>Connect with local construction and home-service professionals. Browse available profiles, review service areas and customer feedback, and request quotes directly from listed businesses.</p></div>
  </div>
- <div class="construction-actions"><a class="btn btn-primary" href="#pros">Find Construction Professionals</a><a class="btn btn-outline" href="#advertise">Join as a Construction Pro</a></div>
+ <div class="construction-actions"><a class="btn btn-primary" href="#post-job">Request Construction Estimate</a><a class="btn btn-primary" href="#pros">Find Construction Professionals</a><a class="btn btn-outline" href="#advertise">Join as a Construction Pro</a></div>
  <h3 class="construction-subheading">Explore construction services</h3>
  <div class="construction-services">
   <span>Remodeling</span><span>Kitchen &amp; Bathroom</span><span>Flooring</span><span>Drywall</span><span>Painting</span><span>Home Repairs</span><span>Patios &amp; Decks</span><span>Property Maintenance</span>
@@ -52,7 +52,7 @@ automotiveIntro.innerHTML=`
   <img class="approved-logo" src="/logos/Superior_Automotive_Network.jpg" alt="Superior ProConnect Automotive Network logo" width="132" height="132"/>
   <div><p class="construction-kicker">Superior ProConnect • Automotive</p><h3>Connect with automotive service professionals.</h3><p>Browse listed automotive businesses, check their service areas and published reviews, and request a quote directly from a provider.</p></div>
  </div>
- <div class="construction-actions"><a class="btn btn-primary" href="#pros">Find Automotive Professionals</a><a class="btn btn-outline" href="#advertise">Join as an Automotive Pro</a></div>
+ <div class="construction-actions"><a class="btn btn-primary" href="#post-job">Request Automotive Estimate</a><a class="btn btn-primary" href="#pros">Find Automotive Professionals</a><a class="btn btn-outline" href="#advertise">Join as an Automotive Pro</a></div>
  <h3 class="construction-subheading">Explore automotive services</h3>
  <div class="construction-services">
   <span>Diagnostics</span><span>Engine Repair</span><span>Brakes</span><span>Suspension</span><span>Maintenance</span><span>Electrical</span><span>Detailing</span><span>Body &amp; Paint</span>
@@ -62,7 +62,7 @@ automotiveIntro.innerHTML=`
 `;
 automotiveView.querySelector('.container').insertBefore(automotiveIntro,automotivePlans);
 const appScreens={
- home:['#home','.ticker','#how','.faq'],
+ home:['#home','.ticker','#post-job','#how','.faq'],
  pros:['#pros'],
  how:['#how','.faq'],
  advertise:['#advertise'],
@@ -77,6 +77,7 @@ function route(){
  let screen=isProfile?'profile':hash.slice(1);
  if(screen==='construction-memberships')screen='construction';
  if(screen==='automotive-memberships')screen='automotive';
+ if(screen==='post-job')screen='home';
  if(!Object.hasOwn(appScreens,screen))screen='home';
  const profile=$('#profile');
  for(const section of appMain.querySelectorAll(':scope > section'))section.hidden=true;

@@ -21,7 +21,7 @@ async function storageSetup(req,res,{env=process.env,sdk=require('@vercel/blob')
    const decipher=crypto.createDecipheriv('aes-256-gcm',Buffer.from(env.BACKUP_ENCRYPTION_KEY,'hex'),Buffer.from(envelope.iv,'base64'));decipher.setAuthTag(Buffer.from(envelope.tag,'base64'));
    const plaintext=Buffer.concat([decipher.update(Buffer.from(envelope.data,'base64')),decipher.final()]);const value=JSON.parse(plaintext);validateBackup(JSON.stringify(value.records));
    const counts=Object.fromEntries(Object.entries(value.records).filter(([,v])=>Array.isArray(v)).map(([k,v])=>[k,v.length]));
-   return send(res,200,{ok:true,namespace,counts,sha256:crypto.createHash('sha256').update(plaintext).digest('hex'),etag:stored.blob.etag});
+   return send(res,200,{ok:true,namespace,counts,ownerAuthenticationConfigured:Boolean(env.ADMIN_TOKEN),microsoftBackupConfigured:Boolean(env.APP_ORIGIN&&env.MICROSOFT_CLIENT_ID&&env.MICROSOFT_TENANT_ID&&(env.MICROSOFT_CLIENT_SECRET||env.microsoft_client_secret)),sha256:crypto.createHash('sha256').update(plaintext).digest('hex'),etag:stored.blob.etag});
   }
   if(route!=='/api/setup/initialize'||req.method!=='POST')return send(res,405,{error:'Method not allowed'});
   const records={profiles:[],reviews:[],intake:[],documents:[],customers:[],subscriptions:[],leads:[],proAccess:[],estimateRequests:[]};validateBackup(JSON.stringify(records));

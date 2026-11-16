@@ -9,16 +9,19 @@ test('exactly six plans recognized and bogus plan IDs rejected',()=>{
  for(const p of catalog.plans)assert.equal(paypal.planFor(p.paypalPlanId).key,p.key);
  assert.equal(paypal.planFor('P-FAKE'),null);
 });
-test('matching account must be unique and in correct industry and tier',()=>{
+test('subscription is matched only to the exact checkout-bound applicant',()=>{
  const plan=catalog.plans.find(x=>x.key==='automotive-elite');
- const subscription={id:'I-VALID12345',subscriber:{email_address:'test@example.com'}};
- const r={email:'TEST@example.com',industry:'automotive',membership:'elite',status:'interest',paypalSubscriptionId:null};
+ const id='12345678-1234-1234-1234-123456789abc';
+ const subscription={id:'I-VALID12345',custom_id:id,subscriber:{email_address:'test@example.com'}};
+ const r={id,email:'TEST@example.com',industry:'automotive',membership:'elite',status:'pending_payment_verification',paypalSubscriptionId:'I-VALID12345'};
  assert.equal(paypal.matchApplication([r],subscription,plan),r);
  assert.equal(paypal.matchApplication([r,r],subscription,plan),null);
  assert.equal(paypal.matchApplication([{...r,industry:'construction'}],subscription,plan),null);
  assert.equal(paypal.matchApplication([{...r,membership:'essential'}],subscription,plan),null);
  assert.equal(paypal.matchApplication([{...r,paypalSubscriptionId:'I-OTHER'}],subscription,plan),null);
- assert.equal(paypal.matchApplication([r],{...subscription,subscriber:{email_address:''}},plan),null);
+ assert.equal(paypal.matchApplication([r],{...subscription,custom_id:undefined},plan),null);
+ assert.equal(paypal.matchApplication([r],{...subscription,custom_id:'different-id'},plan),null);
+ assert.equal(paypal.matchApplication([{...r,status:'interest'}],subscription,plan),null);
 });
 test('webhook activation remains unconfigured without PayPal credentials',()=>{
  if(!process.env.PAYPAL_CLIENT_ID||!process.env.PAYPAL_CLIENT_SECRET||!process.env.PAYPAL_WEBHOOK_ID)assert.equal(paypal.configReady(),false);

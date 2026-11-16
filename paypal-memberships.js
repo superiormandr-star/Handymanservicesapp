@@ -36,9 +36,14 @@ function subscriptionId(event){
 }
 function planFor(id){return catalog.plans.find(p=>p.paypalPlanId===id)||null;}
 function matchApplication(records,subscription,plan){
- const email=String(subscription.subscriber?.email_address||'').toLowerCase().trim();
- if(!email)return null;
- const candidates=records.filter(r=>r.email?.toLowerCase().trim()===email && r.industry===plan.industry && r.membership===plan.package && ['interest','pending_payment_verification','verified','active','suspended','cancelled','expired'].includes(r.status) && (!r.paypalSubscriptionId||r.paypalSubscriptionId===subscription.id));
+ // Subscription must have been created by our own authenticated checkout flow.
+ // Standalone public PayPal plan URLs cannot supply a trusted applicant binding.
+ const applicantId=String(subscription.custom_id||'').trim();
+ if(!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/.test(applicantId))return null;
+ const candidates=records.filter(r=>r.id===applicantId &&
+   r.industry===plan.industry && r.membership===plan.package &&
+   r.paypalSubscriptionId===subscription.id &&
+   ['pending_payment_verification','verified','active','suspended','cancelled','expired'].includes(r.status));
  return candidates.length===1?candidates[0]:null;
 }
 async function handle(req,res,{db,save,send}){

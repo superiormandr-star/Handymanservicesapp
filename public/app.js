@@ -13,7 +13,58 @@ function directory(){const q=$('#search').value.trim().toLowerCase();const match
 function quoteForm(p){return `<section class="panel quote-intake"><h3>Request a quote</h3><p>Describe your project for ${escapeHtml(p.name)}. Your contact details are shared privately with this business and the directory owner.</p><form id="quote-form"><label>Your name<input name="name" required minlength="2" maxlength="100" autocomplete="name"></label><div class="fields"><label>Email<input name="email" type="email" maxlength="180" autocomplete="email"></label><label>Phone<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label></div><p class="coverage-help">Provide an email address or phone number so the business can reply.</p><label>Project city / ZIP<input name="location" required maxlength="150" placeholder="Where is the work needed?"></label><label>Project details<textarea name="description" required minlength="15" maxlength="3000" rows="4" placeholder="Describe the work, timing, and any measurements you have."></textarea></label><label class="consent"><input name="consent" type="checkbox" required> I allow this business to contact me about this project. I have read the <a href="/privacy.html" target="_blank" rel="noopener">privacy information</a>.</label><input class="honey" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="btn btn-primary" type="submit">Send quote request →</button><p id="quote-status" role="status" class="form-status"></p></form></section>`}
 function profileTemplate(p){if(p.id==='superior')p={...p,logo:'/superior-logo.png'};return `<div class="profile-hero"><div class="profile-logo">${p.logo?`<img src="${escapeHtml(p.logo)}" alt="${escapeHtml(p.name)} business logo">`:'<div class="fallback">'+escapeHtml(p.name)+'</div>'}</div><div class="profile-content"><div class="eyebrow orange">SERVICE PROVIDER • ${escapeHtml(p.city)}</div><h2>${escapeHtml(p.name)}</h2><p><b>${escapeHtml(p.tagline||'Service provider')}</b></p><p>${escapeHtml(p.description)}</p><div class="service-tags">${(p.services||[]).map(s=>`<span class="tag">${escapeHtml(s)}</span>`).join('')}</div><div class="listing-actions"><a class="btn btn-primary" href="${phoneLink(p.phone)}">Call ${escapeHtml(p.phone||'Business')} ↗</a>${p.phone?`<a class="btn btn-navy" href="${smsLink(p.phone)}">Send a Text</a>`:''}${p.website&&safeWebsite(p.website)!=='#'?`<a class="btn btn-navy" href="${escapeHtml(safeWebsite(p.website))}" target="_blank" rel="noopener noreferrer">Business Website ↗</a>`:''}</div></div></div>${quoteForm(p)}<div class="profile-grid"><div class="panel"><h3>About this business</h3><p>${escapeHtml(p.description)}</p><p><b>Service area:</b> ${escapeHtml(p.area||p.city)}</p>${p.coverageMode==='radius'&&p.coverageZip?`<span class="coverage-badge">${escapeHtml(p.coverageRadius)}-mile radius from ${escapeHtml(p.coverageZip)}</span>`:''}${Array.isArray(p.coverageAreas)&&p.coverageAreas.length?`<p><b>Areas served:</b> ${escapeHtml(p.coverageAreas.join(', '))}</p>`:''}<p>Contact the business directly for project availability, terms, and estimates.</p><h3>Customer ratings</h3><div id="rating-overview" aria-live="polite">Loading ratings…</div><div id="review-list" class="review-list" aria-live="polite"></div></div><div class="panel"><h3>Leave a review</h3><p>Worked with ${escapeHtml(p.name)}? Share your honest experience. Reviews are screened before appearing publicly.</p><form id="review-form" class="review-form"><label for="review-name">Your first name</label><input id="review-name" name="name" required minlength="2" maxlength="65" placeholder="Your first name"/><label>Your rating</label><div id="stars" class="star-picker" role="group" aria-label="Star rating">${[1,2,3,4,5].map(n=>`<button type="button" data-stars="${n}" aria-label="${n} star${n===1?'':'s'}" class="${n<=selectedStars?'active':''}">★</button>`).join('')}</div><label for="review-comment">Your experience</label><textarea id="review-comment" name="comment" rows="5" required minlength="15" maxlength="800" placeholder="Tell other customers about the project and your experience"></textarea><input class="honey" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true"/><button class="btn btn-primary" type="submit">Submit for review →</button><p id="review-status" class="form-status" role="status" aria-live="polite"></p></form><p style="font-size:11px">Reviews are opinions of customers. A submission does not guarantee publication.</p></div></div>`}
 async function loadReviews(){try{const d=await api('/api/reviews?profile='+encodeURIComponent(selected));$('#rating-overview').innerHTML=d.total?`<div class="review-head"><span class="stars" aria-label="${d.average} out of 5">${'★'.repeat(Math.round(d.average))}${'☆'.repeat(5-Math.round(d.average))}</span><strong>${d.average}/5 · ${d.total} review${d.total===1?'':'s'}</strong></div>`:'<p>No published customer reviews yet. Be the first to share your experience.</p>';$('#review-list').innerHTML=d.reviews.map(r=>`<article class="review"><div class="review-head"><b>${escapeHtml(r.name)}</b><span class="stars" aria-label="${r.stars} out of 5">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</span></div><p>${escapeHtml(r.comment)}</p><small>${new Date(r.createdAt).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}</small>${r.ownerReply?`<div class="reply"><b>Business response:</b> ${escapeHtml(r.ownerReply)}</div>`:''}</article>`).join('')}catch{$('#rating-overview').textContent='Ratings are temporarily unavailable.'}}
-function route(){const hash=decodeURIComponent(location.hash||'#home');const isProfile=hash.startsWith('#profile/');const profile=$('#profile');const homeSections=['.hero','.ticker','.directory','.process','.advertise','.faq'];homeSections.forEach(s=>$(s).hidden=isProfile);profile.hidden=!isProfile;if(isProfile){selected=hash.split('/').slice(1).join('/')||'superior';const p=profiles.find(p=>p.id===selected);if(p){selectedStars=5;$('#profile-body').innerHTML=profileTemplate(p);loadReviews()}else{$('#profile-body').innerHTML='<p>Business not found. <a href="#pros">Return to directory</a>.</p>'}window.scrollTo(0,0)}else{const id=hash.slice(1);if(id&&id!=='home')setTimeout(()=>document.getElementById(id)?.scrollIntoView(),25)}}
+// Dedicated in-app views preserve existing forms, checkout links, and approved branding.
+const appMain=$('#main');
+const constructionPlans=$('#construction-memberships');
+const automotivePlans=$('#automotive-memberships');
+function createNetworkView(id,heading,plans){
+ const view=document.createElement('section');
+ view.id=id;
+ view.className='app-network-view';
+ view.hidden=true;
+ view.innerHTML='<div class="container"><a class="app-back" href="#home" aria-label="Back to home">← Back to Home</a><h2>'+heading+'</h2><p>Explore the network memberships and estimate services.</p></div>';
+ view.querySelector('.container').appendChild(plans);
+ appMain.appendChild(view);
+ return view;
+}
+const constructionView=createNetworkView('construction','Construction Network',constructionPlans);
+const automotiveView=createNetworkView('automotive','Automotive Network',automotivePlans);
+const appScreens={
+ home:['#home','.ticker'],
+ pros:['#pros'],
+ how:['#how','.faq'],
+ advertise:['#advertise'],
+ construction:['#construction'],
+ automotive:['#automotive'],
+ profile:['#profile']
+};
+$('#pc-launch')?.setAttribute('hidden','');
+function route(){
+ const hash=decodeURIComponent(location.hash||'#home');
+ const isProfile=hash.startsWith('#profile/');
+ let screen=isProfile?'profile':hash.slice(1);
+ if(screen==='construction-memberships')screen='construction';
+ if(screen==='automotive-memberships')screen='automotive';
+ if(!Object.hasOwn(appScreens,screen))screen='home';
+ const profile=$('#profile');
+ for(const section of appMain.querySelectorAll(':scope > section'))section.hidden=true;
+ for(const selector of appScreens[screen]){
+  const el=$(selector,appMain);if(el)el.hidden=false;
+ }
+ if(isProfile){
+  selected=hash.split('/').slice(1).join('/')||'superior';
+  const p=profiles.find(p=>p.id===selected);
+  if(p){selectedStars=5;$('#profile-body').innerHTML=profileTemplate(p);loadReviews()}
+  else $('#profile-body').innerHTML='<p>Business not found. <a href="#pros">Return to directory</a>.</p>';
+ }
+ document.querySelectorAll('.desktop-nav a,.bottom-nav a').forEach(link=>{
+  const active=link.getAttribute('href')==='#'+screen;
+  link.classList.toggle('active',active);
+  if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
+ });
+ window.scrollTo({top:0,behavior:'instant'});
+}
+
 $('#search').addEventListener('input',directory);
 const coverageMode=$('#coverage-mode');
 function syncCoverage(){const mode=coverageMode.value;$('#coverage-areas-group').hidden=mode!=='cities';$('#coverage-radius-group').hidden=mode!=='radius';$('#coverage-states-group').hidden=mode!=='states';$('#coverage-areas').required=mode==='cities';$('#coverage-zip').required=mode==='radius';$('#coverage-states').required=mode==='states'}

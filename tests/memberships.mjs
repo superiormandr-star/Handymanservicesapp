@@ -40,6 +40,16 @@ test('six separate packages cannot start checkout or activate from a forged call
   }
   const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
   const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  assert.ok(!html.includes('$3.99'),'Retired $3.99 estimate price must not appear on homepage');
+  for(const entry of catalog.estimatePayments){
+   assert.ok(html.includes(entry.url),'Industry-specific PayPal checkout missing from homepage');
+   assert.ok(html.includes('Estimate payment: 
+  assert.ok(!app.includes('P-53U089831B5370605NLT23EQ'));assert.ok(!app.includes('paypal.com/sdk/js'));assert.ok(!html.includes('paypal-button-container'));
+  for(const p of catalog.plans){assert.ok(html.includes(`data-package-key="${p.key}"`));assert.ok(html.includes(`id="${p.key}-status"`));}
+ }finally{proc.kill('SIGTERM');rmSync(dir,{recursive:true,force:true})}
+});
++entry.amount+' USD'),'Industry-specific estimate price missing from homepage');
+  }
   assert.ok(!app.includes('P-53U089831B5370605NLT23EQ'));assert.ok(!app.includes('paypal.com/sdk/js'));assert.ok(!html.includes('paypal-button-container'));
   for(const p of catalog.plans){assert.ok(html.includes(`data-package-key="${p.key}"`));assert.ok(html.includes(`id="${p.key}-status"`));}
  }finally{proc.kill('SIGTERM');rmSync(dir,{recursive:true,force:true})}

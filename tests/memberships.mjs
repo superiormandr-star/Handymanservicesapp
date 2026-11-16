@@ -51,6 +51,15 @@ test('six separate packages cannot start checkout or activate from a forged call
   }
   const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
   const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
+  // Each estimate checkout must appear only in its own network section.
+  const constructionSection=html.split('id="construction-memberships"')[1]?.split('id="automotive-memberships"')[0];
+  const automotiveSection=html.split('id="automotive-memberships"')[1]?.split('class="founder-note"')[0];
+  assert.ok(constructionSection,'Construction membership section exists');
+  assert.ok(automotiveSection,'Automotive membership section exists');
+  assert.ok(constructionSection.includes('ED9BM6N9TVJMC'),'Construction $18 estimate link missing');
+  assert.ok(!constructionSection.includes('SCXVVGDZU6LE2'),'Automotive $10 estimate link appears in Construction');
+  assert.ok(automotiveSection.includes('SCXVVGDZU6LE2'),'Automotive $10 estimate link missing');
+  assert.ok(!automotiveSection.includes('ED9BM6N9TVJMC'),'Construction $18 estimate link appears in Automotive');
   assert.ok(!html.includes('$3.99'),'Retired $3.99 estimate price must not appear on homepage');
   for(const entry of catalog.estimatePayments){
    assert.ok(html.includes(entry.url),'Industry-specific PayPal checkout missing from homepage');

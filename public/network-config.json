@@ -153,23 +153,23 @@
       {
         "id": "shop-exposure",
         "name": "Shop Exposure",
-        "baseMonthlyPrice": 45,
         "monthlyEstimateCap": 0,
         "perEstimatePrice": null,
-        "estimateGeneration": false
+        "estimateGeneration": false,
+        "newEnrollmentEnabled": false
       },
       {
         "id": "shop-pro",
         "name": "Shop Pro",
-        "baseMonthlyPrice": 89.99,
         "monthlyEstimateCap": 40,
         "perEstimatePrice": 4.99,
-        "estimateGeneration": true
+        "estimateGeneration": true,
+        "newEnrollmentEnabled": false
       }
     ],
     "capPolicy": "40 estimates per calendar billing month for Shop Pro; hard stop at cap, no automatic overages",
     "invoiceHandling": "Shop-managed; no platform-managed invoicing",
-    "pricingStatus": "Owner confirmed $45 Shop Exposure; $89.99 Shop Pro base; $4.99 per estimate; 40 Shop Pro estimates monthly",
+    "pricingStatus": "Legacy shop feature definitions retained; obsolete base prices retired. New network memberships use /subscription-plans.json; checkout remains disabled. Per-estimate fees are separate from recurring subscriptions.",
     "estimateApprovalWorkflow": {
       "customerRequest": "Customer submits request and contact details privately",
       "estimateGeneration": "Shop Pro estimate generated and delivered through platform",
@@ -239,5 +239,6 @@
       "subscriptions",
       "platform document and estimate fees"
     ]
-  }
+  },
+  "membershipCatalog": "/subscription-plans.json"
 }

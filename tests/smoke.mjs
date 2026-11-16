@@ -27,7 +27,7 @@ test('Handyman Services main business-directory flows',async()=>{
   r=await request(base,'/api/admin/reply',json({id,reply:'Thank you for your feedback!'},headers));assert.equal(r.status,200);
   r=await request(base,'/api/reviews?profile=superior');assert.equal(r.body.total,1);assert.equal(r.body.average,5);assert.equal(r.body.reviews[0].ownerReply,'Thank you for your feedback!');
   r=await request(base,'/api/admin/reviews',{headers});assert.equal(r.body.reviews.length,1);
-  r=await request(base,'/api/join',json({business:'Test Services LLC',email:'test@example.com',city:'Austin, TX',phone:'5555550123',services:'Painting, Carpentry',coverageMode:'cities',coverageAreas:'Austin, Round Rock, Travis County'}));assert.equal(r.status,201);const requestId=r.body.requestId;
+  r=await request(base,'/api/join',json({business:'Test Services LLC',membership:'basic',email:'test@example.com',city:'Austin, TX',phone:'5555550123',services:'Painting, Carpentry',coverageMode:'cities',coverageAreas:'Austin, Round Rock, Travis County'}));assert.equal(r.status,201);const requestId=r.body.requestId;
   r=await request(base,'/api/subscription',json({requestId,subscriptionId:'I-EXAMPLE123456'}));assert.equal(r.status,200);
   r=await request(base,'/api/admin/pending',{headers});assert.equal(r.body.intake[0].status,'pending_payment_verification');assert.deepEqual(r.body.intake[0].coverageAreas,['Austin','Round Rock','Travis County']);assert.deepEqual(r.body.intake[0].services,['Painting','Carpentry']);
   r=await request(base,'/api/admin/intake',json({id:requestId,status:'verified'},headers));assert.equal(r.status,200);

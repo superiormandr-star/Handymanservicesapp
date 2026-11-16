@@ -441,3 +441,16 @@ footer .footer-brand img.approved-logo{display:block!important}
 .proconnect-branding .step-icon,.proconnect-branding .form-icon{color:#84652b;background:#f3ead7}
 .proconnect-branding .hero-feature{flex-direction:column;align-items:center}
 .proconnect-branding .hero-feature .float-card{position:static;transform:none;margin:16px 0 0;max-width:100%}
+
+/* Extend the existing pricing cards for the six network/package assignments. */
+.proconnect-branding .network-memberships{margin:24px 0;min-width:0}
+.proconnect-branding .network-memberships h3{color:#e5c879;font-size:22px}
+.proconnect-branding .founder-plans{grid-template-columns:1fr}
+.proconnect-branding .founder-plan h4{font-size:20px;margin:0 0 8px}
+.proconnect-branding .founder-plan .package-network{font-weight:700}
+.proconnect-branding .package-checkout{white-space:normal;width:100%;justify-content:center;margin-top:14px;background:#e4e8ee;color:#43546b;border:1px solid #b7c2cf;font-size:12px;cursor:not-allowed;opacity:1}
+.proconnect-branding .package-checkout:hover{transform:none}
+.proconnect-branding .package-status{font-size:12px;margin-top:10px}
+@media(max-width:767px){.proconnect-branding .network-memberships h3{color:#172b43}}
+.proconnect-branding .package-missing{margin-top:12px;border-top:1px solid #d3bd91;padding-top:12px;font-size:12px;line-height:1.5;color:#43546b}.proconnect-branding .package-missing ul{padding-left:18px;margin:8px 0}.proconnect-branding .package-missing p{margin:8px 0}
+.proconnect-branding .estimate-payment{padding:18px;margin:18px 0;border:1px solid #d3bd91;border-radius:16px;background:#f6f8fb;color:#172b47}.proconnect-branding .estimate-payment h4{margin:0 0 10px}.proconnect-branding .estimate-payment p{font-size:13px;line-height:1.6;color:#43546b}.proconnect-branding .estimate-payment a{white-space:normal}

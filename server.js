@@ -3,6 +3,7 @@ const estimateRoutes = require('./estimate-routes');
 const crmRoutes = require('./crm-routes');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const base=path.join(__dirname,'public'),dataFile=process.env.DATA_FILE||path.join(__dirname,'data','database.json'),port=Number(process.env.PORT||3000);
+const membershipCatalog=require('./public/subscription-plans.json');
 const ADMIN_TOKEN=process.env.ADMIN_TOKEN||'';
 const seed={profiles:[{id:'superior',name:'Superior Maintenance and Remodeling',tagline:'From an idea to a finished improvement.',city:'Fontana',area:'Fontana, California — contact for service coverage',coverageMode:'cities',coverageAreas:[],coverageZip:'',coverageRadius:null,phone:'909-352-3627',website:'https://superior-maintenance-remodeling.indigotune5.chatgpt.site',logo:'/superior-logo.png',description:'Residential and commercial maintenance, painting and remodeling. Contact Superior to discuss the scope, estimate, and availability for your next project.',services:['Painting','Drywall & repairs','Flooring','Kitchens & bathrooms','Doors & windows','Patios & decks','General maintenance','Remodeling'],verified:false,featured:true,createdAt:'2026-11-01T00:00:00.000Z'}],reviews:[],intake:[],documents:[]};
 function db(){try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...structuredClone(seed),...val}}catch(e){if(e.code==='ENOENT')return structuredClone(seed);throw new Error('Stored data could not be read. Contact the owner; existing records have not been replaced.')}}
@@ -15,7 +16,7 @@ function limited(req){let ip=(req.socket.remoteAddress||'unknown');let now=Date.
 function admin(req){if(!ADMIN_TOKEN)return false;const token=req.headers['x-admin-token'];if(typeof token!=='string'||Buffer.byteLength(token)!==Buffer.byteLength(ADMIN_TOKEN))return false;return crypto.timingSafeEqual(Buffer.from(token),Buffer.from(ADMIN_TOKEN))}
 function clean(v,max){return String(v??'').trim().replace(/[<>]/g,'').slice(0,max)}
 function fail(res,e){send(res,e.message==='Request too large'?413:400,{error:e.message||'Invalid request'})}
-const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.png':'image/png','.webmanifest':'application/manifest+json','.ico':'image/x-icon','.svg':'image/svg+xml'};
+const mime={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.jpg':'image/jpeg','.json':'application/json; charset=utf-8','.png':'image/png','.webmanifest':'application/manifest+json','.ico':'image/x-icon','.svg':'image/svg+xml'};
 http.createServer(async (req,res)=>{
  try {
  const url=new URL(req.url,'http://localhost');const route=url.pathname;
@@ -35,8 +36,8 @@ http.createServer(async (req,res)=>{
   if(limited(req))return send(res,429,{error:'Too many submissions. Try later.'});const x=await body(req);
   if(x.website)return send(res,200,{ok:true});const business=clean(x.business,100),email=clean(x.email,180),city=clean(x.city,80),phone=clean(x.phone,32);
   if(business.length<3||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||city.length<2)return send(res,400,{error:'Business name, valid email, and city are required.'});
-  const industry=clean(x.industry||'construction',24),membership=clean(x.membership||'basic',12);
-  if(!['construction','automotive'].includes(industry)||!['basic','pro'].includes(membership))return send(res,400,{error:'Select a valid industry and membership.'});
+  const industry=clean(x.industry||'construction',24),membership=clean(x.membership||'essential',16);
+  if(!['construction','automotive'].includes(industry)||!['essential','professional','elite','basic','pro'].includes(membership))return send(res,400,{error:'Select a valid industry and membership.'});
   const services=clean(x.services,300).split(/[,\n;]+/).map(v=>clean(v,50)).filter(Boolean).slice(0,15);
   if(!services.length)return send(res,400,{error:'List at least one service you provide.'});
   const coverageMode=clean(x.coverageMode||'cities',16), raw=clean(coverageMode==='states'?x.coverageStates:x.coverageAreas,400);
@@ -46,12 +47,20 @@ http.createServer(async (req,res)=>{
   if(coverageMode==='radius'&&(!/^[0-9]{5}$/.test(coverageZip)||![5,10,15,25,50,75,100,150].includes(coverageRadius)))return send(res,400,{error:'Enter a 5-digit starting ZIP code and choose a radius.'});
   if(coverageMode!=='radius'&&!coverageAreas.length)return send(res,400,{error:'List at least one city, county, ZIP code or state you serve.'});
   const serviceArea=coverageMode==='radius'?`${coverageRadius}-mile radius from ZIP ${coverageZip}`:coverageAreas.join(', ');
-  const d=db();const record={id:crypto.randomUUID(),business,email,city,phone,industry,membership,services,coverageMode,coverageAreas:coverageMode==='radius'?[]:coverageAreas,coverageZip:coverageMode==='radius'?coverageZip:'',coverageRadius:coverageMode==='radius'?coverageRadius:null,serviceArea,paypalSubscriptionId:null,status:'interest',createdAt:new Date().toISOString()};d.intake.push(record);save(d);return send(res,201,{ok:true,requestId:record.id,message:'Interest submitted. Complete PayPal checkout and await business listing verification.'});
+  const d=db();const record={id:crypto.randomUUID(),business,email,city,phone,industry,membership,services,coverageMode,coverageAreas:coverageMode==='radius'?[]:coverageAreas,coverageZip:coverageMode==='radius'?coverageZip:'',coverageRadius:coverageMode==='radius'?coverageRadius:null,serviceArea,paypalSubscriptionId:null,status:'interest',createdAt:new Date().toISOString()};d.intake.push(record);save(d);return send(res,201,{ok:true,requestId:record.id,message:'Interest submitted. Checkout is disabled; no payment has been taken.'});
+ }
+ // New memberships remain fail-closed until provider and lifecycle verification is implemented.
+ if(route==='/api/membership-checkout'&&req.method==='POST'){
+  const x=await body(req);
+  const plan=membershipCatalog.plans.find(p=>p.industry===x.industry&&p.package===x.membership);
+  if(!plan||x.packageKey!==plan.key)return send(res,400,{error:'Select the matching network and package.'});
+  return send(res,503,{error:'Subscription checkout is unavailable until the matching PayPal plan and payment lifecycle are verified.',packageKey:plan.key,checkoutEnabled:false});
  }
  if(route==='/api/subscription'&&req.method==='POST'){
   const x=await body(req);const requestId=clean(x.requestId,90),subscriptionId=clean(x.subscriptionId,100);
   if(!/^I-[A-Z0-9-]{6,}$/i.test(subscriptionId))return send(res,400,{error:'Invalid subscription ID'});
   const d=db(),rec=d.intake.find(e=>e.id===requestId);if(!rec)return send(res,404,{error:'Application not found'});
+  if(['essential','professional','elite'].includes(rec.membership))return send(res,409,{error:'New membership activation is disabled pending verified PayPal subscription handling.'});
   rec.paypalSubscriptionId=subscriptionId;rec.status='pending_payment_verification';save(d);return send(res,200,{ok:true,message:'Subscription reference received. Listing will be activated after verification.'});
  }
  if(route==='/api/admin/pending'&&req.method==='GET'){if(!admin(req))return send(res,401,{error:'Admin access required'});const d=db();return send(res,200,{reviews:d.reviews.filter(r=>r.status==='pending'),intake:d.intake,profiles:d.profiles})}

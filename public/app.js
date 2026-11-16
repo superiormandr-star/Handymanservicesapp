@@ -30,7 +30,7 @@ function createNetworkView(id,heading,plans){
 const constructionView=createNetworkView('construction','Construction Network',constructionPlans);
 const automotiveView=createNetworkView('automotive','Automotive Network',automotivePlans);
 const appScreens={
- home:['#home','.ticker'],
+ home:['#home','.ticker','#how','.faq'],
  pros:['#pros'],
  how:['#how','.faq'],
  advertise:['#advertise'],

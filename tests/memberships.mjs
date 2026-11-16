@@ -25,6 +25,19 @@ test('six separate packages cannot start checkout or activate from a forged call
    const record=JSON.parse(readFileSync(file,'utf8')).intake.find(r=>r.id===join.body.requestId);assert.equal(record.industry,plan.industry);assert.equal(record.membership,plan.package);assert.equal(record.status,'interest');assert.equal(record.paypalSubscriptionId,null);
   }
   for(const entry of catalog.estimatePayments){assert.equal(entry.kind,'one-time-estimate');assert.ok(catalog.plans.every(p=>p.checkoutUrl!==entry.url));}
+  // Prevent the retired $3.99 estimate rate from returning or the two checkouts being swapped.
+  const expectedEstimatePayments={
+   construction:{amount:'18.00',url:'https://www.paypal.com/ncp/payment/ED9BM6N9TVJMC'},
+   automotive:{amount:'10.00',url:'https://www.paypal.com/ncp/payment/SCXVVGDZU6LE2'}
+  };
+  assert.equal(catalog.estimatePayments.length,2);
+  for(const entry of catalog.estimatePayments){
+   const expected=expectedEstimatePayments[entry.industry];
+   assert.ok(expected,'Unexpected estimate payment industry');
+   assert.equal(entry.amount,expected.amount);
+   assert.equal(entry.url,expected.url);
+   assert.equal(entry.currency,'USD');
+  }
   const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
   const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
   assert.ok(!app.includes('P-53U089831B5370605NLT23EQ'));assert.ok(!app.includes('paypal.com/sdk/js'));assert.ok(!html.includes('paypal-button-container'));

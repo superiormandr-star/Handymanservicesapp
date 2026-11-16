@@ -62,7 +62,8 @@ automotiveIntro.innerHTML=`
 `;
 automotiveView.querySelector('.container').insertBefore(automotiveIntro,automotivePlans);
 const appScreens={
- home:['#home','.ticker','#how','.faq'],
+ home:['#customer-shortcut','#home','.ticker','#how','.faq'],
+ customers:['#customers'],
  pros:['#pros'],
  how:['#how','.faq'],
  advertise:['#advertise'],
@@ -104,6 +105,51 @@ coverageMode.addEventListener('change',syncCoverage);syncCoverage();
 document.addEventListener('click',e=>{const b=e.target.closest('[data-stars]');if(!b)return;selectedStars=Number(b.dataset.stars);document.querySelectorAll('[data-stars]').forEach(el=>{el.classList.toggle('active',Number(el.dataset.stars)<=selectedStars);el.setAttribute('aria-pressed',String(Number(el.dataset.stars)===selectedStars))})});
 document.addEventListener('submit',async e=>{if(e.target.id!=='review-form')return;e.preventDefault();const form=e.target,status=$('#review-status'),submit=form.querySelector('[type=submit]');status.textContent='Submitting…';status.classList.remove('error');submit.disabled=true;try{const fd=new FormData(form);const data={profileId:selected,stars:selectedStars,name:fd.get('name'),comment:fd.get('comment'),website:fd.get('website')};const r=await api('/api/reviews',{method:'POST',body:JSON.stringify(data)});status.textContent=r.message||'Review submitted for moderation.';form.reset();selectedStars=5;document.querySelectorAll('[data-stars]').forEach(el=>el.classList.toggle('active',Number(el.dataset.stars)<=5))}catch(err){status.textContent=err.message;status.classList.add('error')}finally{submit.disabled=false}});
 document.addEventListener('submit',async e=>{if(e.target.id!=='quote-form')return;e.preventDefault();const form=e.target,button=form.querySelector('button'),status=$('#quote-status');button.disabled=true;status.textContent='Sending your request…';status.classList.remove('error');try{const values=Object.fromEntries(new FormData(form));const out=await api('/api/inquiries',{method:'POST',body:JSON.stringify({...values,profileId:selected,consent:form.elements.consent.checked})});form.reset();status.textContent=out.message}catch(e){status.textContent=e.message;status.classList.add('error')}finally{button.disabled=false}});
+
+/* Customer requests go to an existing listed business's private lead inbox. */
+const customerIndustry=$('#customer-industry'),customerProvider=$('#customer-provider');
+const customerProviderNote=$('#customer-provider-note'),customerSubmit=$('#customer-request-form button[type="submit"]');
+function updateCustomerProviders(){
+ const kind=customerIndustry.value;
+ const construction=/home|remodel|construct|drywall|floor|paint|plumb|electric|roof|kitchen|bath|patio|handyman|property|maintenance|window|deck|repair/i;
+ const automotive=/auto|mechanic|vehicle|car|engine|brake|tire|diagnos|transmission|body shop|detail|oil change|smog|suspension/i;
+ const options=profiles.filter(p=>{
+  const explicit=String(p.industry||p.category||'').toLowerCase();
+  if(explicit==='automotive'||explicit==='construction')return explicit===kind;
+  const services=[p.name,...(p.services||[])].join(' ');
+  return kind==='automotive'?automotive.test(services):p.id==='superior'||construction.test(services);
+ });
+ const previous=customerProvider.value;
+ customerProvider.replaceChildren(new Option(options.length?'Choose a listed business':'No businesses listed in this network',''));
+ options.forEach(p=>customerProvider.add(new Option(p.name+' · '+p.city,p.id)));
+ if(options.some(p=>p.id===previous))customerProvider.value=previous;
+ customerProvider.disabled=!options.length;
+ customerSubmit.disabled=!options.length;
+ customerProviderNote.textContent=options.length
+  ?'Choose the business that should receive your private request. Sending a request does not guarantee availability or a quote.'
+  :'There are no matching listed professionals for this network yet. No request has been sent. Try browsing current listings or check back later.';
+}
+customerIndustry.addEventListener('change',updateCustomerProviders);
+$('#customer-request-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const form=e.currentTarget,submit=form.querySelector('[type="submit"]'),status=$('#customer-request-status');
+ const fields=Object.fromEntries(new FormData(form).entries());
+ if(!profiles.some(p=>p.id===fields.profileId)){status.textContent='Select a listed business first.';status.classList.add('error');return;}
+ if(!fields.email&&!fields.phone){status.textContent='Enter an email or phone number so the business can contact you.';status.classList.add('error');return;}
+ submit.disabled=true;
+ status.classList.remove('error');status.textContent='Sending your request…';
+ try{
+  const result=await api('/api/inquiries',{method:'POST',body:JSON.stringify({
+   profileId:fields.profileId,name:fields.name,email:fields.email,
+   phone:fields.phone,location:fields.location,description:fields.description,
+   consent:form.elements.consent.checked,website:fields.website||''
+  })});
+  form.reset();updateCustomerProviders();
+  status.textContent=result.message||'Your request has been saved for the selected business.';
+ }catch(error){status.classList.add('error');status.textContent=error.message;}
+ finally{submit.disabled=customerProvider.disabled;}
+});
+
 $('#join-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.target,status=$('#join-status'),submit=form.querySelector('[type=submit]');status.classList.remove('error');status.textContent='Submitting your business details…';submit.disabled=true;try{const fd=new FormData(form);const data=Object.fromEntries(fd.entries());await api('/api/join',{method:'POST',body:JSON.stringify(data)});status.textContent='Application received. Membership enrollment is being finalized. No payment has been taken and no founding-member spot is reserved.'}catch(err){status.textContent=err.message;status.classList.add('error')}finally{submit.disabled=false}});
-(async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
+(async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory();updateCustomerProviders()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>';updateCustomerProviders()}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
 })();

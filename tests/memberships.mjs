@@ -22,12 +22,13 @@ test('six separate packages cannot start checkout or activate from a forged call
   ]);
   assert.equal(allowedPayPalUrls.size,8);
   const publicMarkup=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
-  for(const match of publicMarkup.matchAll(/https:\/\/www\.paypal\.com\/[^"'<>\\s]+/g)){
+  for(const match of publicMarkup.matchAll(/https:\/\/www\.paypal\.com\/[^"'<>\s]+/g)){
    assert.ok(allowedPayPalUrls.has(match[0]),'Unapproved PayPal URL in homepage: '+match[0]);
   }
   assert.equal(new Set(catalog.plans.map(p=>p.paypalPlanId)).size,6);
   for(const plan of catalog.plans){
-   assert.equal(plan.checkoutEnabled,false);assert.match(plan.checkoutUrl,/^https:\/\/www\.paypal\.com\/webapps\/billing\/plans\/subscribe\?plan_id=P-[A-Z0-9]+$/);assert.equal(new URL(plan.checkoutUrl).searchParams.get('plan_id'),plan.paypalPlanId);assert.equal(plan.interval,'MONTH');
+   // Static PayPal links were enabled in main by 9514514; activation remains disabled.
+   assert.equal(catalog.activationEnabled,false);assert.match(plan.checkoutUrl,/^https:\/\/www\.paypal\.com\/webapps\/billing\/plans\/subscribe\?plan_id=P-[A-Z0-9]+$/);assert.equal(new URL(plan.checkoutUrl).searchParams.get('plan_id'),plan.paypalPlanId);assert.equal(plan.interval,'MONTH');
    const response=await post('/api/membership-checkout',{industry:plan.industry,membership:plan.package,packageKey:plan.key});
    assert.equal(response.status,503);assert.equal(response.body.packageKey,plan.key);assert.equal(response.body.checkoutEnabled,false);assert.equal(response.body.checkoutUrl,undefined);
    const wrong=await post('/api/membership-checkout',{industry:plan.industry==='construction'?'automotive':'construction',membership:plan.package,packageKey:plan.key});assert.equal(wrong.status,400);
@@ -63,12 +64,7 @@ test('six separate packages cannot start checkout or activate from a forged call
   assert.ok(!html.includes('$3.99'),'Retired $3.99 estimate price must not appear on homepage');
   for(const entry of catalog.estimatePayments){
    assert.ok(html.includes(entry.url),'Industry-specific PayPal checkout missing from homepage');
-   assert.ok(html.includes('Estimate payment: 
-  assert.ok(!app.includes('P-53U089831B5370605NLT23EQ'));assert.ok(!app.includes('paypal.com/sdk/js'));assert.ok(!html.includes('paypal-button-container'));
-  for(const p of catalog.plans){assert.ok(html.includes(`data-package-key="${p.key}"`));assert.ok(html.includes(`id="${p.key}-status"`));}
- }finally{proc.kill('SIGTERM');rmSync(dir,{recursive:true,force:true})}
-});
-+entry.amount+' USD'),'Industry-specific estimate price missing from homepage');
+   assert.ok(html.includes('Estimate payment: $'+entry.amount+' USD'),'Industry-specific estimate price missing from homepage');
   }
   assert.ok(!app.includes('P-53U089831B5370605NLT23EQ'));assert.ok(!app.includes('paypal.com/sdk/js'));assert.ok(!html.includes('paypal-button-container'));
   for(const p of catalog.plans){assert.ok(html.includes(`data-package-key="${p.key}"`));assert.ok(html.includes(`id="${p.key}-status"`));}

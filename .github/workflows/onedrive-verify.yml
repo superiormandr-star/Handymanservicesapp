@@ -1,28 +1,31 @@
-name: OneDrive backup verification
+name: OneDrive backup and recovery regression tests
+
 on:
-  schedule:
-    - cron: '*/5 * * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/onedrive-verify.yml
+      - onedrive.js
+      - persistent-store.js
+      - server.js
+      - tests/onedrive*.mjs
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify configured OneDrive upload and download
-        env:
-          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
-          MICROSOFT_TENANT_ID: ${{ secrets.MICROSOFT_TENANT_ID }}
-          MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
-          MICROSOFT_REFRESH_TOKEN: ${{ secrets.MICROSOFT_REFRESH_TOKEN }}
-          ONEDRIVE_DRIVE_ID: ${{ secrets.ONEDRIVE_DRIVE_ID }}
-        run: |
-          node - <<'NODE'
-          const { uploadAndVerify } = require('./onedrive-backup');
-          uploadAndVerify({ type: 'verification-only', app: 'Superior ProConnect', timestamp: new Date().toISOString() })
-            .then(result => console.log('VERIFIED:', JSON.stringify(result)))
-            .catch(error => { console.error('NOT VERIFIED:', error.message); process.exitCode = 1; });
-          NODE
+      # This exercises mocked Graph. Production backup status comes from the
+      # application's authenticated nightly backup and owner Backups screen.
+      - name: Test encryption, Graph upload, download, and recovery
+        run: node --test tests/onedrive.mjs tests/onedrive-appfolder-repair.mjs

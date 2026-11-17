@@ -8,7 +8,7 @@ function validateBackup(text) {
  for (const key of ['profiles','reviews','intake','documents']) {
   if (!Array.isArray(data[key])) throw Error('Invalid backup: missing '+key);
  }
- for (const key of ['leads','proAccess','estimateRequests']) {
+ for (const key of ['leads','proAccess','estimateRequests','jobs']) {
   if (data[key] !== undefined && !Array.isArray(data[key])) throw Error('Invalid backup: '+key);
  }
  return data;
@@ -88,6 +88,12 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   if(!item?.id||!item.folder)throw Error('The ProConnect backup destination is not a folder. No existing item was replaced.');
   put('backup-folder',{id:item.id});return 'items/'+encodeURIComponent(item.id);
  }
+ function recoverSnapshot(contents) {
+  const backup=unseal(contents);
+  if(backup.version!==1||typeof backup.snapshot!=='string'||crypto.createHash('sha256').update(backup.snapshot).digest('hex')!==backup.sha256)throw Error('Backup integrity check failed.');
+  validateBackup(backup.snapshot);
+  return backup.snapshot;
+ }
  async function exclusive(action) {
   if(busy)throw Error('A Microsoft backup operation is already running.');
   busy=true;try{return await action()}finally{busy=false}
@@ -127,8 +133,10 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
   async backup() {
    requireConfig();return exclusive(async()=>{
     const text=readSnapshot();validateBackup(text);
-    const name='superior-proconnect-'+new Date(now()).toISOString().replace(/[:.]/g,'-')+'-'+crypto.randomUUID()+'.json.enc';
-    const contents=seal({version:1,createdAt:new Date(now()).toISOString(),sha256:crypto.createHash('sha256').update(text).digest('hex'),snapshot:text});
+    const createdAt=new Date(now()).toISOString();
+    const snapshotHash=crypto.createHash('sha256').update(text).digest('hex');
+    const name='superior-proconnect-'+createdAt.replace(/[:.]/g,'-')+'-'+crypto.randomUUID()+'.json.enc';
+    const contents=seal({version:1,createdAt,sha256:snapshotHash,snapshot:text});
     const destination=await backupFolder();
     const result=await graph(destination+':/'+name+':/content',{method:'PUT',headers:{'content-type':'application/octet-stream'},body:contents});
     const item=await result.json();
@@ -136,8 +144,10 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
     const downloaded=await (await graph('items/'+encodeURIComponent(item.id)+'/content')).text();
     const digest=crypto.createHash('sha256').update(contents).digest('hex');
     if(crypto.createHash('sha256').update(downloaded).digest('hex')!==digest)throw Error('OneDrive upload verification failed: downloaded checksum does not match.');
-    put('last-backup',{id:item.id,name,createdAt:new Date(now()).toISOString(),sha256:crypto.createHash('sha256').update(text).digest('hex')});
-    return {id:item.id,name,verified:true,sha256:digest};
+    if(recoverSnapshot(downloaded)!==text)throw Error('OneDrive recovery verification failed: recovered records do not match.');
+    const verifiedAt=new Date(now()).toISOString();
+    put('last-backup',{id:item.id,name,createdAt,verifiedAt,sha256:snapshotHash});
+    return {id:item.id,name,verified:true,verifiedAt,sha256:digest};
    });
   },
   async list() {
@@ -153,9 +163,7 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
     const destination=await backupFolder();const listing=await (await graph(destination+'/children?$top=200&$select=id,name')).json();
     if(!(listing.value||[]).some(item=>item.id===id&&/^superior-proconnect-.*\.json\.enc$/.test(item.name)))throw Error('Backup not found in the application folder.');
     const response=await graph('items/'+encodeURIComponent(id)+'/content');
-    const backup=unseal(await response.text());
-    if(backup.version!==1||typeof backup.snapshot!=='string'||crypto.createHash('sha256').update(backup.snapshot).digest('hex')!==backup.sha256)throw Error('Backup integrity check failed.');
-    validateBackup(backup.snapshot);return backup.snapshot;
+    return recoverSnapshot(await response.text());
    });
   },
   schedule(onError=()=>{}) {

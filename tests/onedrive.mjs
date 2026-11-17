@@ -7,8 +7,8 @@ import {join} from 'node:path';
 const {createOneDrive}=createRequire(import.meta.url)('../onedrive');
 test('Microsoft state, PKCE, encrypted backup, refresh and authenticated recovery',async()=>{
  const dir=mkdtempSync(join(tmpdir(),'proconnect-ms-'));
- const snapshot=JSON.stringify({profiles:[{id:'original'}],reviews:[],intake:[],documents:[{id:'estimate-existing'}],custom:{preserved:true}});
- let clock=1000000,uploaded,refreshes=0,fail=false;
+ const snapshot=JSON.stringify({profiles:[{id:'original'}],reviews:[],intake:[],documents:[{id:'estimate-existing'}],jobs:[{id:'job-existing'}],custom:{preserved:true}});
+ let clock=1000000,uploaded,refreshes=0,fail=false,corruptDownload=false;
  const env={APP_ORIGIN:'https://superior-proconnect.vercel.app',MICROSOFT_CLIENT_ID:'test-client',microsoft_client_secret:'private-test-secret',MICROSOFT_TENANT_ID:'test-tenant',BACKUP_ENCRYPTION_KEY:'ab'.repeat(32),ONEDRIVE_STATE_DIR:dir};
  const request=async(url,options)=>{
   if(url.includes('/token')){
@@ -21,7 +21,7 @@ test('Microsoft state, PKCE, encrypted backup, refresh and authenticated recover
   if(fail)return new Response('',{status:503});
   if(options.method==='PUT'){uploaded=options.body;assert.ok(!uploaded.includes('estimate-existing'));return Response.json({id:'backup-id'});}
   if(url.includes('/children'))return Response.json({value:[{id:'backup-id',name:'superior-proconnect-test.json.enc'},{id:'unrelated',name:'unrelated.txt'}]});
-  return new Response(uploaded);
+  return new Response(corruptDownload?uploaded+' ':uploaded);
  };
  const api=createOneDrive({env,request,now:()=>clock,readSnapshot:()=>snapshot});
  try{
@@ -32,7 +32,14 @@ test('Microsoft state, PKCE, encrypted backup, refresh and authenticated recover
   await assert.rejects(api.callback(auth.searchParams.get('state'),'code'),/state/);
   assert.equal(api.status().connected,true);
   assert.ok(!readFileSync(join(dir,'tokens.json'),'utf8').includes('private-refresh'));
-  await api.backup();assert.equal((await api.list()).backups.length,1);
+  const verified=await api.backup();assert.equal((await api.list()).backups.length,1);
+  assert.equal(verified.verified,true);
+  assert.equal(api.status().lastVerifiedBackup.verifiedAt,verified.verifiedAt);
+  corruptDownload=true;
+  clock+=1000;
+  await assert.rejects(api.backup(),/checksum does not match/);
+  assert.equal(api.status().lastVerifiedBackup.verifiedAt,verified.verifiedAt);
+  corruptDownload=false;
   assert.equal(await api.recover('backup-id'),snapshot);
   await assert.rejects(api.recover('unrelated'),/not found/);
   clock+=120000;await api.backup();assert.equal(refreshes,1);

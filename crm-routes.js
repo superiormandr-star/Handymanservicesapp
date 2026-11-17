@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto');
+const {professionalAccess,tokenHash}=require('./pro-access');
 const stages=['New','Contacted','Estimate Needed','Estimate Sent','Approved','Declined','Scheduled','Completed','Invoiced','Paid'];
-const hash=token=>crypto.createHash('sha256').update(token).digest('hex');
 module.exports=async function crmRoutes(req,res,u){
  const {db,save,send,body,admin,clean,limited}=u;
  const url=new URL(req.url,'http://localhost'),route=url.pathname;
@@ -38,10 +38,16 @@ module.exports=async function crmRoutes(req,res,u){
   if(!profile)return error('Business not found',404);
   d.proAccess=Array.isArray(d.proAccess)?d.proAccess:[];
   const prior=d.proAccess.find(p=>p.profileId===profile.id);
-  if(x.revoke===true){d.proAccess=d.proAccess.filter(p=>p.profileId!==profile.id);save(d);return reply(200,{ok:true})}
+  const membership=(d.intake||[]).find(record=>record.profileId===profile.id);
+  d.proAccess=d.proAccess.filter(p=>p.profileId!==profile.id);
+  if(x.revoke===true){
+   if(membership)delete membership.accountKeyHash;
+   save(d);return reply(200,{ok:true});
+  }
   const token=crypto.randomBytes(32).toString('hex');
-  const access={profileId:profile.id,tokenHash:hash(token),createdAt:prior?.createdAt||now(),updatedAt:now()};
-  d.proAccess=d.proAccess.filter(p=>p.profileId!==profile.id);d.proAccess.push(access);save(d);
+  if(membership)membership.accountKeyHash=tokenHash(token);
+  else d.proAccess.push({profileId:profile.id,tokenHash:tokenHash(token),createdAt:prior?.createdAt||now(),updatedAt:now()});
+  save(d);
   return reply(201,{token,profileId:profile.id,message:'Share privately with this business only. Previous access is revoked.'});
  }
  if(route==='/api/inquiries'){
@@ -52,18 +58,16 @@ module.exports=async function crmRoutes(req,res,u){
   const name=clean(x.name,100),contactEmail=clean(x.email,180),phone=clean(x.phone,40),description=clean(x.description,3000),location=clean(x.location,150);
   if(name.length<2||description.length<15||location.length<2||(!email(contactEmail)&&phone.replace(/\D/g,'').length<7)|| (contactEmail&&!email(contactEmail)))return error('Enter your name, project location, details (15 characters or more), and a valid email or phone number.');
   if(x.consent!==true)return error('Please allow the selected business to contact you about this project.');
-  const d=db(),profile=d.profiles.find(p=>p.id===x.profileId);
+  const d=db(),profile=d.profiles.find(p=>p.id===x.profileId&&p.listed!==false);
   if(!profile)return error('Business not found',404);
   d.leads=Array.isArray(d.leads)?d.leads:[];
   const record={id:crypto.randomUUID(),profileId:profile.id,name,email:contactEmail,phone,location,description,status:'New',origin:'Directory quote request',consentAt:now(),createdAt:now(),updatedAt:now(),notes:[],reminderDate:'',history:[{status:'New',at:now()}]};
   d.leads.push(record);save(d);
   return reply(201,{ok:true,message:'Your request was saved for '+profile.name+'. They can review it in their private inbox. Availability and a response are not guaranteed.'});
  }
- const raw=req.headers['x-pro-token'];
- if(typeof raw!=='string'||!/^\w{64}$/.test(raw))return error('Professional access required',401);
- const digest=hash(raw),access=(db().proAccess||[]).find(a=>a.tokenHash===digest);
- if(!access)return error('Access expired or invalid. Ask the directory owner for a new access link.',401);
- const profileId=access.profileId;
+ const access=professionalAccess(db(),req.headers['x-pro-token']);
+ if(!access)return error('Access expired or invalid. Check your private key or contact the directory owner.',401);
+ const profileId=access.profile.id;
  if(route==='/api/crm/workspace'&&req.method==='GET'){
   const d=db(),profile=d.profiles.find(p=>p.id===profileId);
   if(!profile)return error('Business not found',404);

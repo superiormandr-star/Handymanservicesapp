@@ -8,7 +8,7 @@ function validateBackup(text) {
  for (const key of ['profiles','reviews','intake','documents']) {
   if (!Array.isArray(data[key])) throw Error('Invalid backup: missing '+key);
  }
- for (const key of ['leads','proAccess','estimateRequests','jobs']) {
+ for (const key of ['leads','proAccess','estimateRequests','jobs','jobEntitlements','paypalEvents','paypalTransactions']) {
   if (data[key] !== undefined && !Array.isArray(data[key])) throw Error('Invalid backup: '+key);
  }
  return data;

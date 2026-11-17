@@ -44,10 +44,11 @@ function collect(){return {id:currentId,type:val('type'),number:val('number'),da
 function calc(d){const subtotal=round(d.items.reduce((a,i)=>a+Math.max(0,Number(i.qty)||0)*Math.max(0,Number(i.rate)||0),0));const markup=Math.max(0,Number(d.markup)||0);const discount=Math.min(subtotal+markup,Math.max(0,Number(d.discount)||0));const taxable=Math.max(0,subtotal+markup-discount),tax=round(taxable*Math.min(100,Math.max(0,Number(d.taxRate)||0))/100);const total=round(taxable+tax);return {subtotal,markup,discount,tax,total,payment:Math.min(total,Math.max(0,Number(d.payment)||0)),balance:round(total-Math.min(total,Math.max(0,Number(d.payment)||0)))}}
 function renderPreview(){
  const d=collect(),amount=calc(d),invoice=d.type==='invoice',title=invoice?'INVOICE':'ESTIMATE';
+ const marketplaceInvoice=Boolean(loadedRecord?.sourceJobId),issuer=marketplaceInvoice?loadedRecord.issuer:'Superior Maintenance and Remodeling';
  $('#editor-title').textContent=(currentId?'Edit ':'New ')+(invoice?'Invoice':'Estimate');
  $('#due-label').textContent=invoice?'Payment due':'Valid until';
  $('#payment-label').textContent=invoice?'Amount already paid ($)':'Requested deposit ($)';
- $('#convert-document').hidden=true;$('#save-document').disabled=!!(loadedRecord&&((loadedRecord.type==='estimate'&&loadedRecord.status==='approved')||loadedRecord.sourceEstimateId));
+ $('#convert-document').hidden=true;$('#save-document').disabled=!!(loadedRecord&&((loadedRecord.type==='estimate'&&loadedRecord.status==='approved')||loadedRecord.sourceEstimateId||marketplaceInvoice));
  $$('.item-row').forEach(row=>{const q=Math.max(0,Number(row.querySelector('.li-qty').value)||0),r=Math.max(0,Number(row.querySelector('.li-rate').value)||0);row.querySelector('.item-line-total span').textContent=fmt(q*r)});
  const terms=d.terms|| (invoice?'Payment is due by the stated due date. Please reference the invoice number with your payment.':'Estimate subject to customer approval. Changes to scope may affect the final price.');
  const scope=d.scope?.trim()||'Scope of work will be described here.';
@@ -56,7 +57,11 @@ function renderPreview(){
  const discount=amount.discount?'<div class="total-row"><span>Discount</span><b>−'+fmt(amount.discount)+'</b></div>':'';
  const tax=amount.tax?'<div class="total-row"><span>Tax ('+esc(d.taxRate)+'%)</span><b>'+fmt(amount.tax)+'</b></div>':'';
  const paid=invoice?'<div class="total-row payment"><span>Payments received</span><b>−'+fmt(amount.payment)+'</b></div><div class="total-row grand"><span>Balance due</span><b>'+fmt(amount.balance)+'</b></div>':(amount.payment?'<div class="total-row payment"><span>Deposit requested</span><b>'+fmt(amount.payment)+'</b></div><div class="total-row"><span>Remaining after deposit</span><b>'+fmt(amount.balance)+'</b></div>':'');
- $('#print-area').innerHTML='<div class="invoice-header"><img src="/superior-logo.png" alt="Superior Maintenance and Remodeling original logo"><div><div class="doc-name">'+title+'</div><div class="doc-number">'+esc(d.number||'DRAFT')+'</div><div class="business-title">SUPERIOR MAINTENANCE AND REMODELING</div><div class="business-subtitle">Fontana, California · Inland Empire<br>909-352-3627'+(d.license?'<br>License: '+esc(d.license):'')+'</div></div></div>'+
+ const logo=marketplaceInvoice?'':'<img src="/superior-logo.png" alt="Superior Maintenance and Remodeling original logo">';
+ const issuerDetails=marketplaceInvoice?'':'Fontana, California · Inland Empire<br>909-352-3627';
+ $('#print-area').innerHTML='<div class="invoice-header">'+logo+'<div><div class="doc-name">'+title+
+ '</div><div class="doc-number">'+esc(d.number||'DRAFT')+'</div><div class="business-title">'+esc(issuer)+
+ '</div><div class="business-subtitle">'+issuerDetails+(d.license?'<br>License: '+esc(d.license):'')+'</div></div></div>'+
  '<div class="doc-meta"><div><div class="meta-head">PREPARED FOR</div><strong>'+esc(d.client||'Customer Name')+'</strong><p>'+esc(d.clientAddress||'Billing address')+(d.clientPhone?'<br>'+esc(d.clientPhone):'')+(d.clientEmail?'<br>'+esc(d.clientEmail):'')+'</p></div><div><div class="meta-head">PROJECT</div><strong>'+esc(d.project||'Project description')+'</strong><p>'+esc(d.projectAddress||'Jobsite address')+'</p></div></div>'+
  '<div class="doc-dates"><div>DOCUMENT DATE<b>'+esc(dateText(d.date))+'</b></div><div>'+(invoice?'DUE DATE':'VALID UNTIL')+'<b>'+esc(dateText(d.dueDate))+'</b></div><div>STATUS<b>'+esc(d.status.toUpperCase())+'</b></div></div>'+
  '<div class="doc-scope"><b>Scope of Work</b>'+esc(scope)+'</div>'+
@@ -64,7 +69,8 @@ function renderPreview(){
  '<div class="totals-wrap"><div class="totals"><div class="total-row"><span>Subtotal</span><b>'+fmt(amount.subtotal)+'</b></div>'+markup+discount+tax+'<div class="total-row grand"><span>'+ (invoice?'Invoice total':'Estimate total') +'</span><b>'+fmt(amount.total)+'</b></div>'+paid+'</div></div>'+
  '<div class="doc-foot"><strong>Terms & payment</strong>'+esc(terms)+(d.notes?'<strong>Notes & exclusions</strong>'+esc(d.notes):'')+'</div>'+
  (invoice?'':'<div class="signature"><span>Customer approval / signature</span><span>Date</span></div>')+
- '<div class="doc-footer"><span>Superior Maintenance and Remodeling</span><span>From an idea to a finished improvement.</span></div>';
+ '<div class="doc-footer"><span>'+esc(issuer)+'</span>'+
+ (marketplaceInvoice?'':'<span>From an idea to a finished improvement.</span>')+'</div>';
 }
 function openNew(type){currentId=null;loadedRecord=null;$('#save-document').disabled=false;form.reset();field('type').value=type;field('date').value=today();field('status').value='draft';$('#item-lines').innerHTML='';line('Labor');line('Materials');status('');show('editor');renderPreview()}
 function editRecord(id){const d=records.find(r=>r.id===id);if(!d)return;currentId=d.id;loadedRecord=d;form.reset();for(const [key,value]of Object.entries(d)){const el=field(key);if(el&&typeof value!=='object')el.value=value??''}$('#item-lines').innerHTML='';(d.items||[]).forEach(i=>line(i.category,i.description,i.qty,i.unit,i.rate));show('editor');status('Loaded '+d.number+'.');renderPreview()}

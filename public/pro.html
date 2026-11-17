@@ -1,7 +1,17 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><meta name="theme-color" content="#071a35"><title>Professional Workspace | Superior ProConnect</title><link rel="stylesheet" href="/workspace.css"><script src="/pro.js" defer></script></head><body>
 <header><a href="/" class="pro-brand"><img src="/logos/Superior_ProConnect_Master.jpg" alt="" width="42" height="42">SUPERIOR <strong>PROCONNECT</strong></a><span>PRO WORKSPACE</span></header>
-<main><section id="signin" class="card"><p class="eyebrow">YOUR BUSINESS, ORGANIZED</p><h1>Welcome back.</h1><p>Review real customer inquiries, keep track of jobs, and manage your next steps.</p><form id="login-form"><label for="access">Private business access key</label><input id="access" type="password" autocomplete="off" required><button>Open workspace →</button></form><p class="muted">Ask the directory owner for your private access link. Keep it private; anyone with it can access your business workspace.</p></section>
+<main><section id="signin" class="card"><p class="eyebrow">YOUR BUSINESS, ORGANIZED</p><h1>Welcome back.</h1><p>Review real customer inquiries, keep track of jobs, and manage your next steps.</p><form id="login-form"><label for="access">Private business access key</label><input id="access" type="password" autocomplete="off" required><button>Open workspace →</button></form><p class="muted">Use the access key from your application or the private key provided by the owner. <a href="/#advertise">Apply for a professional account</a>.</p></section>
 <p id="message" role="status" aria-live="polite"></p>
+<section id="membership-panel" class="card" hidden>
+ <h2>Your membership</h2><p id="membership-state"></p>
+ <div class="marketplace-actions">
+  <button id="membership-checkout" type="button" hidden>Continue to PayPal</button>
+  <button id="membership-hosted" class="secondary" type="button" hidden>Open hosted PayPal plan</button>
+  <button id="membership-refresh" class="secondary" type="button">Refresh membership</button>
+  <button id="membership-signout" class="secondary" type="button">Sign out</button>
+ </div>
+ <p class="muted"><a href="/standards.html">Payment, cancellation and refund information</a></p>
+</section>
 <div id="workspace" hidden><div class="heading"><div><p class="eyebrow">PROFESSIONAL WORKSPACE</p><h1 id="business"></h1></div><button id="logout" class="secondary">Sign out</button></div>
 <div id="metrics" class="metrics"></div>
 <section id="marketplace" class="card marketplace-panel"><p class="eyebrow">PRIVATE ESTIMATE MARKETPLACE</p><h2>Available customer jobs</h2><p class="muted">Customers choose one to three estimates. Only general job details are shown. Contact information is released only when the customer selects your verified estimate. Your membership estimate credits are applied before any separate fee.</p><p id="marketplace-billing" class="muted" role="status"></p><div id="marketplace-jobs" aria-live="polite"><p>Sign in to view jobs.</p></div><button id="marketplace-refresh" type="button" class="secondary">Refresh available jobs</button></section>

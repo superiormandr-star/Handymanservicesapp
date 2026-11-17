@@ -5,3 +5,4 @@ data/*.json
 .env.*
 !.env.example
 .vercel/
+.netlify/

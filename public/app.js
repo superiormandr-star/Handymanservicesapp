@@ -73,7 +73,8 @@ const appScreens={
 };
 $('#pc-launch')?.setAttribute('hidden','');
 function route(){
- const hash=decodeURIComponent(location.hash||'#home');
+ let hash=location.hash||'#home';
+ try{hash=decodeURIComponent(hash)}catch{hash='#home'}
  const isProfile=hash.startsWith('#profile/');
  const isPrivateJob=hash.startsWith('#my-job/');
  let screen=isProfile?'profile':isPrivateJob?'customers':hash.slice(1);
@@ -126,6 +127,35 @@ async function ownJobRequest(path,key,data){
  if(!response.ok)throw Error(out.error||'Job request failed.');
  return out;
 }
+async function drawPrivatePhotos(node, photos, route, header, credential){
+ node.replaceChildren();
+ await Promise.all(photos.map(async (photo,index)=>{
+  try{
+   const response=await fetch(route+'/'+encodeURIComponent(photo.id),{headers:{[header]:credential},cache:'no-store'});
+   if(!response.ok)return;
+   const url=URL.createObjectURL(await response.blob()),img=document.createElement('img');
+   img.alt='Job photo '+(index+1);
+   img.onload=img.onerror=()=>URL.revokeObjectURL(url);
+   img.src=url;
+   node.append(img);
+  }catch{}
+ }));
+}
+async function jpegForUpload(file){
+ const image=await createImageBitmap(file);
+ try{
+  const canvas=document.createElement('canvas'),scale=Math.min(1,1600/Math.max(image.width,image.height));
+  canvas.width=Math.max(1,Math.round(image.width*scale));
+  canvas.height=Math.max(1,Math.round(image.height*scale));
+  const context=canvas.getContext('2d',{alpha:false});
+  context.drawImage(image,0,0,canvas.width,canvas.height);
+  for(const quality of [0.85,0.65,0.45]){
+   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
+   if(blob&&blob.size<=768*1024)return blob;
+  }
+  throw Error('Photo is too large after resizing. Choose a smaller image.');
+ }finally{image.close()}
+}
 async function showPrivateJob(){
  const match=privateJobPath();
  if(!match)return jobMessage('Your private management link is incomplete.',true,'#customer-dashboard-status');
@@ -138,18 +168,33 @@ async function showPrivateJob(){
   if(location.hash!=='#my-job/'+id+'/'+key)return;
   $('#customer-job-summary').textContent=item.title+' · '+item.city+' · '+item.industry+
    ' · '+item.bids.length+' verified estimates · '+
-   item.remainingSlots+' slot(s) available or reserved · '+item.status.toUpperCase();
+   item.remainingSlots+' slot(s) available · '+(item.progress||item.status).replaceAll('_',' ');
+  $('#customer-photos').hidden=!item.photoUploadsAvailable;
+  $('#customer-share-photos').checked=item.sharePhotos;
+  const photoList=$('#customer-photo-list');
+  const currentPhotoList=photoList.cloneNode(false);photoList.replaceWith(currentPhotoList);
+  if(item.photoUploadsAvailable)void drawPrivatePhotos(currentPhotoList,item.photos,'/api/jobs/'+id+'/photos','x-customer-key',key);
   const node=$('#customer-job-bids');
   if(item.bids.length){
    node.innerHTML='<h4>Private estimates</h4>'+item.bids.map(b=>'<article class="customer-bid-card"><h4>'+
     escapeHtml(b.professional.name)+'</h4><p>'+escapeHtml(b.professional.city||'')+'</p><strong>'+
     new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(b.amount)+'</strong><p>'+
-    escapeHtml(b.scope)+'</p>'+((item.status==='open')?'<button type="button" class="btn btn-primary" data-select-private-bid="'+escapeHtml(b.id)+'">Select this professional</button>':'')+'</article>').join('');
+    escapeHtml(b.scope)+'</p>'+
+    (b.clarification?'<p><strong>Your question:</strong> '+escapeHtml(b.clarification.question)+'</p>'+
+     '<p>'+escapeHtml(b.clarification.answer||'Awaiting an answer.')+'</p>':'')+
+    (b.decision==='declined'?'<p>Declined</p>':item.status==='open'?
+     '<div class="customer-actions"><button type="button" class="btn btn-primary" data-select-private-bid="'+escapeHtml(b.id)+'">Approve and select</button>'+
+     '<button type="button" class="btn btn-outline" data-decline-private-bid="'+escapeHtml(b.id)+'">Decline</button></div>'+
+     '<form data-clarify-private-bid="'+escapeHtml(b.id)+'"><label>Request clarification<input name="question" minlength="5" maxlength="500" required></label>'+
+     '<button class="btn btn-outline" type="submit">Send question</button></form>':'')+
+    '</article>').join('');
   }else node.innerHTML='<p class="customer-note">No verified estimates yet. Pending payment requests are not delivered as bids. Check back using this private link.</p>';
   if(item.selectedProfessional)node.innerHTML+='<p class="customer-selected"><strong>You selected: '+escapeHtml(item.selectedProfessional.name)+'</strong><br>'+
    escapeHtml(item.selectedProfessional.phone||'No phone listed')+'<br>'+
    (item.selectedProfessional.website?'<a href="'+escapeHtml(item.selectedProfessional.website)+'" rel="noopener noreferrer" target="_blank">Professional website</a>':'')+
    '<br>Your private contact details were released to this selected professional only.</p>';
+  if(item.invoice)node.innerHTML+='<p><strong>Invoice '+escapeHtml(item.invoice.number)+'</strong> · '+escapeHtml(item.invoice.issuer)+' · '+
+   new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(item.invoice.total)+' · '+escapeHtml(item.invoice.status)+'</p>';
   $('#customer-job-fourth').hidden=!(item.status==='open'&&item.bidLimit===3&&!item.fourthApproved&&item.bids.length>=3);
   $('#customer-job-close').hidden=item.status!=='open';
   jobMessage('Job information loaded. Share only the public job description, never your private management link.',false,'#customer-dashboard-status');
@@ -175,12 +220,56 @@ $('#copy-customer-job').addEventListener('click',async()=>{
  catch{input.select();jobMessage('Select and copy this private link.',false,'#customer-dashboard-status')}
 });
 $('#customer-job-refresh').addEventListener('click',()=>showPrivateJob());
+$('#customer-photo-upload').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const form=event.currentTarget,match=privateJobPath();
+ if(!match)return;
+ const files=[...form.elements.photos.files];
+ const status='#customer-dashboard-status';
+ if(files.length>3)return jobMessage('Choose up to three photos.',true,status);
+ const button=form.querySelector('button');button.disabled=true;
+ try{
+  for(const file of files){
+   jobMessage('Preparing and uploading photo…',false,status);
+   const blob=await jpegForUpload(file);
+   const response=await fetch('/api/jobs/'+match[1]+'/photos',{
+    method:'POST',headers:{'content-type':'image/jpeg','x-customer-key':match[2]},body:blob
+   });
+   if(!response.ok){const out=await response.json();throw Error(out.error||'Photo could not be uploaded.');}
+  }
+  form.reset();
+  await showPrivateJob();
+  jobMessage('Photos saved.',false,status);
+ }catch(error){await showPrivateJob();jobMessage(error.message,true,status)}
+ finally{button.disabled=false}
+});
+$('#customer-share-photos').addEventListener('change',async event=>{
+ const control=event.currentTarget,match=privateJobPath();
+ if(!match)return;
+ try{await ownJobRequest('/api/jobs/'+match[1]+'/share-photos',match[2],{sharePhotos:control.checked})}
+ catch(error){control.checked=!control.checked;jobMessage(error.message,true,'#customer-dashboard-status')}
+});
 $('#customer-job-bids').addEventListener('click',async e=>{
- const bid=e.target.closest('[data-select-private-bid]');
- if(!bid||!confirm('Select this professional and release your private contact information to them? Other professionals will not receive it.'))return;
- const match=privateJobPath();if(!match)return;
- try{await ownJobRequest('/api/jobs/'+match[1]+'/select',match[2],{bidId:bid.dataset.selectPrivateBid});await showPrivateJob();}
+ const button=e.target.closest('[data-select-private-bid],[data-decline-private-bid]');
+ const match=privateJobPath();
+ if(!button||!match)return;
+ const select=button.hasAttribute('data-select-private-bid');
+ if(select&&!confirm('Approve this estimate and share your private contact details with this professional?'))return;
+ if(!select&&!confirm('Decline this estimate? It will still count toward your chosen estimate limit.'))return;
+ const bidId=select?button.dataset.selectPrivateBid:button.dataset.declinePrivateBid;
+ try{await ownJobRequest('/api/jobs/'+match[1]+(select?'/select':'/decline'),match[2],{bidId});await showPrivateJob();}
  catch(err){jobMessage(err.message,true,'#customer-dashboard-status')}
+});
+$('#customer-job-bids').addEventListener('submit',async event=>{
+ const form=event.target,match=privateJobPath();
+ if(!form.dataset.clarifyPrivateBid||!match)return;
+ event.preventDefault();
+ try{
+  await ownJobRequest('/api/jobs/'+match[1]+'/clarify',match[2],{
+   bidId:form.dataset.clarifyPrivateBid,question:form.elements.question.value
+  });
+  await showPrivateJob();
+ }catch(error){jobMessage(error.message,true,'#customer-dashboard-status')}
 });
 $('#customer-job-close').addEventListener('click',async()=>{
  if(!confirm('Close this job to new bids? You will not be able to reopen it here.'))return;
@@ -194,6 +283,35 @@ $('#customer-job-fourth').addEventListener('click',async()=>{
  try{await ownJobRequest('/api/jobs/'+match[1]+'/fourth',match[2],{approveFourth:true});await showPrivateJob();}
  catch(err){jobMessage(err.message,true,'#customer-dashboard-status')}
 });
-$('#join-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.target,status=$('#join-status'),submit=form.querySelector('[type=submit]');status.classList.remove('error');status.textContent='Submitting your business details…';submit.disabled=true;try{const fd=new FormData(form);const data=Object.fromEntries(fd.entries());await api('/api/join',{method:'POST',body:JSON.stringify(data)});status.textContent='Application received. Membership enrollment is being finalized. No payment has been taken and no founding-member spot is reserved.'}catch(err){status.textContent=err.message;status.classList.add('error')}finally{submit.disabled=false}});
-(async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
+document.addEventListener('click',event=>{
+ const plan=event.target.closest('[data-enroll-plan]');
+ if(!plan)return;
+ const [industry,tier]=plan.closest('[data-package-key]').dataset.packageKey.split('-');
+ const form=$('#join-form');
+ form.elements.industry.value=industry;
+ form.elements.membership.value=tier;
+});
+$('#join-form').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const form=event.currentTarget,status=$('#join-status'),submit=form.querySelector('[type=submit]');
+ status.classList.remove('error');status.textContent='Submitting your business details…';submit.disabled=true;
+ try{
+  const data=Object.fromEntries(new FormData(form));
+  const result=await api('/api/join',{method:'POST',body:JSON.stringify(data)});
+  status.textContent=result.message||'Application received.';
+  if(result.accountKey){
+   $('#join-account-key').value=result.accountKey;
+   $('#join-account').hidden=false;
+   try{sessionStorage.setItem('proconnect-access',result.accountKey)}catch{}
+   $('#join-account-key').focus();
+  }
+ }catch(error){status.textContent=error.message;status.classList.add('error')}
+ finally{submit.disabled=false}
+});
+$('#copy-join-key').addEventListener('click',async()=>{
+ const field=$('#join-account-key');
+ try{await navigator.clipboard.writeText(field.value);$('#join-key-status').textContent='Private key copied.'}
+ catch{field.select();$('#join-key-status').textContent='Select and copy your private key.'}
+});
+(async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&window.isSecureContext)window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
 })();

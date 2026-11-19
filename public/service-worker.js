@@ -1,4 +1,4 @@
-const CACHE='proconnect-v14-app-screen-navigation';
+const CACHE='proconnect-2-v1-app-screen-navigation';
 const ASSETS=['/','/index.html','/styles.css','/app.js','/logos/Superior_ProConnect_Master.jpg','/logos/Superior_Construction_Network.jpg','/logos/Superior_Automotive_Network.jpg','/subscription-plans.json','/manifest.webmanifest','/icons/icon-192.png','/icons/icon-512.png','/icons/apple-touch-icon.png','/icons/icon-192.png?v=approved-20261116','/icons/icon-512.png?v=approved-20261116','/icons/apple-touch-icon.png?v=approved-20261116'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));self.skipWaiting()});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim()});

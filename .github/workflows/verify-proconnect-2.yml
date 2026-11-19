@@ -1,0 +1,22 @@
+name: ProConnect 2.0 source verification
+on:
+  push:
+    branches: [superior-proconnect-2-railway]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test
+      - name: Approved assets & deployment file checks
+        run: |
+          test -s public/logos/Superior_ProConnect_Master.jpg
+          test -s public/logos/Superior_Construction_Network.jpg
+          test -s public/logos/Superior_Automotive_Network.jpg
+          test -s scripts/start-railway.sh
+          test -s railway.json

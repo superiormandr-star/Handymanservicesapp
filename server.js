@@ -53,7 +53,7 @@ async function handle(req,res){
  if(await jobRoutes(req,res,{db,save,send,body,admin,clean,limited}))return;
  if(await crmRoutes(req,res,{db,save,send,body,admin,clean,limited}))return;
  if(await estimateRoutes(req,res,{db,save,send,body,admin,clean}))return;
- if(route==='/api/health'&&req.method==='GET')return send(res,200,{ok:true,persistence:persistentStore.enabled?'encrypted durable '+persistentStore.backend+' (read verified)':'local development file',writesEnabled:persistentStore.enabled?process.env.SPC_WRITES_ENABLED==='true'&&process.env.SPC_PERSISTENCE_VERIFIED==='true':!process.env.VERCEL,payments:'PayPal plan details must be verified'});
+ if(route==='/api/health'&&req.method==='GET')return send(res,200,{ok:true,persistence:persistentStore.enabled?'encrypted durable '+persistentStore.backend+' (read verified)':(process.env.RAILWAY_VOLUME_MOUNT_PATH==='/data'&&process.env.DATA_FILE==='/data/proconnect.json'?'Railway persistent volume (single instance)':'local development file'),writesEnabled:persistentStore.enabled?process.env.SPC_WRITES_ENABLED==='true'&&process.env.SPC_PERSISTENCE_VERIFIED==='true':!process.env.VERCEL,payments:'PayPal plan details must be verified'});
  if(route==='/api/profiles'&&req.method==='GET')return send(res,200,{profiles:db().profiles});
  if(route==='/api/reviews'&&req.method==='GET'){const profile=clean(url.searchParams.get('profile')||'superior',80);const x=db().reviews.filter(r=>r.profileId===profile&&r.status==='approved').sort((a,b)=>b.createdAt.localeCompare(a.createdAt));return send(res,200,{reviews:x,total:x.length,average:x.length?Math.round(10*x.reduce((a,b)=>a+b.stars,0)/x.length)/10:null})}
  if(route==='/api/reviews'&&req.method==='POST'){

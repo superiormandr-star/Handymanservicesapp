@@ -1,0 +1,30 @@
+name: Verify ProConnect 2.0 Netlify Free build
+on:
+  push:
+    branches: [superior-proconnect-2-netlify-free]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: JavaScript syntax
+        run: |
+          node --check server.js
+          node --check persistent-store.js
+          node --check netlify-persistent-store.js
+          node --check netlify/server/index.mjs
+          node --check public/app.js
+      - name: Verify approved original logos and database migration
+        run: |
+          test -s public/logos/Superior_ProConnect_Master.jpg
+          test -s public/logos/Superior_Construction_Network.jpg
+          test -s public/logos/Superior_Automotive_Network.jpg
+          test -s netlify/database/migrations/202611190001_fresh_state.sql
+          test -s netlify.toml
+      - name: Run all functional tests
+        run: npm test

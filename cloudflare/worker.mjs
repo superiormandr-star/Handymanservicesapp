@@ -21,7 +21,9 @@ async function spc2JobApi(request,env,url){
    if(!mime||typeof a.bytes!=='string'||a.bytes.length>350000||!/^[A-Za-z0-9+/]*={0,2}$/.test(a.bytes))return spc2Error('Only JPG, PNG and PDF attachments up to 256 KB are accepted');
    const binary=atob(a.bytes);
    if(binary.length>262144)return spc2Error('Attachment exceeds 256 KB');
-   const magic=mime==='application/pdf'?binary.startsWith('%PDF-'):mime==='image/png'?binary.startsWith('\x89PNG\r\n\x1a\n'):binary.startsWith('\xff\xd8\xff');
+   const magic=mime==='application/pdf'?binary.startsWith('%PDF-'):mime==='image/png'?binary.startsWith('\x89PNG\r
+\x1a
+'):binary.startsWith('\xff\xd8\xff');
    if(!magic)return spc2Error('Attachment content does not match file type');
    validated.push({id:crypto.randomUUID(),filename,mime,bytes:a.bytes});
   }
@@ -76,6 +78,9 @@ export default {
       return Response.json({error:'Cloudflare API migration in progress; submissions and payments disabled to protect records.'},
         {status:503, headers:{'cache-control':'no-store'}});
     }
-    if (/^\/logos\/Superior_(?:ProConnect_Master|Construction_Network|Automotive_Network)\.jpg$/.test(url.pathname)) {\n      return env.ASSETS.fetch(request);\n    }\n    return env.ASSETS.fetch(request);
+    if (/^\/logos\/Superior_(?:ProConnect_Master|Construction_Network|Automotive_Network)\.jpg$/.test(url.pathname)) {
+      return env.ASSETS.fetch(request);
+    }
+    return env.ASSETS.fetch(request);
   }
 };

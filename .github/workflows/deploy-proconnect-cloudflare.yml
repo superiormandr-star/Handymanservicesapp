@@ -1,0 +1,25 @@
+name: Deploy Superior ProConnect 2.0 to Cloudflare Workers
+on:
+  push:
+    branches:
+      - superior-proconnect-2-workers-production
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify repository tests
+        run: |
+          npm ci
+          npm test
+      - name: Deploy Workers and static assets
+        run: npx --yes wrangler@4 deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: c917ac1c9a3824a210d0fb77e5879329

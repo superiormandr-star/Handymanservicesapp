@@ -4,6 +4,7 @@ const {AsyncLocalStorage}=require('node:async_hooks');
 const {validateBackup}=require('./onedrive');
 const context=new AsyncLocalStorage();
 function createStore({env=process.env,request=fetch,blobSDK}={}){
+ if(env.SPC_STORAGE_BACKEND==='netlify')return require('./netlify-persistent-store').createStore({env});
  const backend=env.SPC_STORAGE_BACKEND||'d1';
  const enabled=Boolean(/^[a-f0-9]{64}$/i.test(env.BACKUP_ENCRYPTION_KEY||'')&&(backend==='blob'?env.BLOB_READ_WRITE_TOKEN:backend==='d1'&&env.SPC_STORAGE_URL&&env.SPC_STORAGE_PRIVATE_KEY));
  const namespace=env.SPC_STORAGE_NAMESPACE||(env.VERCEL_ENV==='preview'?'preview-'+String(env.VERCEL_GIT_COMMIT_SHA||'development').slice(0,20):'production');

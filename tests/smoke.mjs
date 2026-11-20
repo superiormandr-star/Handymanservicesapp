@@ -15,7 +15,7 @@ test('Handyman Services main business-directory flows',async()=>{
  const admin='test-secret-long-token';const proc=spawn(process.execPath,['server.js'],{cwd:new URL('../',import.meta.url),env:{...process.env,PORT:String(port),DATA_FILE:join(dir,'data.json'),ADMIN_TOKEN:admin}});
  try{
   let started=false;for(let i=0;i<60;i++){try{const r=await request(base,'/api/health');if(r.status===200){started=true;break}}catch{}await pause(100)}assert.ok(started,'server starts');
-  for(const route of ['/','/styles.css','/app.js','/manifest.webmanifest','/icons/icon-192.png','/icons/icon-512.png','/handyman-logo.png','/superior-logo.png','/admin.html','/admin.js','/privacy.html','/terms.html']){const r=await fetch(base+route);assert.equal(r.status,200,route)}
+  for(const route of ['/','/customers','/construction','/automotive','/pro.html','/command-center.html','/styles.css','/app.js','/manifest.webmanifest','/icons/icon-192.png','/icons/icon-512.png','/handyman-logo.png','/superior-logo.png','/admin.html','/admin.js','/privacy.html','/terms.html']){const r=await fetch(base+route);assert.equal(r.status,200,route)}
   let r=await request(base,'/api/profiles');assert.equal(r.status,200);assert.equal(r.body.profiles[0].name,'Superior Maintenance and Remodeling');assert.ok(r.body.profiles[0].logo);
   r=await request(base,'/api/reviews?profile=superior');assert.equal(r.body.total,0);
   r=await request(base,'/api/reviews',json({profileId:'superior',name:'Test Customer',stars:5,comment:'The contractor was courteous and did quality work.'}));assert.equal(r.status,201);

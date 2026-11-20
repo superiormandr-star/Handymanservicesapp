@@ -4,6 +4,11 @@
  "buildCommand": null,
  "outputDirectory": "public",
  "functions": {"api/index.js":{"maxDuration":60}},
- "rewrites":[{"source":"/api/:path*","destination":"/api/index"}],
+ "rewrites":[
+  {"source":"/api/:path*","destination":"/api/index"},
+  {"source":"/customers","destination":"/index.html"},
+  {"source":"/construction","destination":"/index.html"},
+  {"source":"/automotive","destination":"/index.html"}
+ ],
  "crons":[{"path":"/api/cron/backup","schedule":"17 7 * * *"}]
 }

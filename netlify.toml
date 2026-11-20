@@ -27,3 +27,18 @@
   [headers.values]
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Content-Type-Options = "nosniff"
+
+[[redirects]]
+  from = "/customers"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/construction"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/automotive"
+  to = "/index.html"
+  status = 200

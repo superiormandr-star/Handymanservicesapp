@@ -72,8 +72,14 @@ const appScreens={
  profile:['#profile']
 };
 $('#pc-launch')?.setAttribute('hidden','');
+const workspacePaths={
+ '/customers':'customers',
+ '/construction':'construction',
+ '/automotive':'automotive'
+};
 function route(){
- let hash=location.hash||'#home';
+ const defaultScreen=workspacePaths[location.pathname.replace(/\/$/,'')]||'home';
+ let hash=location.hash||'#'+defaultScreen;
  try{hash=decodeURIComponent(hash)}catch{hash='#home'}
  const isProfile=hash.startsWith('#profile/');
  const isPrivateJob=hash.startsWith('#my-job/');

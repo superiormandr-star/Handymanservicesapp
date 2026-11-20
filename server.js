@@ -169,7 +169,8 @@ async function handle(req,res){
 
  if(route.startsWith('/api/'))return send(res,404,{error:'Not found'});
  if(!['GET','HEAD'].includes(req.method))return send(res,405,{error:'Method not allowed'});
- const filepath=path.resolve(base,'.'+(route==='/'?'/index.html':route));if(!filepath.startsWith(base+path.sep))return send(res,403,{error:'Forbidden'});
+ const workspacePath=/^\/(?:customers|construction|automotive)\/?$/.test(route);
+ const filepath=path.resolve(base,'.'+(route==='/'||workspacePath?'/index.html':route));if(!filepath.startsWith(base+path.sep))return send(res,403,{error:'Forbidden'});
  fs.stat(filepath,(err,stat)=>{if(err||!stat.isFile()){res.writeHead(404);res.end('Not found');return}res.writeHead(200,{'content-type':mime[path.extname(filepath)]||'application/octet-stream','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin','x-frame-options':'SAMEORIGIN','cache-control':route==='/service-worker.js'?'no-cache':'public, max-age=120'});if(req.method==='HEAD')return res.end();fs.createReadStream(filepath).pipe(res)});
  }catch(e){fail(res,e)}
 }

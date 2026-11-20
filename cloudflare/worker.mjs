@@ -19,6 +19,6 @@ export default {
       return Response.json({error:'Cloudflare API migration in progress; submissions and payments disabled to protect records.'},
         {status:503, headers:{'cache-control':'no-store'}});
     }
-    return env.ASSETS.fetch(request);
+    if (/^\/logos\/Superior_(?:ProConnect_Master|Construction_Network|Automotive_Network)\.jpg$/.test(url.pathname)) {\n      return env.ASSETS.fetch(request);\n    }\n    return env.ASSETS.fetch(request);
   }
 };

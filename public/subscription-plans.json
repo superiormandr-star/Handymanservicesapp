@@ -11,7 +11,7 @@
       "currency": "USD",
       "interval": "MONTH",
       "intervalCount": 1,
-      "foundingPrice": "25.00",
+      "foundingPrice": "39.00",
       "regularPrice": "39.99",
       "features": [
         "Directory visibility and access to available leads. No guaranteed leads or revenue."
@@ -43,7 +43,7 @@
       "currency": "USD",
       "interval": "MONTH",
       "intervalCount": 1,
-      "foundingPrice": "50.00",
+      "foundingPrice": "80.00",
       "regularPrice": "80.00",
       "features": [
         "Enhanced business profile, one-click contact and up to 10 AI-assisted estimate drafts per month for review."
@@ -75,7 +75,7 @@
       "currency": "USD",
       "interval": "MONTH",
       "intervalCount": 1,
-      "foundingPrice": "100.00",
+      "foundingPrice": "149.00",
       "regularPrice": "149.00",
       "features": [],
       "featuresStatus": "missing-approved-definition",
@@ -137,7 +137,7 @@
       "currency": "USD",
       "interval": "MONTH",
       "intervalCount": 1,
-      "foundingPrice": "50.00",
+      "foundingPrice": "60.00",
       "regularPrice": "80.00",
       "features": [],
       "featuresStatus": "missing-approved-definition",
@@ -168,7 +168,7 @@
       "currency": "USD",
       "interval": "MONTH",
       "intervalCount": 1,
-      "foundingPrice": "99.00",
+      "foundingPrice": "100.00",
       "regularPrice": "149.00",
       "features": [],
       "featuresStatus": "missing-approved-definition",

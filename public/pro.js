@@ -1,9 +1,64 @@
 (()=>{'use strict';
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v||0);
-let token='',data=null,selected=null;
+let token='',data=null,selected=null,membership=null;
+const accessStorageKey='proconnect-access';
 const message=(v,error=false)=>{$('#message').textContent=v;$('#message').className=error?'error':''};
-async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',cache:'no-store',headers:{'content-type':'application/json','x-pro-token':token},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');return d}
+async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',cache:'no-store',headers:{'content-type':'application/json','x-pro-token':token},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw Object.assign(Error(d.error||'Request failed'),{status:r.status});return d}
+const paymentState=value=>(value||'pending').replaceAll('_',' ');
+async function loadMembership(){
+ try{membership=await api('/api/membership/account')}
+ catch(error){if(error.status!==404)throw error;membership=null}
+ $('#membership-panel').hidden=!membership;
+ if(!membership)return;
+ $('#membership-state').textContent=membership.industry+' · '+membership.membership+' · '+paymentState(membership.status)+
+  (membership.paidThrough?' · Next billing boundary '+new Date(membership.paidThrough).toLocaleDateString():'')+
+  (!membership.checkoutAvailable&&!membership.workspaceAvailable?' · Checkout is unavailable.':'');
+ $('#membership-hosted').hidden=!membership.hostedAvailable;
+ $('#membership-checkout').hidden=!(membership.checkoutAvailable&&['interest','pending_payment_verification'].includes(membership.status));
+}
+async function signIn(){
+ await loadMembership();
+ if(!membership||membership.workspaceAvailable)await load();
+ else{$('#signin').hidden=true;$('#workspace').hidden=true;$('#access').value='';}
+ try{sessionStorage.setItem(accessStorageKey,token)}catch{}
+}
+function signOut(){
+ token='';data=null;selected=null;membership=null;marketplaceJobs=[];
+ try{sessionStorage.removeItem(accessStorageKey)}catch{}
+ $('#workspace').hidden=true;$('#membership-panel').hidden=true;$('#signin').hidden=false;
+ for(const id of ['leads','detail','requests','marketplace-jobs'])$('#'+id).replaceChildren();
+ message('Signed out.');
+}
+$('#membership-signout').onclick=signOut;
+$('#membership-refresh').onclick=async()=>{try{await signIn();message('Membership refreshed.')}catch(error){message(error.message,true)}};
+$('#membership-checkout').onclick=async event=>{
+ const button=event.currentTarget;
+ const payload={requestId:membership.id,industry:membership.industry,membership:membership.membership,
+  packageKey:membership.industry+'-'+membership.membership};
+ button.disabled=true;
+ try{
+  message('Checking the approved PayPal plan…');
+  let checkout=await api('/api/membership-checkout',payload);
+  if(checkout.pending)checkout=await api('/api/membership-checkout',payload);
+  if(!checkout.approvalUrl)throw Error('PayPal checkout is not available.');
+  const url=new URL(checkout.approvalUrl);
+  if(!['https://www.paypal.com','https://www.sandbox.paypal.com'].includes(url.origin))throw Error('Invalid PayPal checkout.');
+  location.assign(url.href);
+ }catch(error){message(error.message,true)}
+ finally{button.disabled=false}
+};
+$('#membership-hosted').onclick=async event=>{
+ if(!confirm('Continue to the hosted PayPal plan? Your account remains pending until the owner confirms your payment and the PayPal email must match your application.'))return;
+ const button=event.currentTarget;button.disabled=true;
+ try{
+  const {checkoutUrl}=await api('/api/membership/hosted-plan',{});
+  const url=new URL(checkoutUrl);
+  if(url.origin!=='https://www.paypal.com'||url.pathname!=='/webapps/billing/plans/subscribe')throw Error('Invalid PayPal checkout.');
+  location.assign(url.href);
+ }catch(error){message(error.message,true)}
+ finally{button.disabled=false}
+};
 async function load(){data=await api('/api/crm/workspace');$('#business').textContent=data.profile.name;$('#signin').hidden=true;$('#workspace').hidden=false;$('#access').value='';$('#stage').innerHTML='<option value="">All stages</option>'+data.stages.map(s=>'<option>'+esc(s)+'</option>').join('');render();if(selected)detail();await loadMarketplace().catch(e=>message('Customer job board: '+e.message,true))}
 function render(){const q=$('#search').value.trim().toLowerCase(),stage=$('#stage').value,leads=data.leads;
  const today=new Date().toLocaleDateString('en-CA');
@@ -23,7 +78,7 @@ async function loadMarketplace(){
  marketplaceJobs=payload.jobs||[];
  const credits=payload.credits;
  $('#marketplace-billing').textContent=credits?
-  'Owner-verified '+credits.tier+' membership for this month: '+credits.remaining+
+  'Verified '+credits.tier+' membership for this billing period: '+credits.remaining+
   ' of '+credits.allowed+' included estimate credits remaining. Additional estimates: $18 Construction / $10 Automotive, once verified in PayPal.':
   'Your membership tier and estimate credits have not been verified for this month. Job details are visible; submissions are disabled to avoid incorrect charges.';
  renderMarketplace(Boolean(credits));
@@ -39,16 +94,34 @@ function renderMarketplace(verified){
   let card='<article class="marketplace-job card"><div class="marketplace-head"><span class="pill">'+safe(job.industry)+
    '</span> <small>'+safe(job.city)+'</small></div><h3>'+safe(job.title)+'</h3>'+
    '<p class="pre">'+safe(job.description)+'</p>'+
+   (job.measurements?'<p>Measurements: '+safe(job.measurements)+'</p>':'')+
    '<p class="muted">Estimate slots occupied or reserved: '+safe(job.filledSlots)+' / '+safe(job.bidLimit)+
    '. Remaining: '+safe(job.remainingSlots)+'. Status: '+safe(job.status)+'.</p>';
   if(contact){
    card+='<div class="selected-contact"><strong>Customer selected your estimate and authorized contact sharing.</strong>'+
     '<p>'+safe(contact.name)+' · '+safe(contact.email||'')+' · '+safe(contact.phone||'')+
     '</p><p>Job address (private): '+safe(contact.address||'Ask customer for details')+'</p></div>';
+   const progress=job.progress||'selected';
+   const next={selected:['scheduled','in_progress'],scheduled:['in_progress'],in_progress:['completed'],completed:[]}[progress];
+   if(job.photos.length)card+='<div class="job-photo-list" data-job-photos="'+safe(job.id)+'"></div>';
+   if(next.length)card+='<form data-progress-job="'+safe(job.id)+'"><label>Update job status<select name="progress">'+
+    next.map(value=>'<option value="'+value+'">'+paymentState(value)+'</option>').join('')+
+    '</select></label><button type="submit">Save status</button></form>';
+   if(job.invoice)card+='<p>Invoice '+safe(job.invoice.number)+' · '+money(job.invoice.total)+' · '+safe(job.invoice.status)+'</p>';
+   else card+='<form data-invoice-job="'+safe(job.id)+'"><button type="submit">Create invoice from approved estimate</button></form>';
+
   }
   if(owned){
    card+='<p><strong>Your bid:</strong> '+money(owned.amount)+' · '+safe(owned.status)+
     '</p><p class="pre">'+safe(owned.scope)+'</p>';
+   if(owned.decision==='declined')card+='<p>The customer declined this estimate.</p>';
+   if(owned.clarification){
+    card+='<p><strong>Customer question:</strong> '+safe(owned.clarification.question)+'</p>';
+    if(owned.clarification.answer)card+='<p>'+safe(owned.clarification.answer)+'</p>';
+    else if(job.status==='open'&&!owned.decision)card+='<form data-answer-job="'+safe(job.id)+'" data-answer-bid="'+safe(owned.id)+'">'+
+      '<label>Answer without contact details<textarea name="answer" minlength="5" maxlength="500" required></textarea></label>'+
+      '<button type="submit">Answer</button></form>';
+   }
    if(owned.status==='pending'&&owned.paymentReference){
     card+='<p class="muted">Transaction reference submitted. Waiting for owner to check PayPal; not yet visible to customer.</p>';
    }else if(owned.status==='pending'){
@@ -60,7 +133,7 @@ function renderMarketplace(verified){
       '<label>PayPal transaction ID from receipt<input name="paymentReference" required minlength="6" maxlength="80"></label>'+
       '<button type="submit">Submit payment reference for owner review</button></form>';
    }else if(owned.status==='verified'){
-    card+='<p class="muted">Your paid or included-credit estimate has been delivered privately to the customer. Wait for their selection.</p>';
+    if(!owned.decision)card+='<p class="muted">Your verified estimate is available to the customer.</p>';
    }
   }else if(job.status==='open'&&job.remainingSlots>0&&verified){
    card+='<form data-marketplace-bid="'+safe(job.id)+'">'+
@@ -77,6 +150,23 @@ function renderMarketplace(verified){
   }
   return card+'</article>';
  }).join('');
+ for(const node of box.querySelectorAll('[data-job-photos]')){
+  const job=marketplaceJobs.find(row=>row.id===node.dataset.jobPhotos);
+  void showJobPhotos(node,job,token);
+ }
+}
+async function showJobPhotos(node,job,key){
+ await Promise.all(job.photos.map(async(photo,index)=>{
+  try{
+   const response=await fetch('/api/pro/jobs/'+job.id+'/photos/'+photo.id,{headers:{'x-pro-token':key},cache:'no-store'});
+   if(!response.ok)return;
+   const url=URL.createObjectURL(await response.blob()),image=document.createElement('img');
+   image.alt='Shared job photo '+(index+1);
+   image.onload=image.onerror=()=>URL.revokeObjectURL(url);
+   image.src=url;
+   node.append(image);
+  }catch{}
+ }));
 }
 $('#marketplace-refresh').addEventListener('click',async()=>{try{await loadMarketplace();message('Available jobs refreshed.')}catch(e){message(e.message,true)}});
 $('#marketplace-jobs').addEventListener('click',async e=>{
@@ -87,7 +177,7 @@ $('#marketplace-jobs').addEventListener('click',async e=>{
  catch(error){message(error.message,true);button.disabled=false;}
 });
 $('#marketplace-jobs').addEventListener('submit',async e=>{
- const f=e.target; if(!f.matches('[data-marketplace-bid],[data-payment-job]'))return;
+ const f=e.target; if(!f.matches('[data-marketplace-bid],[data-payment-job],[data-progress-job],[data-invoice-job],[data-answer-job]'))return;
  e.preventDefault();const button=f.querySelector('button[type=submit]');button.disabled=true;
  try{
   const values=Object.fromEntries(new FormData(f));
@@ -96,6 +186,14 @@ $('#marketplace-jobs').addEventListener('submit',async e=>{
     amount:Number(values.amount),scope:values.scope,feeAcknowledged:f.elements.feeAcknowledged.checked,rulesAccepted:f.elements.rulesAccepted.checked
    });
    message('Estimate submitted or reserved. Review the payment/credit status below.');
+  }else if(f.dataset.progressJob){
+   await api('/api/pro/jobs/'+f.dataset.progressJob+'/progress',values);message('Job status saved.');
+  }else if(f.dataset.invoiceJob){
+   if(!confirm('Create an invoice from the approved estimate? This does not charge your customer.'))return;
+   await api('/api/pro/jobs/'+f.dataset.invoiceJob+'/invoice',{confirm:true});message('Invoice created.');
+  }else if(f.dataset.answerJob){
+   await api('/api/pro/jobs/'+f.dataset.answerJob+'/answer',{bidId:f.dataset.answerBid,answer:values.answer});
+   message('Answer sent to the private customer workspace.');
   }else{
    await api('/api/pro/jobs/'+f.dataset.paymentJob+'/bids/'+f.dataset.paymentBid+'/payment',{
     paymentReference:values.paymentReference
@@ -107,11 +205,25 @@ $('#marketplace-jobs').addEventListener('submit',async e=>{
  finally{button.disabled=false;}
 });
 
-$('#login-form').addEventListener('submit',async e=>{e.preventDefault();token=$('#access').value.trim();try{await load();message('Workspace loaded.')}catch(e){token='';message(e.message,true)}});
-$('#logout').onclick=()=>{token='';data=null;selected=null;marketplaceJobs=[];$('#workspace').hidden=true;$('#signin').hidden=false;$('#leads').replaceChildren();$('#detail').replaceChildren();$('#requests').replaceChildren();message('Signed out.');};
+$('#login-form').addEventListener('submit',async event=>{
+ event.preventDefault();token=$('#access').value.trim();
+ try{await signIn();message('Signed in.')}
+ catch(error){token='';try{sessionStorage.removeItem(accessStorageKey)}catch{}message(error.message,true)}
+});
+$('#logout').onclick=signOut;
 $('#search').oninput=render;$('#stage').onchange=render;
 $('#refresh').onclick=async()=>{try{await load();message('Inbox refreshed.')}catch(e){message(e.message,true)}};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-lead]');if(b){selected=b.dataset.lead;render();detail();$('#detail').scrollIntoView({behavior:'smooth',block:'nearest'})}});
 document.addEventListener('submit',async e=>{const f=e.target;if(!['job-form','estimate-request'].includes(f.id)&&!f.dataset.review)return;e.preventDefault();const submit=e.submitter;submit.disabled=true;try{const values=Object.fromEntries(new FormData(f));if(f.id==='job-form')await api('/api/crm/leads/'+selected,values);else if(f.id==='estimate-request')await api('/api/crm/estimate-requests',{leadId:selected,...values});else{const decision=submit.value;if(decision==='approved'&&!confirm('Approve this draft? No estimate will be sent to your customer.'))return;await api('/api/crm/estimate-requests/'+f.dataset.review+'/decision',{...values,decision})}await load();message('Saved.')}catch(e){message(e.message,true)}finally{submit.disabled=false}});
-const supplied=new URLSearchParams(location.hash.slice(1)).get('access');if(supplied){history.replaceState(null,'',location.pathname);$('#access').value=supplied;$('#login-form').requestSubmit()}
+const callback=new URLSearchParams(location.search).get('checkout');
+const supplied=new URLSearchParams(location.hash.slice(1)).get('access');
+if(callback||supplied)history.replaceState(null,'',location.pathname);
+let saved;
+try{saved=sessionStorage.getItem(accessStorageKey)}catch{}
+if(supplied||saved){
+ $('#access').value=supplied||saved;
+ $('#login-form').requestSubmit();
+}else if(callback){
+ message('Sign in with your private key to check the membership status.');
+}
 })();

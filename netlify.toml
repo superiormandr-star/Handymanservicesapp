@@ -1,0 +1,44 @@
+# Staging configuration for a commercially permitted free Netlify plan.
+# Initialize and verify the selected record namespace before enabling writes.
+[build]
+  publish = "public"
+  command = "npm test"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Content-Type-Options = "nosniff"
+
+[[redirects]]
+  from = "/customers"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/construction"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/automotive"
+  to = "/index.html"
+  status = 200

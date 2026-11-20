@@ -1,0 +1,10 @@
+[build]
+  publish = "public"
+  command = "npm test"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Netlify Server entry is discovered at netlify/server/index.mjs.
+# Database is provisioned through @netlify/database and migration.
+# Never put secrets in netlify.toml.

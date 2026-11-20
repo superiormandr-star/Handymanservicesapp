@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "checkoutEnabled": true,
+  "checkoutEnabled": false,
   "activationEnabled": false,
   "plans": [
     {
@@ -19,8 +19,8 @@
       "featuresStatus": "retained-existing-directory-copy; complete-industry-definition-pending",
       "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8HA54058MH7212436NL5EX3Q",
       "paypalPlanId": "P-8HA54058MH7212436NL5EX3Q",
-      "checkoutEnabled": true,
-      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
+      "checkoutEnabled": false,
+      "verificationStatus": "pending-PayPal-plan-price-and-cycle-verification",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -32,8 +32,8 @@
         "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ],
       "activationEnabled": false,
-      "checkoutMode": "live-paypal-link-manual-verification",
-      "activationNote": "A successful PayPal payment does not automatically activate a membership; owner must verify payment and provision service."
+      "checkoutMode": "disabled-until-verified",
+      "activationNote": "Checkout and activation disabled until PayPal amount, recurring cycle, and payment lifecycle are verified."
     },
     {
       "key": "construction-professional",
@@ -43,7 +43,7 @@
       "currency": "USD",
       "interval": "MONTH",
       "intervalCount": 1,
-      "foundingPrice": "60.00",
+      "foundingPrice": "50.00",
       "regularPrice": "80.00",
       "features": [
         "Enhanced business profile, one-click contact and up to 10 AI-assisted estimate drafts per month for review."
@@ -51,8 +51,8 @@
       "featuresStatus": "retained-existing-directory-copy; complete-industry-definition-pending",
       "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-1VM79900PL768641SNL5E7KA",
       "paypalPlanId": "P-1VM79900PL768641SNL5E7KA",
-      "checkoutEnabled": true,
-      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
+      "checkoutEnabled": false,
+      "verificationStatus": "pending-PayPal-plan-price-and-cycle-verification",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -64,8 +64,8 @@
         "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ],
       "activationEnabled": false,
-      "checkoutMode": "live-paypal-link-manual-verification",
-      "activationNote": "A successful PayPal payment does not automatically activate a membership; owner must verify payment and provision service."
+      "checkoutMode": "disabled-until-verified",
+      "activationNote": "Checkout and activation disabled until PayPal amount, recurring cycle, and payment lifecycle are verified."
     },
     {
       "key": "construction-elite",
@@ -75,14 +75,14 @@
       "currency": "USD",
       "interval": "MONTH",
       "intervalCount": 1,
-      "foundingPrice": "99.00",
+      "foundingPrice": "100.00",
       "regularPrice": "149.00",
       "features": [],
       "featuresStatus": "missing-approved-definition",
       "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-1JG93932CP734950ANL5F2DI",
       "paypalPlanId": "P-1JG93932CP734950ANL5F2DI",
-      "checkoutEnabled": true,
-      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
+      "checkoutEnabled": false,
+      "verificationStatus": "pending-PayPal-plan-price-and-cycle-verification",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -95,8 +95,8 @@
         "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ],
       "activationEnabled": false,
-      "checkoutMode": "live-paypal-link-manual-verification",
-      "activationNote": "A successful PayPal payment does not automatically activate a membership; owner must verify payment and provision service."
+      "checkoutMode": "disabled-until-verified",
+      "activationNote": "Checkout and activation disabled until PayPal amount, recurring cycle, and payment lifecycle are verified."
     },
     {
       "key": "automotive-essential",
@@ -112,8 +112,8 @@
       "featuresStatus": "missing-approved-definition",
       "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-2K759018XE8664423NL5GR2I",
       "paypalPlanId": "P-2K759018XE8664423NL5GR2I",
-      "checkoutEnabled": true,
-      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
+      "checkoutEnabled": false,
+      "verificationStatus": "pending-PayPal-plan-price-and-cycle-verification",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -126,8 +126,8 @@
         "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ],
       "activationEnabled": false,
-      "checkoutMode": "live-paypal-link-manual-verification",
-      "activationNote": "A successful PayPal payment does not automatically activate a membership; owner must verify payment and provision service."
+      "checkoutMode": "disabled-until-verified",
+      "activationNote": "Checkout and activation disabled until PayPal amount, recurring cycle, and payment lifecycle are verified."
     },
     {
       "key": "automotive-professional",
@@ -137,14 +137,14 @@
       "currency": "USD",
       "interval": "MONTH",
       "intervalCount": 1,
-      "foundingPrice": "60.00",
+      "foundingPrice": "50.00",
       "regularPrice": "80.00",
       "features": [],
       "featuresStatus": "missing-approved-definition",
       "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-38662930HA324233RNL5GVMI",
       "paypalPlanId": "P-38662930HA324233RNL5GVMI",
-      "checkoutEnabled": true,
-      "verificationStatus": "owner-screenshot-verified-name-and-plan-id; price-and-lifecycle-pending",
+      "checkoutEnabled": false,
+      "verificationStatus": "pending-PayPal-plan-price-and-cycle-verification",
       "priceSource": "Owner-approved monthly price table supplied in task; not yet verified against PayPal",
       "description": null,
       "eligibility": null,
@@ -157,8 +157,8 @@
         "Confirm exact plan billing amount, billing cycle, founding eligibility, and verified server-side payment activation"
       ],
       "activationEnabled": false,
-      "checkoutMode": "live-paypal-link-manual-verification",
-      "activationNote": "A successful PayPal payment does not automatically activate a membership; owner must verify payment and provision service."
+      "checkoutMode": "disabled-until-verified",
+      "activationNote": "Checkout and activation disabled until PayPal amount, recurring cycle, and payment lifecycle are verified."
     },
     {
       "key": "automotive-elite",
@@ -168,14 +168,14 @@
       "currency": "USD",
       "interval": "MONTH",
       "intervalCount": 1,
-      "foundingPrice": "100.00",
+      "foundingPrice": "99.00",
       "regularPrice": "149.00",
       "features": [],
       "featuresStatus": "missing-approved-definition",
       "checkoutUrl": "https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8WL58047SB8224218NL5GUEI",
       "paypalPlanId": "P-8WL58047SB8224218NL5GUEI",
-      "checkoutEnabled": true,
-      "verificationStatus": "owner-screenshot-verified-name-plan-id-and-current-100-monthly-price; subscription-lifecycle-pending",
+      "checkoutEnabled": false,
+      "verificationStatus": "pending-PayPal-plan-price-and-cycle-verification",
       "priceSource": "Owner-supplied PayPal dashboard screenshot confirms Automotive Elite plan is On at $100.00 USD monthly (2026-11-15); regular price remains unverified",
       "description": null,
       "eligibility": null,
@@ -188,8 +188,8 @@
         "Confirm founding eligibility, regular tier pricing, and verified server-side payment activation"
       ],
       "activationEnabled": false,
-      "checkoutMode": "live-paypal-link-manual-verification",
-      "activationNote": "A successful PayPal payment does not automatically activate a membership; owner must verify payment and provision service."
+      "checkoutMode": "disabled-until-verified",
+      "activationNote": "Checkout and activation disabled until PayPal amount, recurring cycle, and payment lifecycle are verified."
     }
   ],
   "estimatePayments": [

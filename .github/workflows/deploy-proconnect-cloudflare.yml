@@ -16,7 +16,7 @@ jobs:
           node-version: '22'
       - name: Verify repository tests
         run: |
-          npm ci
+          npm install --no-package-lock --no-audit --no-fund
           npm test
       - name: Deploy Workers and static assets
         run: npx --yes wrangler@4 deploy

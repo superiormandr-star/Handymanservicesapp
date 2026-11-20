@@ -97,6 +97,17 @@ $('#member-checkout').onclick=async e=>{
   else $('#member-state').textContent=result.status||'Pending PayPal verification.';
  }catch(err){$('#member-state').textContent=err.message;}finally{button.disabled=false;}
 };
+let lastProUpdate='';
+setInterval(async()=>{
+ if(!token||document.hidden)return;
+ const activeToken=token;
+ try{
+  const update=await api('/api/pro/jobs');if(token!==activeToken)return;
+  const signature=JSON.stringify(update.jobs.map(j=>[j.id,j.status,j.ownBid?.status,j.messages.length]));
+  if(lastProUpdate&&signature!==lastProUpdate)message('Your job board has an update. Refresh available jobs to see it.');
+  lastProUpdate=signature;
+ }catch{}
+},60000);
 $('#marketplace-refresh').addEventListener('click',async()=>{try{await loadMarketplace();message('Available jobs refreshed.')}catch(e){message(e.message,true)}});
 $('#marketplace-jobs').addEventListener('click',async e=>{
  const button=e.target.closest('[data-marketplace-pass]');if(!button)return;
@@ -128,7 +139,7 @@ $('#marketplace-jobs').addEventListener('submit',async e=>{
 });
 
 $('#login-form').addEventListener('submit',async e=>{e.preventDefault();token=$('#access').value.trim();try{await load();message('Workspace loaded.')}catch(e){token='';message(e.message,true)}});
-$('#logout').onclick=()=>{token='';data=null;selected=null;marketplaceJobs=[];$('#workspace').hidden=true;$('#signin').hidden=false;$('#leads').replaceChildren();$('#detail').replaceChildren();$('#requests').replaceChildren();message('Signed out.');};
+$('#logout').onclick=()=>{lastProUpdate='';token='';data=null;selected=null;marketplaceJobs=[];$('#workspace').hidden=true;$('#signin').hidden=false;$('#leads').replaceChildren();$('#detail').replaceChildren();$('#requests').replaceChildren();message('Signed out.');};
 $('#search').oninput=render;$('#stage').onchange=render;
 $('#refresh').onclick=async()=>{try{await load();message('Inbox refreshed.')}catch(e){message(e.message,true)}};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-lead]');if(b){selected=b.dataset.lead;render();detail();$('#detail').scrollIntoView({behavior:'smooth',block:'nearest'})}});

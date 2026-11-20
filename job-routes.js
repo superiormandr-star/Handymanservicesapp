@@ -29,6 +29,7 @@ const info=(job,time)=>({
  id:job.id,industry:job.industry,title:job.title,description:job.description,
  city:job.city,category:job.category,createdAt:job.createdAt,status:job.status,
  bidLimit:job.bidLimit,filledSlots:validCount(job,time),remainingSlots:Math.max(0,job.bidLimit-validCount(job,time)),
+ receivedEstimates:job.bids.filter(b=>b.verifiedAt).length,
  fourthApproved:Boolean(job.fourthApproved)
 });
 module.exports=async function jobRoutes(req,res,ctx){
@@ -242,6 +243,14 @@ module.exports=async function jobRoutes(req,res,ctx){
    const input=await body(req);
    if(input.confirmedInPayPal!==true)return fail('Confirm the matching fee and transaction independently in PayPal before approving.');
    if(jobs.some(j=>j.bids.some(b=>b!==bid&&b.verifiedAt&&b.paymentReference?.toUpperCase()===bid.paymentReference.toUpperCase())))return fail('This PayPal transaction has already been applied.',409);
+   if(ctx.verifyEstimate){
+    const application=(data.intake||[]).find(r=>r.id===bid.profileId);
+    const payerEmail=application?.email||data.profiles.find(p=>p.id===bid.profileId)?.email;
+    let verified=false;
+    try{verified=await ctx.verifyEstimate({reference:bid.paymentReference,industry:job.industry,payerEmail,createdAt:bid.createdAt});}
+    catch{return fail('PayPal transaction reporting is unavailable. The estimate remains pending.',503);}
+    if(!verified)return fail('PayPal has not confirmed a matching merchant, payer, item and fee. Check the receipt and retry when reporting updates.',409);
+   }
    bid.status='verified';bid.verifiedAt=timestamp;bid.updatedAt=timestamp;
   }else{bid.status='rejected';bid.updatedAt=timestamp;}
   job.updatedAt=timestamp;save(data);

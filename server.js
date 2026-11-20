@@ -51,7 +51,7 @@ async function handle(req,res){
  return send(res,200,await oneDrive.backup());
  }
  if(await require('./customer-workspace').customerRoutes(req,res,{db,save,send,body,limited}))return;
- if(await jobRoutes(req,res,{db,save,send,body,admin,clean,limited}))return;
+ if(await jobRoutes(req,res,{db,save,send,body,admin,clean,limited,verifyEstimate:process.env.SPC_STORAGE_BACKEND==='netlify'?membershipRoutes.verifyEstimate:null}))return;
  if(await crmRoutes(req,res,{db,save,send,body,admin,clean,limited}))return;
  if(await estimateRoutes(req,res,{db,save,send,body,admin,clean}))return;
  if(route==='/api/health'&&req.method==='GET')return send(res,200,{ok:true,persistence:persistentStore.enabled?'encrypted durable '+persistentStore.backend+' (read verified)':'local development file',writesEnabled:persistentStore.enabled?process.env.SPC_WRITES_ENABLED==='true'&&process.env.SPC_PERSISTENCE_VERIFIED==='true':!process.env.VERCEL,payments:'PayPal plan details must be verified'});

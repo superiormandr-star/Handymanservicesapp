@@ -47,7 +47,7 @@ function createMembershipRoutes({env = process.env, request = fetch} = {}) {
     if (!response.ok) throw Error('PayPal verification unavailable');
     return response.json();
   }
-  return async function membershipRoutes(req, res, {body, db, save, send}) {
+  async function membershipRoutes(req, res, {body, db, save, send}) {
     const path = req.url.split('?')[0];
     if (!['/api/membership-checkout','/api/paypal/webhook'].includes(path)) return false;
     const reply = (code, payload) => { send(res, code, payload); return true; };
@@ -125,6 +125,23 @@ function createMembershipRoutes({env = process.env, request = fetch} = {}) {
       record.billingEvents = [...(record.billingEvents || []),{id:input.id,type:input.event_type,at:input.create_time}].slice(-100);
       save(data); return reply(200,{received:true});
     } catch { return reply(503,{error:'PayPal verification unavailable. Retry delivery.'}); }
+  }
+  membershipRoutes.verifyEstimate = async ({reference,industry,payerEmail,createdAt}) => {
+    if (!configured || !env.PAYPAL_MERCHANT_ID || !payerEmail) return false;
+    const expected=catalog.estimatePayments.find(p=>p.industry===industry);
+    if(!expected)return false;
+    const start=new Date(createdAt),end=new Date();
+    const params=new URLSearchParams({transaction_id:reference,start_date:start.toISOString(),end_date:end.toISOString(),fields:'all',balance_affecting_records_only:'Y'});
+    const result=await provider('/v1/reporting/transactions?'+params);
+    return (result.transaction_details||[]).some(detail=>{
+      const tx=detail.transaction_info,items=detail.cart_info?.item_details||[];
+      return tx?.transaction_id===reference && tx.paypal_account_id===env.PAYPAL_MERCHANT_ID &&
+        tx.transaction_status==='S' && Date.parse(tx.transaction_initiation_date)>=start.getTime() &&
+        tx.transaction_amount?.currency_code===expected.currency && tx.transaction_amount?.value===expected.amount &&
+        detail.payer_info?.email_address?.toLowerCase()===payerEmail.toLowerCase() &&
+        items.length===1 && items[0].item_name?.toLowerCase()===expected.displayedItem.toLowerCase();
+    });
   };
+  return membershipRoutes;
 }
 module.exports = {createMembershipRoutes, planMatches};

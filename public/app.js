@@ -137,7 +137,7 @@ async function showPrivateJob(){
   const item=await ownJobRequest('/api/jobs/'+encodeURIComponent(id),key);
   if(location.hash!=='#my-job/'+id+'/'+key)return;
   $('#customer-job-summary').textContent=item.title+' · '+item.city+' · '+item.industry+
-   ' · '+item.bids.length+' verified estimates · '+
+   ' · '+item.receivedEstimates+' received estimates · '+
    item.remainingSlots+' slot(s) available or reserved · '+item.status.toUpperCase();
   const node=$('#customer-job-bids');
   if(item.bids.length){
@@ -157,7 +157,7 @@ async function showPrivateJob(){
    chat.insertAdjacentHTML('beforeend','<form id="customer-chat"><label>Message your professional<textarea name="text" required maxlength="1200"></textarea></label><button>Send message</button></form>');
    node.append(chat);
   }
-  $('#customer-job-fourth').hidden=!(item.status==='open'&&item.bidLimit===3&&!item.fourthApproved&&item.bids.length>=3);
+  $('#customer-job-fourth').hidden=!(item.status==='open'&&item.bidLimit===3&&!item.fourthApproved&&item.receivedEstimates>=3);
   $('#customer-job-close').hidden=item.status!=='open';
   jobMessage('Job information loaded. Share only the public job description, never your private management link.',false,'#customer-dashboard-status');
  }catch(err){jobMessage(err.message,true,'#customer-dashboard-status')}
@@ -186,6 +186,18 @@ $('#copy-customer-job').addEventListener('click',async()=>{
  try{await navigator.clipboard.writeText(input.value);jobMessage('Private link copied. Store it securely.',false,'#customer-dashboard-status')}
  catch{input.select();jobMessage('Select and copy this private link.',false,'#customer-dashboard-status')}
 });
+let lastCustomerUpdate='';
+setInterval(async()=>{
+ const m=privateJobPath();
+ if(!m||document.hidden)return;
+ try{
+  const job=await ownJobRequest('/api/jobs/'+m[1],m[2]);
+  if(!privateJobPath()||location.hash!==m[0])return;
+  const signature=[job.id,job.status,job.receivedEstimates,job.messages?.length||0].join('/');
+  if(lastCustomerUpdate&&lastCustomerUpdate!==signature)jobMessage('Your job has an update. Refresh estimates to see the latest activity.',false,'#customer-dashboard-status');
+  lastCustomerUpdate=signature;
+ }catch{}
+},60000);
 $('#customer-job-refresh').addEventListener('click',()=>showPrivateJob());
 $('#customer-job-bids').addEventListener('click',async e=>{
  const decline=e.target.closest('[data-decline-bid]');

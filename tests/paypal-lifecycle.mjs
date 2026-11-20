@@ -56,3 +56,13 @@ test('checkout and signed PayPal events bind paid access to the approved applica
   await call(endpoint,hook('BILLING.SUBSCRIPTION.CANCELLED','event5',3000),signed);assert.equal(record.paidThrough,null);
   assert.equal(record.billingStatus,'CANCELLED');
 });
+
+test('one-time receipt verification requires the matching merchant, amount, item and payer',async()=>{
+ const now=new Date(),row={transaction_info:{transaction_id:'REF123',paypal_account_id:'merchant',transaction_status:'S',transaction_initiation_date:now.toISOString(),transaction_amount:{value:'10.00',currency_code:'USD'}},cart_info:{item_details:[{item_name:'Automotive estimate'}]},payer_info:{email_address:'buyer@example.invalid'}};
+ const routes=billing.createMembershipRoutes({env:{PAYPAL_ENVIRONMENT:'sandbox',PAYPAL_CLIENT_ID:'test',PAYPAL_CLIENT_SECRET:'test',PAYPAL_WEBHOOK_ID:'test',PAYPAL_MERCHANT_ID:'merchant'},request:async url=>Response.json(url.endsWith('/token')?{access_token:'test',expires_in:120}:{transaction_details:[row]})});
+ const input={industry:'automotive',reference:'REF123',payerEmail:'buyer@example.invalid',createdAt:new Date(+now-1000).toISOString()};
+ assert.equal(await routes.verifyEstimate(input),true);
+ assert.equal(await routes.verifyEstimate({...input,industry:'construction'}),false);
+ assert.equal(await routes.verifyEstimate({...input,payerEmail:'other@example.invalid'}),false);
+ row.transaction_info.transaction_status='P';assert.equal(await routes.verifyEstimate(input),false);
+});

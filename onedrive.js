@@ -8,7 +8,7 @@ function validateBackup(text) {
  for (const key of ['profiles','reviews','intake','documents']) {
   if (!Array.isArray(data[key])) throw Error('Invalid backup: missing '+key);
  }
- for (const key of ['leads','proAccess','estimateRequests']) {
+ for (const key of ['leads','proAccess','estimateRequests','jobs','jobEntitlements','customerAccounts']) {
   if (data[key] !== undefined && !Array.isArray(data[key])) throw Error('Invalid backup: '+key);
  }
  return data;
@@ -136,6 +136,8 @@ function createOneDrive({env=process.env, request=fetch, now=()=>Date.now(), rea
     const downloaded=await (await graph('items/'+encodeURIComponent(item.id)+'/content')).text();
     const digest=crypto.createHash('sha256').update(contents).digest('hex');
     if(crypto.createHash('sha256').update(downloaded).digest('hex')!==digest)throw Error('OneDrive upload verification failed: downloaded checksum does not match.');
+    const recovered=unseal(downloaded);
+    if(recovered.snapshot!==text||recovered.sha256!==crypto.createHash('sha256').update(text).digest('hex'))throw Error('Recovered records differ from the backup source.');
     put('last-backup',{id:item.id,name,createdAt:new Date(now()).toISOString(),sha256:crypto.createHash('sha256').update(text).digest('hex')});
     return {id:item.id,name,verified:true,sha256:digest};
    });

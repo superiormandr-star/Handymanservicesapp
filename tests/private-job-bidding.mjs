@@ -156,3 +156,25 @@ test('Passing hides job and expired holds cannot be charged or validated',async(
  const feed=await f.request('GET','/api/pro/jobs',{}, {'x-pro-token':proTokens[1]});
  assert.equal(feed.jobs.length,0);
 });
+
+test('only selected professionals can download private files and exchange messages; a declined bid still counts toward the cap',async()=>{
+ const f=makeFixture();const posted=await f.postJob(2);
+ const customer={'x-customer-key':posted.customerKey};
+ const path='/api/jobs/'+posted.jobId;
+ const proPath='/api/pro/jobs/'+posted.jobId;
+ const files=[{id:'example',name:'scope.pdf',type:'application/pdf',bytes:'JVBERi0='}];
+ f.records().jobs[0].attachments=files;
+ await f.authorize(0);await f.authorize(1);
+ const first=await f.bid(0,posted.jobId),second=await f.bid(1,posted.jobId);
+ const pro=i=>({'x-pro-token':proTokens[i]});
+ assert.deepEqual((await f.request('GET','/api/pro/jobs',{},pro(0))).jobs[0].attachments,[]);
+ assert.equal((await f.request('POST',path+'/reject',{bidId:first.bidId},customer)).httpStatus,200);
+ assert.equal((await f.request('GET',path,{},customer)).remainingSlots,0);
+ assert.equal((await f.request('POST',path+'/select',{bidId:second.bidId},customer)).httpStatus,200);
+ assert.deepEqual((await f.request('GET','/api/pro/jobs',{},pro(1))).jobs[0].attachments,files);
+ assert.equal((await f.request('POST',proPath+'/message',{text:'Private note'},pro(0))).httpStatus,403);
+ assert.equal((await f.request('POST',proPath+'/message',{text:'Scope received'},pro(1))).httpStatus,201);
+ assert.equal((await f.request('POST',path+'/message',{text:'Thank you'},customer)).httpStatus,201);
+ assert.equal((await f.request('GET',path,{},customer)).messages.length,2);
+ assert.deepEqual((await f.request('GET','/api/pro/jobs',{},pro(0))).jobs[0].messages,[]);
+});

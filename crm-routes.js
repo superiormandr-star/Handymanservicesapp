@@ -35,7 +35,7 @@ module.exports=async function crmRoutes(req,res,u){
   if(!admin(req))return error('Owner access required',401);
   if(req.method!=='POST')return error('Method not allowed',405);
   const x=await body(req),d=db(),profile=d.profiles.find(p=>p.id===x.profileId);
-  if(!profile)return error('Business not found',404);
+  if(!profile||d.intake.some(r=>r.id===profile.id&&r.status!=='approved'))return error('Approved business required',404);
   d.proAccess=Array.isArray(d.proAccess)?d.proAccess:[];
   const prior=d.proAccess.find(p=>p.profileId===profile.id);
   if(x.revoke===true){d.proAccess=d.proAccess.filter(p=>p.profileId!==profile.id);save(d);return reply(200,{ok:true})}
@@ -67,7 +67,8 @@ module.exports=async function crmRoutes(req,res,u){
  if(route==='/api/crm/workspace'&&req.method==='GET'){
   const d=db(),profile=d.profiles.find(p=>p.id===profileId);
   if(!profile)return error('Business not found',404);
-  return reply(200,{profile,stages,leads:(d.leads||[]).filter(l=>l.profileId===profileId).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)),requests:(d.estimateRequests||[]).filter(r=>r.profileId===profileId),estimateAssistanceAvailable:process.env.ESTIMATE_ASSISTANCE_ENABLED==='true'});
+  const member=d.intake.find(r=>r.id===profileId);
+  return reply(200,{profile,stages,membership:member?{industry:member.industry,package:member.membership,billingStatus:member.billingStatus||'Awaiting payment',paidThrough:member.paidThrough||null}:null,leads:(d.leads||[]).filter(l=>l.profileId===profileId).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt)),requests:(d.estimateRequests||[]).filter(r=>r.profileId===profileId),estimateAssistanceAvailable:process.env.ESTIMATE_ASSISTANCE_ENABLED==='true'});
  }
  const leadRoute=route.match(/^\/api\/crm\/leads\/([a-f0-9-]{36})$/);
  if(leadRoute&&req.method==='POST'){

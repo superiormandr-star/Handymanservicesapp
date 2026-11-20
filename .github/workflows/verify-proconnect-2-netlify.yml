@@ -28,3 +28,27 @@ jobs:
           test -s netlify.toml
       - name: Run all functional tests
         run: npm test
+
+  database-and-browser:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: disposable-ci-password
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-fund --no-audit --no-save playwright-core@1.56.1
+      - run: createdb -h localhost -U postgres recovery
+        env:
+          PGPASSWORD: disposable-ci-password
+      - run: node scripts/verify-netlify.mjs
+        env:
+          SPC_QA_DATABASE_URL: postgresql://postgres:disposable-ci-password@localhost:5432/postgres
+          SPC_QA_RECOVERY_URL: postgresql://postgres:disposable-ci-password@localhost:5432/recovery

@@ -1,5 +1,6 @@
 'use strict';
 const crypto=require('node:crypto');
+const {customerAccount,readAttachments}=require('./customer-workspace');
 const paymentLinks={
  construction:'https://www.paypal.com/ncp/payment/ED9BM6N9TVJMC',
  automotive:'https://www.paypal.com/ncp/payment/SCXVVGDZU6LE2'
@@ -14,7 +15,7 @@ const expires=(minutes,base)=>new Date(base+minutes*60000).toISOString();
 const identifyingText=s=>/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(s) ||
  /(?:(?:\+?1)[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}/.test(s) ||
  /\b\d{1,6}\s+(?:[a-zA-Z0-9]+\s+){0,3}(?:street|st|road|rd|avenue|ave|boulevard|blvd|drive|dr|lane|ln|court|ct|way)\b/i.test(s);
-const active=(b,time)=>b.status==='verified'||b.status==='selected'||(b.status==='pending' && Date.parse(b.expiresAt)>time);
+const active=(b,time)=>b.status==='declined'||b.status==='verified'||b.status==='selected'||(b.status==='pending' && Date.parse(b.expiresAt)>time);
 const validCount=(job,time)=>job.bids.filter(b=>active(b,time)).length;
 const currentBids=job=>job.bids.filter(b=>b.status==='verified'||b.status==='selected');
 const matchingIndustry=(profile,industry)=>{
@@ -45,6 +46,11 @@ module.exports=async function jobRoutes(req,res,ctx){
  const billingMonth=timestamp.slice(0,7);
  const entitlementFor=profileId=>entitlements.find(e=>e.profileId===profileId&&e.period===billingMonth&&e.verified===true)||null;
  const creditsFor=profileId=>{
+  const member=(data.intake||[]).find(r=>r.id===profileId);
+  if(member){
+   if(member.status!=='approved'||member.billingStatus!=='ACTIVE'||!(Date.parse(member.paidThrough)>when)||member.membership==='essential')return null;
+   return {tier:member.membership,allowed:0,used:0,remaining:0};
+  }
   const entitlement=entitlementFor(profileId);
   if(!entitlement)return null;
   const allowed={basic:0,pro:2,elite:5}[entitlement.tier]||0;
@@ -64,7 +70,7 @@ module.exports=async function jobRoutes(req,res,ctx){
  };
  if(route==='/api/jobs'&&req.method==='POST'){
   if(limited(req))return fail('Too many submissions. Try later.',429);
-  const input=await body(req);
+  const input=await body(req,1100000);
   if(input.website)return reply(200,{ok:true,message:'Request received.'});
   const industry=clean(input.industry,24),title=clean(input.title,100),description=clean(input.description,2200);
   const category=clean(input.category,70),city=clean(input.city,100);
@@ -81,11 +87,15 @@ module.exports=async function jobRoutes(req,res,ctx){
   const job={id:crypto.randomUUID(),industry,title,description,category,city,customer:{name,email,phone,address},
    customerKeyHash:digest(customerKey),customerRulesVersion:rulesVersion,customerRulesAcceptedAt:timestamp,bidLimit:limit,fourthApproved:false,status:'open',selectedBidId:null,
    bids:[],passes:[],createdAt:timestamp,updatedAt:timestamp};
+  try{job.attachments=readAttachments(input.attachments);}catch(e){return fail(e.message);}
+  const account=customerAccount(req,data);
+  if(req.headers['x-customer-account']&&!account)return fail('Customer access key expired.',401);
+  if(account){job.customerAccountId=account.id;job.accountJobKey=customerKey;}
   data.jobs=jobs;data.jobs.push(job);save(data);
   return reply(201,{ok:true,jobId:job.id,customerKey,job:info(job,when),
    message:'Your private job has been posted. Save the private management link; it is needed to review bids and choose a professional.'});
  }
- const customerRoute=route.match(/^\/api\/jobs\/([0-9a-f-]{36})(?:\/(select|close|fourth))?$/i);
+ const customerRoute=route.match(/^\/api\/jobs\/([0-9a-f-]{36})(?:\/(select|reject|close|fourth|message))?$/i);
  if(customerRoute){
   const job=jobs.find(j=>j.id===customerRoute[1]);
   if(!job||!secureCustomer(job))return fail('Job not found or private customer link is invalid.',404);
@@ -99,6 +109,7 @@ module.exports=async function jobRoutes(req,res,ctx){
      return {id:b.id,amount:b.amount,scope:b.scope,submittedAt:b.verifiedAt,
       professional:provider?{name:provider.name,city:provider.city,services:provider.services}: {name:'Listed professional'}};
     }),
+    attachments:job.attachments||[],messages:job.messages||[],
     selectedBidId:job.selectedBidId,
     selectedProfessional:selected?(()=>{
      const p=data.profiles.find(p=>p.id===selected.profileId);
@@ -107,7 +118,18 @@ module.exports=async function jobRoutes(req,res,ctx){
    });
   }
   if(req.method!=='POST')return fail('Method not allowed.',405);
+  if(command==='message'&&job.status==='selected'){
+   const input=await body(req),text=clean(input.text,1200);
+   if(!text)return fail('Write a message first.');
+   (job.messages||=[]).push({from:'customer',text,at:timestamp});save(data);
+   return reply(201,{ok:true});
+  }
   if(job.status!=='open')return fail('This job is no longer accepting changes.',409);
+  if(command==='reject'){
+   const input=await body(req),bid=job.bids.find(b=>b.id===input.bidId&&b.status==='verified');
+   if(!bid)return fail('Choose an available estimate.');
+   bid.status='declined';job.updatedAt=timestamp;save(data);return reply(200,{ok:true});
+  }
   if(command==='select'){
    const input=await body(req),bid=job.bids.find(b=>b.id===input.bidId && b.status==='verified');
    if(!bid)return fail('Choose a verified estimate from your private dashboard.');
@@ -120,7 +142,7 @@ module.exports=async function jobRoutes(req,res,ctx){
   }
   if(command==='fourth'){
    if(job.bidLimit!==3||job.fourthApproved)return fail('A fourth estimate can only be authorized once after choosing a three-estimate limit.',409);
-   if(currentBids(job).length<3)return fail('The customer must receive three verified estimates before authorizing a fourth.',409);
+   if(job.bids.filter(b=>['verified','declined'].includes(b.status)).length<3)return fail('The customer must receive three verified estimates before authorizing a fourth.',409);
    const input=await body(req);
    if(input.approveFourth!==true)return fail('Explicit approval is required for a fourth estimate.');
    job.bidLimit=4;job.fourthApproved=true;job.updatedAt=timestamp;save(data);
@@ -131,20 +153,28 @@ module.exports=async function jobRoutes(req,res,ctx){
  if(route==='/api/pro/jobs'||route.startsWith('/api/pro/jobs/')){
   const profile=pro();if(!profile)return fail('Professional access required.',401);
   if(route==='/api/pro/jobs'&&req.method==='GET'){
-   const own=jobs.filter(j=>matchingIndustry(profile,j.industry)&&!(j.passes||[]).includes(profile.id));
+   const member=(data.intake||[]).find(r=>r.id===profile.id);
+   const eligible=!member||(member.status==='approved'&&member.billingStatus==='ACTIVE'&&Date.parse(member.paidThrough)>when);
+   const own=jobs.filter(j=>(eligible||j.bids.some(b=>b.profileId===profile.id))&&matchingIndustry(profile,j.industry)&&!(j.passes||[]).includes(profile.id));
    return reply(200,{professional:{id:profile.id,name:profile.name},credits:creditsFor(profile.id),jobs:own.map(j=>{
     const ownBid=j.bids.find(b=>b.profileId===profile.id&&active(b,when));
     const selectedForMe=j.status==='selected'&&j.selectedBidId===ownBid?.id;
     return {...info(j,when),ownBid:ownBid?{id:ownBid.id,status:ownBid.status,amount:ownBid.amount,
      scope:ownBid.scope,paymentReference:ownBid.paymentReference||null,
      expiresAt:ownBid.expiresAt,fee:fee[j.industry],paymentLink:paymentLinks[j.industry]}:null,
-     customerContact:selectedForMe?j.customer:null};
+     attachments:selectedForMe?(j.attachments||[]):[],messages:selectedForMe?(j.messages||[]):[],customerContact:selectedForMe?j.customer:null};
    })});
   }
-  const match=route.match(/^\/api\/pro\/jobs\/([0-9a-f-]{36})\/(pass|bids)(?:\/([0-9a-f-]{36})\/payment)?$/i);
+  const match=route.match(/^\/api\/pro\/jobs\/([0-9a-f-]{36})\/(pass|bids|message)(?:\/([0-9a-f-]{36})\/payment)?$/i);
   if(!match||req.method!=='POST')return fail('Method not allowed.',405);
   const job=jobs.find(j=>j.id===match[1]);
   if(!job||!matchingIndustry(profile,job.industry))return fail('This job is not available to your professional workspace.',404);
+  if(match[2]==='message'){
+   if(job.status!=='selected'||!job.bids.some(b=>b.id===job.selectedBidId&&b.profileId===profile.id))return fail('Selected professional required.',403);
+   const input=await body(req),text=clean(input.text,1200);
+   if(!text)return fail('Write a message first.');
+   (job.messages||=[]).push({from:'professional',text,at:timestamp});save(data);return reply(201,{ok:true});
+  }
   if(match[2]==='pass'){
    if(!(job.passes||[]).includes(profile.id)){job.passes.push(profile.id);job.updatedAt=timestamp;save(data);}
    return reply(200,{ok:true,message:'Passed. This job has been hidden from your available opportunities.'});
@@ -211,6 +241,7 @@ module.exports=async function jobRoutes(req,res,ctx){
    if(validCount(job,when)>job.bidLimit)return fail('Customer estimate limit reached. Do not accept an extra estimate.',409);
    const input=await body(req);
    if(input.confirmedInPayPal!==true)return fail('Confirm the matching fee and transaction independently in PayPal before approving.');
+   if(jobs.some(j=>j.bids.some(b=>b!==bid&&b.verifiedAt&&b.paymentReference?.toUpperCase()===bid.paymentReference.toUpperCase())))return fail('This PayPal transaction has already been applied.',409);
    bid.status='verified';bid.verifiedAt=timestamp;bid.updatedAt=timestamp;
   }else{bid.status='rejected';bid.updatedAt=timestamp;}
   job.updatedAt=timestamp;save(data);

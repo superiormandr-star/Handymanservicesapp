@@ -4,16 +4,16 @@ const jobRoutes = require('./job-routes');
 const crmRoutes = require('./crm-routes');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const base=path.join(__dirname,'public'),dataFile=process.env.DATA_FILE||path.join(__dirname,'data','database.json'),port=Number(process.env.PORT||3000);
-const membershipCatalog=require('./public/subscription-plans.json');
+const membershipRoutes=require('./paypal-memberships').createMembershipRoutes();
 const ADMIN_TOKEN=process.env.ADMIN_TOKEN||'';
 const persistentStore=require('./persistent-store').createStore();
 const oneDrive=require('./onedrive').createOneDrive({readSnapshot:()=>JSON.stringify(db()),stateStore:persistentStore.enabled?persistentStore.stateStore:null});
 const seed={profiles:[{id:'superior',name:'Superior Maintenance and Remodeling',tagline:'From an idea to a finished improvement.',city:'Fontana',area:'Fontana, California — contact for service coverage',coverageMode:'cities',coverageAreas:[],coverageZip:'',coverageRadius:null,phone:'909-352-3627',website:'https://superior-maintenance-remodeling.indigotune5.chatgpt.site',logo:'/superior-logo.png',description:'Residential and commercial maintenance, painting and remodeling. Contact Superior to discuss the scope, estimate, and availability for your next project.',services:['Painting','Drywall & repairs','Flooring','Kitchens & bathrooms','Doors & windows','Patios & decks','General maintenance','Remodeling'],verified:false,featured:true,createdAt:'2026-11-01T00:00:00.000Z'}],reviews:[],intake:[],documents:[]};
-function db(){const transaction=persistentStore.context.getStore();if(transaction)return structuredClone(transaction.value.records);if(process.env.VERCEL)throw Error('Durable storage context required');try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...structuredClone(seed),...val}}catch(e){if(e.code==='ENOENT')return structuredClone(seed);throw new Error('Stored data could not be read. Contact the owner; existing records have not been replaced.')}}
-function save(x){const transaction=persistentStore.context.getStore();if(transaction){transaction.value.records=x;transaction.dirty=true;return;}if(process.env.VERCEL)throw Error('Durable storage context required');fs.mkdirSync(path.dirname(dataFile),{recursive:true});const tmp=dataFile+'.'+process.pid+'.tmp';fs.writeFileSync(tmp,JSON.stringify(x,null,2),{mode:0o600});fs.renameSync(tmp,dataFile)}
+function db(){const transaction=persistentStore.context.getStore();if(transaction)return structuredClone(transaction.value.records);if(process.env.VERCEL||process.env.SPC_STORAGE_BACKEND==='netlify')throw Error('Durable storage context required');try{const val=JSON.parse(fs.readFileSync(dataFile,'utf8'));return {...structuredClone(seed),...val}}catch(e){if(e.code==='ENOENT')return structuredClone(seed);throw new Error('Stored data could not be read. Contact the owner; existing records have not been replaced.')}}
+function save(x){const transaction=persistentStore.context.getStore();if(transaction){transaction.value.records=x;transaction.dirty=true;return;}if(process.env.VERCEL||process.env.SPC_STORAGE_BACKEND==='netlify')throw Error('Durable storage context required');fs.mkdirSync(path.dirname(dataFile),{recursive:true});const tmp=dataFile+'.'+process.pid+'.tmp';fs.writeFileSync(tmp,JSON.stringify(x,null,2),{mode:0o600});fs.renameSync(tmp,dataFile)}
 if(!process.env.VERCEL&&process.env.SPC_STORAGE_BACKEND!=='netlify'&&!persistentStore.enabled&&!fs.existsSync(dataFile))save(seed);
 function send(res,status,payload){res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin'});res.end(JSON.stringify(payload))}
-function body(req){return new Promise((resolve,reject)=>{let size=0,chunks=[];req.on('data',chunk=>{size+=chunk.length;if(size>16*1024){reject(new Error('Request too large'));req.destroy()}else chunks.push(chunk)});req.on('end',()=>{try{resolve(JSON.parse(Buffer.concat(chunks).toString()||'{}'))}catch{reject(new Error('Invalid JSON'))}});req.on('error',reject)})}
+function body(req,limit=16*1024){return new Promise((resolve,reject)=>{let size=0,chunks=[];req.on('data',chunk=>{size+=chunk.length;if(size>limit){chunks=[];reject(new Error('Request too large'))}else chunks.push(chunk)});req.on('end',()=>{try{resolve(JSON.parse(Buffer.concat(chunks).toString()||'{}'))}catch{reject(new Error('Invalid JSON'))}});req.on('error',reject)})}
 const visits=new Map();
 function limited(req){let ip=(req.socket.remoteAddress||'unknown');let now=Date.now();let rec=visits.get(ip)||[];rec=rec.filter(t=>now-t<3600_000);const deny=rec.length>=8;rec.push(now);visits.set(ip,rec);return deny}
 function admin(req){if(!ADMIN_TOKEN)return false;const token=req.headers['x-admin-token'];if(typeof token!=='string'||Buffer.byteLength(token)!==Buffer.byteLength(ADMIN_TOKEN))return false;return crypto.timingSafeEqual(Buffer.from(token),Buffer.from(ADMIN_TOKEN))}
@@ -50,11 +50,12 @@ async function handle(req,res){
  if(!process.env.CRON_SECRET||actual.length!==expected.length||!crypto.timingSafeEqual(actual,expected))return send(res,401,{error:'Scheduled backup authorization required'});
  return send(res,200,await oneDrive.backup());
  }
+ if(await require('./customer-workspace').customerRoutes(req,res,{db,save,send,body,limited}))return;
  if(await jobRoutes(req,res,{db,save,send,body,admin,clean,limited}))return;
  if(await crmRoutes(req,res,{db,save,send,body,admin,clean,limited}))return;
  if(await estimateRoutes(req,res,{db,save,send,body,admin,clean}))return;
  if(route==='/api/health'&&req.method==='GET')return send(res,200,{ok:true,persistence:persistentStore.enabled?'encrypted durable '+persistentStore.backend+' (read verified)':'local development file',writesEnabled:persistentStore.enabled?process.env.SPC_WRITES_ENABLED==='true'&&process.env.SPC_PERSISTENCE_VERIFIED==='true':!process.env.VERCEL,payments:'PayPal plan details must be verified'});
- if(route==='/api/profiles'&&req.method==='GET')return send(res,200,{profiles:db().profiles});
+ if(route==='/api/profiles'&&req.method==='GET'){const d=db();return send(res,200,{profiles:d.profiles.filter(p=>!d.intake.some(r=>r.id===p.id&&r.status!=='approved'))});}
  if(route==='/api/reviews'&&req.method==='GET'){const profile=clean(url.searchParams.get('profile')||'superior',80);const x=db().reviews.filter(r=>r.profileId===profile&&r.status==='approved').sort((a,b)=>b.createdAt.localeCompare(a.createdAt));return send(res,200,{reviews:x,total:x.length,average:x.length?Math.round(10*x.reduce((a,b)=>a+b.stars,0)/x.length)/10:null})}
  if(route==='/api/reviews'&&req.method==='POST'){
   if(limited(req))return send(res,429,{error:'Too many submissions. Try later.'});const x=await body(req);
@@ -80,13 +81,7 @@ async function handle(req,res){
   const serviceArea=coverageMode==='radius'?`${coverageRadius}-mile radius from ZIP ${coverageZip}`:coverageAreas.join(', ');
   const d=db();const record={id:crypto.randomUUID(),business,email,city,phone,industry,membership,services,coverageMode,coverageAreas:coverageMode==='radius'?[]:coverageAreas,coverageZip:coverageMode==='radius'?coverageZip:'',coverageRadius:coverageMode==='radius'?coverageRadius:null,serviceArea,paypalSubscriptionId:null,status:'interest',createdAt:new Date().toISOString()};d.intake.push(record);save(d);return send(res,201,{ok:true,requestId:record.id,message:'Interest submitted. Checkout is disabled; no payment has been taken.'});
  }
- // New memberships remain fail-closed until provider and lifecycle verification is implemented.
- if(route==='/api/membership-checkout'&&req.method==='POST'){
-  const x=await body(req);
-  const plan=membershipCatalog.plans.find(p=>p.industry===x.industry&&p.package===x.membership);
-  if(!plan||x.packageKey!==plan.key)return send(res,400,{error:'Select the matching network and package.'});
-  return send(res,503,{error:'Subscription checkout is unavailable until the matching PayPal plan and payment lifecycle are verified.',packageKey:plan.key,checkoutEnabled:false});
- }
+ if(await membershipRoutes(req,res,{body,db,save,send}))return;
  if(route==='/api/subscription'&&req.method==='POST'){
   const x=await body(req);const requestId=clean(x.requestId,90),subscriptionId=clean(x.subscriptionId,100);
   if(!/^I-[A-Z0-9-]{6,}$/i.test(subscriptionId))return send(res,400,{error:'Invalid subscription ID'});
@@ -98,7 +93,12 @@ async function handle(req,res){
  if(route==='/api/admin/reviews'&&req.method==='GET'){if(!admin(req))return send(res,401,{error:'Admin access required'});return send(res,200,{reviews:db().reviews})}
  if(route==='/api/admin/review'&&req.method==='POST'){if(!admin(req))return send(res,401,{error:'Admin access required'});const x=await body(req);const d=db(),r=d.reviews.find(r=>r.id===x.id);if(!r)return send(res,404,{error:'Not found'});if(!['approved','rejected'].includes(x.status))return send(res,400,{error:'Invalid status'});r.status=x.status;save(d);return send(res,200,{ok:true})}
  if(route==='/api/admin/reply'&&req.method==='POST'){if(!admin(req))return send(res,401,{error:'Admin access required'});const x=await body(req);const d=db(),r=d.reviews.find(r=>r.id===x.id);if(!r)return send(res,404,{error:'Not found'});r.ownerReply=clean(x.reply,500)||null;save(d);return send(res,200,{ok:true})}
- if(route==='/api/admin/intake'&&req.method==='POST'){if(!admin(req))return send(res,401,{error:'Admin access required'});const x=await body(req);const d=db(),r=d.intake.find(r=>r.id===x.id);if(!r)return send(res,404,{error:'Not found'});if(!['interest','pending_payment_verification','verified','declined'].includes(x.status))return send(res,400,{error:'Invalid status'});r.status=x.status;save(d);return send(res,200,{ok:true})}
+ if(route==='/api/admin/intake'&&req.method==='POST'){if(!admin(req))return send(res,401,{error:'Admin access required'});const x=await body(req);const d=db(),r=d.intake.find(r=>r.id===x.id);if(!r)return send(res,404,{error:'Not found'});if(!(x.status==='verified'&&['basic','pro'].includes(r.membership))&&!['approved','suspended','declined','interest'].includes(x.status))return send(res,400,{error:'Invalid application status'});r.status=x.status;
+  if(x.status==='approved'&&!d.profiles.some(p=>p.id===r.id)){
+   d.profiles.push({id:r.id,name:r.business,city:r.city,industry:r.industry,services:r.services,area:r.serviceArea,phone:r.phone,verified:false,featured:false,createdAt:new Date().toISOString()});
+  }
+  if(x.status!=='approved')d.proAccess=(d.proAccess||[]).filter(a=>a.profileId!==r.id);
+  save(d);return send(res,200,{ok:true})}
  if(route==='/api/admin/profile'&&req.method==='POST'){if(!admin(req))return send(res,401,{error:'Admin access required'});const x=await body(req);const d=db();const id=clean(x.id,80)||crypto.randomUUID();const p={id,name:clean(x.name,100),tagline:clean(x.tagline,150),city:clean(x.city,80),area:clean(x.area,400),coverageMode:clean(x.coverageMode,16),coverageZip:clean(x.coverageZip,5),coverageRadius:Number(x.coverageRadius)||null,coverageAreas:clean(x.coverageAreas,400).split(/[,\n;]+/).map(v=>clean(v,60)).filter(Boolean).slice(0,25),phone:clean(x.phone,40),website:clean(x.website,280),logo:'',description:clean(x.description,700),services:Array.isArray(x.services)?x.services.slice(0,15).map(v=>clean(v,40)):[],verified:false,featured:false,createdAt:new Date().toISOString()};if(!p.name||!p.city)return send(res,400,{error:'Name and city required'});const i=d.profiles.findIndex(e=>e.id===id);if(i<0)d.profiles.push(p);else {if(!x.logo)p.logo=d.profiles[i].logo;p.featured=d.profiles[i].featured;d.profiles[i]={...d.profiles[i],...p}}save(d);return send(res,200,{ok:true,profile:p})}
 
  if(route==='/api/admin/documents'&&req.method==='GET'){

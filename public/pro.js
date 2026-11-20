@@ -5,7 +5,11 @@ let token='',data=null,selected=null;
 const message=(v,error=false)=>{$('#message').textContent=v;$('#message').className=error?'error':''};
 async function api(path,body){const r=await fetch(path,{method:body?'POST':'GET',cache:'no-store',headers:{'content-type':'application/json','x-pro-token':token},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');return d}
 async function load(){data=await api('/api/crm/workspace');$('#business').textContent=data.profile.name;$('#signin').hidden=true;$('#workspace').hidden=false;$('#access').value='';$('#stage').innerHTML='<option value="">All stages</option>'+data.stages.map(s=>'<option>'+esc(s)+'</option>').join('');render();if(selected)detail();await loadMarketplace().catch(e=>message('Customer job board: '+e.message,true))}
-function render(){const q=$('#search').value.trim().toLowerCase(),stage=$('#stage').value,leads=data.leads;
+function render(){
+ const m=data.membership;
+ $('#member-panel').hidden=!m;
+ if(m){$('#member-state').textContent=m.industry+' · '+m.package+' · '+m.billingStatus+(m.paidThrough?' · Paid through '+new Date(m.paidThrough).toLocaleDateString():'');$('#member-checkout').hidden=m.billingStatus==='ACTIVE';}
+const q=$('#search').value.trim().toLowerCase(),stage=$('#stage').value,leads=data.leads;
  const today=new Date().toLocaleDateString('en-CA');
  $('#metrics').innerHTML=[[leads.length,'Real inquiries'],[leads.filter(l=>l.status==='New').length,'New inquiries'],[leads.filter(l=>l.status==='Paid').length,'Paid jobs'],[leads.filter(l=>l.reminderDate&&l.reminderDate<=today&&!['Paid','Declined'].includes(l.status)).length,'Reminders due']].map(([n,label])=>'<div class="metric"><strong>'+n+'</strong>'+label+'</div>').join('');
  const matched=leads.filter(l=>(!stage||l.status===stage)&&[l.name,l.email,l.phone,l.location,l.description].join(' ').toLowerCase().includes(q));
@@ -75,9 +79,24 @@ function renderMarketplace(verified){
   }else{
    card+='<p class="muted">This job is not accepting another estimate. No additional charge was taken.</p>';
   }
+  if(contact){
+   card+='<section data-job-files="'+safe(job.id)+'"></section><h4>Messages</h4>'+(job.messages||[]).map(m=>'<p>'+safe(m.from)+' · '+safe(m.text)+'</p>').join('')+
+     '<form data-chat="'+safe(job.id)+'"><label>Message your customer<textarea name="text" required maxlength="1200"></textarea></label><button type="submit">Send message</button></form>';
+  }
   return card+'</article>';
  }).join('');
+ for(const el of box.querySelectorAll('[data-job-files]'))window.jobFileLinks(marketplaceJobs.find(j=>j.id===el.dataset.jobFiles)?.attachments,el);
 }
+$('#member-checkout').onclick=async e=>{
+ const button=e.currentTarget;button.disabled=true;
+ try{
+  const m=data.membership,payload={industry:m.industry,membership:m.package,packageKey:m.industry+'-'+m.package};
+  let result=await api('/api/membership-checkout',payload);
+  if(result.reserved)result=await api('/api/membership-checkout',payload);
+  if(result.checkoutUrl)location.assign(result.checkoutUrl);
+  else $('#member-state').textContent=result.status||'Pending PayPal verification.';
+ }catch(err){$('#member-state').textContent=err.message;}finally{button.disabled=false;}
+};
 $('#marketplace-refresh').addEventListener('click',async()=>{try{await loadMarketplace();message('Available jobs refreshed.')}catch(e){message(e.message,true)}});
 $('#marketplace-jobs').addEventListener('click',async e=>{
  const button=e.target.closest('[data-marketplace-pass]');if(!button)return;
@@ -87,11 +106,12 @@ $('#marketplace-jobs').addEventListener('click',async e=>{
  catch(error){message(error.message,true);button.disabled=false;}
 });
 $('#marketplace-jobs').addEventListener('submit',async e=>{
- const f=e.target; if(!f.matches('[data-marketplace-bid],[data-payment-job]'))return;
+ const f=e.target; if(!f.matches('[data-marketplace-bid],[data-payment-job],[data-chat]'))return;
  e.preventDefault();const button=f.querySelector('button[type=submit]');button.disabled=true;
  try{
   const values=Object.fromEntries(new FormData(f));
-  if(f.dataset.marketplaceBid){
+  if(f.dataset.chat){await api('/api/pro/jobs/'+f.dataset.chat+'/message',{text:values.text});message('Message sent.');}
+  else if(f.dataset.marketplaceBid){
    await api('/api/pro/jobs/'+f.dataset.marketplaceBid+'/bids',{
     amount:Number(values.amount),scope:values.scope,feeAcknowledged:f.elements.feeAcknowledged.checked,rulesAccepted:f.elements.rulesAccepted.checked
    });

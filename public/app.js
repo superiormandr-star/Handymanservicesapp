@@ -144,12 +144,19 @@ async function showPrivateJob(){
    node.innerHTML='<h4>Private estimates</h4>'+item.bids.map(b=>'<article class="customer-bid-card"><h4>'+
     escapeHtml(b.professional.name)+'</h4><p>'+escapeHtml(b.professional.city||'')+'</p><strong>'+
     new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(b.amount)+'</strong><p>'+
-    escapeHtml(b.scope)+'</p>'+((item.status==='open')?'<button type="button" class="btn btn-primary" data-select-private-bid="'+escapeHtml(b.id)+'">Select this professional</button>':'')+'</article>').join('');
+    escapeHtml(b.scope)+'</p>'+((item.status==='open')?'<button type="button" class="btn btn-outline" data-decline-bid="'+escapeHtml(b.id)+'">Decline</button><button type="button" class="btn btn-primary" data-select-private-bid="'+escapeHtml(b.id)+'">Select this professional</button>':'')+'</article>').join('');
   }else node.innerHTML='<p class="customer-note">No verified estimates yet. Pending payment requests are not delivered as bids. Check back using this private link.</p>';
   if(item.selectedProfessional)node.innerHTML+='<p class="customer-selected"><strong>You selected: '+escapeHtml(item.selectedProfessional.name)+'</strong><br>'+
    escapeHtml(item.selectedProfessional.phone||'No phone listed')+'<br>'+
    (item.selectedProfessional.website?'<a href="'+escapeHtml(item.selectedProfessional.website)+'" rel="noopener noreferrer" target="_blank">Professional website</a>':'')+
    '<br>Your private contact details were released to this selected professional only.</p>';
+  window.jobFileLinks(item.attachments,node);
+  if(item.status==='selected'){
+   const chat=document.createElement('div');
+   for(const m of item.messages||[]){const p=document.createElement('p');p.textContent=m.from+' · '+m.text;chat.append(p);}
+   chat.insertAdjacentHTML('beforeend','<form id="customer-chat"><label>Message your professional<textarea name="text" required maxlength="1200"></textarea></label><button>Send message</button></form>');
+   node.append(chat);
+  }
   $('#customer-job-fourth').hidden=!(item.status==='open'&&item.bidLimit===3&&!item.fourthApproved&&item.bids.length>=3);
   $('#customer-job-close').hidden=item.status!=='open';
   jobMessage('Job information loaded. Share only the public job description, never your private management link.',false,'#customer-dashboard-status');
@@ -162,7 +169,12 @@ $('#customer-job-form').addEventListener('submit',async event=>{
  if(!fields.email&&!fields.phone){jobMessage('Enter a phone or email to receive a response.',true);return;}
  button.disabled=true;jobMessage('Posting your job…');
  try{
-  const response=await api('/api/jobs',{method:'POST',body:JSON.stringify({...fields,consent:form.elements.consent.checked,rulesAccepted:form.elements.rulesAccepted.checked})});
+  const files=Array.from($('#job-files').files);
+  if(files.length>3||files.some(f=>f.size>262144))throw Error('Choose up to three files of 256 KB each.');
+  const attachments=await Promise.all(files.map(file=>new Promise((resolve,reject)=>{
+   const reader=new FileReader();reader.onload=()=>resolve({name:file.name,bytes:reader.result.split(',')[1]});reader.onerror=()=>reject(Error('Could not read attachment.'));reader.readAsDataURL(file);
+  })));
+  const response=await api('/api/jobs',{method:'POST',headers:accountKey?{'x-customer-account':accountKey}:{},body:JSON.stringify({...fields,attachments,consent:form.elements.consent.checked,rulesAccepted:form.elements.rulesAccepted.checked})});
   if(!response.jobId||!response.customerKey)throw Error('Job link was not returned. Please contact the owner before posting again.');
   form.reset();location.hash='#my-job/'+response.jobId+'/'+response.customerKey;
   jobMessage('Posted. Save your private job link.');
@@ -176,6 +188,8 @@ $('#copy-customer-job').addEventListener('click',async()=>{
 });
 $('#customer-job-refresh').addEventListener('click',()=>showPrivateJob());
 $('#customer-job-bids').addEventListener('click',async e=>{
+ const decline=e.target.closest('[data-decline-bid]');
+ if(decline){const m=privateJobPath();if(m&&confirm('Decline this estimate?'))try{await ownJobRequest('/api/jobs/'+m[1]+'/reject',m[2],{bidId:decline.dataset.declineBid});await showPrivateJob();}catch(err){jobMessage(err.message,true,'#customer-dashboard-status');}return;}
  const bid=e.target.closest('[data-select-private-bid]');
  if(!bid||!confirm('Select this professional and release your private contact information to them? Other professionals will not receive it.'))return;
  const match=privateJobPath();if(!match)return;
@@ -193,6 +207,31 @@ $('#customer-job-fourth').addEventListener('click',async()=>{
  const match=privateJobPath();if(!match)return;
  try{await ownJobRequest('/api/jobs/'+match[1]+'/fourth',match[2],{approveFourth:true});await showPrivateJob();}
  catch(err){jobMessage(err.message,true,'#customer-dashboard-status')}
+});
+let accountKey=sessionStorage.getItem('spc-customer')||'';
+async function openAccount(key){
+ const account=await api('/api/customer/account',{headers:{'x-customer-account':key}});accountKey=key;sessionStorage.setItem('spc-customer',key);
+ $('#customer-register').hidden=true;$('#customer-signin').hidden=true;$('#customer-account-panel').hidden=false;
+ $('#customer-account-name').textContent=account.name+' · '+account.jobs.length+' jobs';
+ $('#account-jobs').replaceChildren(...account.jobs.map(j=>{const li=document.createElement('li'),a=document.createElement('a');a.href='#my-job/'+j.id+'/'+j.key;a.textContent=j.title+' · '+j.status;li.append(a);return li;}));
+}
+for(const id of ['customer-register','customer-signin']){
+ $('#'+id).addEventListener('submit',async e=>{e.preventDefault();try{
+  if(id==='customer-register'){const r=await api('/api/customer/account',{method:'POST',body:JSON.stringify({name:e.target.elements.name.value})});await openAccount(r.key);$('#customer-new-key').value=r.key;$('#customer-key-label').hidden=false;}
+  else await openAccount(e.target.elements.key.value.trim());
+  e.target.reset();$('#customer-account-status').textContent='';
+ }catch(err){$('#customer-account-status').textContent=err.message;}});
+}
+$('#customer-signout').onclick=()=>{sessionStorage.removeItem('spc-customer');location.reload();};
+window.addEventListener('hashchange',()=>{if(accountKey&&location.hash==='#customers')openAccount(accountKey).catch(e=>$('#customer-account-status').textContent=e.message);});
+if(accountKey)openAccount(accountKey).catch(e=>$('#customer-account-status').textContent=e.message);
+document.addEventListener('submit',async e=>{if(e.target.id!=='customer-chat')return;e.preventDefault();const m=privateJobPath();try{await ownJobRequest('/api/jobs/'+m[1]+'/message',m[2],{text:e.target.elements.text.value});await showPrivateJob();}catch(err){jobMessage(err.message,true,'#customer-dashboard-status');}});
+document.addEventListener('click',e=>{
+ const card=e.target.closest('.package-checkout')?.closest('[data-package-key]');
+ const network=e.target.closest('#construction,#automotive');if(!network)return;
+ const industry=network.id;
+ if(e.target.closest('a[href="#advertise"]')){const f=$('#join-form');f.elements.industry.value=industry;if(card)f.elements.membership.value=card.dataset.packageKey.split('-')[1];}
+ if(e.target.closest('a[href="#customers"]'))$('#customer-job-form').elements.industry.value=industry;
 });
 $('#join-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.target,status=$('#join-status'),submit=form.querySelector('[type=submit]');status.classList.remove('error');status.textContent='Submitting your business details…';submit.disabled=true;try{const fd=new FormData(form);const data=Object.fromEntries(fd.entries());await api('/api/join',{method:'POST',body:JSON.stringify(data)});status.textContent='Application received. Membership enrollment is being finalized. No payment has been taken and no founding-member spot is reserved.'}catch(err){status.textContent=err.message;status.classList.add('error')}finally{submit.disabled=false}});
 (async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));

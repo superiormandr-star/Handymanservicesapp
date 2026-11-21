@@ -44,6 +44,12 @@ constructionIntro.innerHTML=`
  <h3 class="construction-subheading">Construction memberships and estimates</h3>
 `;
 constructionView.querySelector('.container').insertBefore(constructionIntro,constructionPlans);
+const constructionDirectory=document.createElement('section');
+constructionDirectory.className='section directory';
+constructionDirectory.innerHTML='<h3>Construction professionals</h3><div id="construction-directory-list" class="directory-list" aria-live="polite"></div>';
+constructionIntro.insertBefore(constructionDirectory,constructionIntro.querySelector('.construction-subheading:last-child'));
+function renderConstructionDirectory(){const root=$('#construction-directory-list');if(!root)return;const entries=profiles.filter(p=>p.industry==='construction');root.innerHTML=entries.length?entries.map(listing).join(''):'<div class="empty">No construction businesses listed yet.</div>';}
+
 const automotiveView=createNetworkView('automotive','Automotive Network',automotivePlans);
 const automotiveIntro=document.createElement('div');
 automotiveIntro.className='construction-overview';
@@ -311,5 +317,5 @@ if(spc2MembershipSaved()){
  button.addEventListener('click',spc2CheckMembership);
  controls.appendChild(button);form.appendChild(controls);
 }
-(async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
+(async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory();renderConstructionDirectory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
 })();

@@ -257,7 +257,8 @@ async function spc2PublicDirectoryApi(request,env,url){
      area,services,tagline:'Independent service provider',description:'Contact this professional to discuss service availability.',
      verified:false,featured:false,createdAt:row.created_at};
   });
-  return spc2Json({profiles});
+  const ownerProfile={id:'superior',industry:'construction',ownerListed:true,name:'Superior Maintenance and Remodeling',tagline:'From an idea to a finished improvement.',city:'Fontana',area:'Fontana, California — contact for service coverage',coverageMode:'cities',coverageAreas:[],coverageZip:'',coverageRadius:null,phone:'909-352-3627',website:'https://superior-maintenance-remodeling.indigotune5.chatgpt.site',logo:'/superior-logo.png',description:'Residential and commercial maintenance, painting and remodeling. Contact Superior to discuss the scope, estimate, and availability for your next project.',services:['Painting','Drywall & repairs','Flooring','Kitchens & bathrooms','Doors & windows','Patios & decks','General maintenance','Remodeling'],verified:false,featured:true,createdAt:'2026-11-01T00:00:00.000Z'};
+  return spc2Json({profiles:[ownerProfile,...profiles.filter(p=>p.id!==ownerProfile.id)]});
  }catch{return spc2Error('Directory temporarily unavailable',503)}
 }
 

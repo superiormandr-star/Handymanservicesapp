@@ -1,5 +1,6 @@
 name = "superior-proconnect-2"
 main = "cloudflare/worker.mjs"
+keep_vars = true
 compatibility_date = "2026-11-19"
 
 [assets]

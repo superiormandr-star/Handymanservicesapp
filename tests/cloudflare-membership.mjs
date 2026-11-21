@@ -56,7 +56,13 @@ test('Cloudflare membership enrollment persists, requires private key, and never
  assert.equal(result.status,404);
  result=await worker.fetch(request('/api/profiles'),env);
  assert.equal(result.status,200);
- assert.deepEqual((await result.json()).profiles,[]);
+ const listingProfiles=(await result.json()).profiles;
+ assert.equal(listingProfiles.length,1);
+ assert.equal(listingProfiles[0].id,'superior');
+ assert.equal(listingProfiles[0].industry,'construction');
+ assert.equal(listingProfiles[0].ownerListed,true);
+ assert.equal(listingProfiles[0].featured,true);
+ assert.equal(listingProfiles[0].verified,false);
  result=await worker.fetch(request('/api/paypal/webhook',{method:'POST',body:'{}'}),env);
  assert.equal(result.status,503);
  result=await worker.fetch(request('/api/health'),env);

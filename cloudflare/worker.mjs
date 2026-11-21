@@ -213,13 +213,23 @@ async function spc2MembershipApi(request,env,url){
  try{subscription=await spc2PayPalProvider(env,'/v1/billing/subscriptions/'+encodeURIComponent(id));}
  catch{return spc2Error('PayPal subscription verification unavailable',503)}
  const plan=spc2PlanForSub(subscription),email=spc2Clean(subscription.subscriber?.email_address,180).toLowerCase();
- if(!plan||!email||subscription.id!==id)return spc2Json({received:true,activation:'not_matched'});
- const existing=await env.DB.prepare('SELECT id,email,industry,tier,paypal_subscription_id FROM spc2_applications WHERE paypal_subscription_id=?')
-  .bind(id).all();
- const bound=existing.results||[];
- const matches=bound.length?bound:((await env.DB.prepare("SELECT id,email,industry,tier,paypal_subscription_id FROM spc2_applications WHERE email=? AND industry=? AND tier=? AND status='pending' ORDER BY created_at DESC LIMIT 2").bind(email,plan.industry,plan.tier).all()).results||[]);
+ if(!plan||subscription.id!==id)return spc2Json({received:true,activation:'not_matched'});
+ let livePlan;
+ try{livePlan=await spc2PayPalProvider(env,'/v1/billing/plans/'+encodeURIComponent(plan.planId));}
+ catch{return spc2Error('PayPal plan verification unavailable',503)}
+ if(!spc2PlanTermsMatch(livePlan,plan))
+  return spc2Error('PayPal billing terms do not match the approved plan',409);
+ const bound=(await env.DB.prepare('SELECT id,email,industry,tier,paypal_subscription_id FROM spc2_applications WHERE paypal_subscription_id=?')
+  .bind(id).all()).results||[];
+ const custom=spc2Clean(subscription.custom_id,36);
+ let matches=bound;
+ if(!matches.length&&/^[0-9a-f-]{36}$/.test(custom))
+  matches=(await env.DB.prepare('SELECT id,email,industry,tier,paypal_subscription_id FROM spc2_applications WHERE id=?').bind(custom).all()).results||[];
+ if(!matches.length&&!custom&&email)
+  matches=(await env.DB.prepare("SELECT id,email,industry,tier,paypal_subscription_id FROM spc2_applications WHERE email=? AND industry=? AND tier=? AND status='pending' ORDER BY created_at DESC LIMIT 2").bind(email,plan.industry,plan.tier).all()).results||[];
  if(matches.length!==1||matches[0].industry!==plan.industry||matches[0].tier!==plan.tier||
-    matches[0].email!==email||(matches[0].paypal_subscription_id&&matches[0].paypal_subscription_id!==id))
+    (custom&&matches[0].id!==custom)||(!custom&&!bound.length&&matches[0].email!==email)||
+    (matches[0].paypal_subscription_id&&matches[0].paypal_subscription_id!==id))
    return spc2Json({received:true,activation:'no_unique_matching_application'});
  const application=matches[0],bad=/CANCELLED|SUSPENDED|EXPIRED|PAYMENT\.FAILED|SALE\.(REFUNDED|REVERSED)/.test(event.event_type);
  const active=!bad&&spc2SubscriptionPaid(subscription,plan);

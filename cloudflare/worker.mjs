@@ -258,7 +258,9 @@ async function spc2PublicDirectoryApi(request,env,url){
      verified:false,featured:false,createdAt:row.created_at};
   });
   const ownerProfile={id:'superior',industry:'construction',ownerListed:true,name:'Superior Maintenance and Remodeling',tagline:'From an idea to a finished improvement.',city:'Fontana',area:'Fontana, California — contact for service coverage',coverageMode:'cities',coverageAreas:[],coverageZip:'',coverageRadius:null,phone:'909-352-3627',website:'https://superior-maintenance-remodeling.indigotune5.chatgpt.site',logo:'/superior-logo.png',description:'Residential and commercial maintenance, painting and remodeling. Contact Superior to discuss the scope, estimate, and availability for your next project.',services:['Painting','Drywall & repairs','Flooring','Kitchens & bathrooms','Doors & windows','Patios & decks','General maintenance','Remodeling'],verified:false,featured:true,createdAt:'2026-11-01T00:00:00.000Z'};
-  return spc2Json({profiles:[ownerProfile,...profiles.filter(p=>p.id!==ownerProfile.id)]});
+  const automotiveOwnerProfile={"id":"best-wrench-works","industry":"automotive","ownerListed":true,"name":"Best Wrench Worx LLC","city":"Fontana","area":"Fontana, California — contact for service coverage","coverageMode":"cities","coverageAreas":[],"phone":"909-251-4533","tagline":"Automotive repair and maintenance","description":"Contact Best Wrench Worx to discuss automotive repair, maintenance, pricing and availability.","services":["Brakes","Oil service","Transmission service","Alternators & starters","Suspension","Head gaskets","Timing belts & chains","Engine & transmission swaps","Radiators"],"verified":false,"featured":true};
+  const ownerProfiles=[ownerProfile,automotiveOwnerProfile];
+  return spc2Json({profiles:[...ownerProfiles,...profiles.filter(p=>!ownerProfiles.some(o=>o.id===p.id))]});
  }catch{return spc2Error('Directory temporarily unavailable',503)}
 }
 

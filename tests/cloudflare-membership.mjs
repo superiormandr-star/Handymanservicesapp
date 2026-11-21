@@ -57,7 +57,13 @@ test('Cloudflare membership enrollment persists, requires private key, and never
  result=await worker.fetch(request('/api/profiles'),env);
  assert.equal(result.status,200);
  const listingProfiles=(await result.json()).profiles;
- assert.equal(listingProfiles.length,1);
+ assert.equal(listingProfiles.length,2);
+ const automotive=listingProfiles.find(p=>p.id==='best-wrench-works');
+ assert.equal(automotive.name,'Best Wrench Worx LLC');
+ assert.equal(automotive.industry,'automotive');
+ assert.equal(automotive.ownerListed,true);
+ assert.equal(automotive.featured,true);
+ assert.equal(automotive.verified,false);
  assert.equal(listingProfiles[0].id,'superior');
  assert.equal(listingProfiles[0].industry,'construction');
  assert.equal(listingProfiles[0].ownerListed,true);

@@ -67,6 +67,12 @@ automotiveIntro.innerHTML=`
  <h3 class="construction-subheading">Automotive memberships and estimates</h3>
 `;
 automotiveView.querySelector('.container').insertBefore(automotiveIntro,automotivePlans);
+const automotiveDirectory=document.createElement('section');
+automotiveDirectory.className='section directory';
+automotiveDirectory.innerHTML='<h3>Automotive professionals</h3><div id="automotive-directory-list" class="directory-list" aria-live="polite"></div>';
+automotiveIntro.insertBefore(automotiveDirectory,automotiveIntro.querySelector('.construction-subheading:last-child'));
+function renderAutomotiveDirectory(){const root=$('#automotive-directory-list');if(!root)return;const entries=profiles.filter(p=>p.industry==='automotive');root.innerHTML=entries.length?entries.map(listing).join(''):'<div class="empty">No automotive businesses listed yet.</div>';}
+
 const appScreens={
  home:['#customer-shortcut','#home','.ticker','#how','.faq'],
  customers:['#customers'],
@@ -317,5 +323,5 @@ if(spc2MembershipSaved()){
  button.addEventListener('click',spc2CheckMembership);
  controls.appendChild(button);form.appendChild(controls);
 }
-(async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory();renderConstructionDirectory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
+(async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory();renderConstructionDirectory();renderAutomotiveDirectory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
 })();

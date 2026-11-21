@@ -292,7 +292,14 @@ $('#join-form').addEventListener('submit',async e=>{
   const saved={requestId:outcome.requestId,accessKey:outcome.accessKey,packageKey:outcome.packageKey};
   localStorage.setItem(spc2EnrollmentStore,JSON.stringify(saved));
   status.textContent='Application saved. Opening PayPal to finish your recurring subscription. Your membership will activate after payment is confirmed.';
-  location.assign(outcome.checkoutUrl);
+  let link=outcome.checkoutUrl;
+  if(outcome.automaticCheckoutAvailable){
+   const purchase=await api('/api/membership-checkout',{method:'POST',body:JSON.stringify({requestId:outcome.requestId,accessKey:outcome.accessKey})});
+   if(!purchase.checkoutUrl)throw Error(purchase.message||'PayPal checkout is unavailable. No new subscription was started.');
+   link=purchase.checkoutUrl;
+  }
+  if(!/^https:\/\/www\.paypal\.com\//.test(link))throw Error('PayPal checkout link was not recognized');
+  location.assign(link);
  }catch(err){status.textContent=err.message;status.classList.add('error')}
  finally{submit.disabled=false}
 });

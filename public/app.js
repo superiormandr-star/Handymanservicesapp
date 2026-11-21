@@ -40,7 +40,7 @@ constructionIntro.innerHTML=`
  <div class="construction-services">
   <span>Remodeling</span><span>Kitchen &amp; Bathroom</span><span>Flooring</span><span>Drywall</span><span>Painting</span><span>Home Repairs</span><span>Patios &amp; Decks</span><span>Property Maintenance</span>
  </div>
- <div class="construction-how"><h3>How the construction network works</h3><p><strong>Customers:</strong> Post a job for free, select one to three private estimates, review verified responses, and choose your professional. Your private contact information stays hidden until selection.</p><p><strong>Professionals:</strong> Apply to be listed, choose your service territory and membership tier, and manage customer inquiries through your professional workspace.</p><p class="construction-note">Services vary by professional. Private job posting is available; new recurring membership checkout remains disabled until PayPal lifecycle verification is complete.</p></div>
+ <div class="construction-how"><h3>How the construction network works</h3><p><strong>Customers:</strong> Post a job for free, select one to three private estimates, review verified responses, and choose your professional. Your private contact information stays hidden until selection.</p><p><strong>Professionals:</strong> Apply to be listed, choose your service territory and membership tier, and manage customer inquiries through your professional workspace.</p><p class="construction-note">Services vary by professional. Private job posting is available. PayPal hosts membership checkout; paid access only begins after subscription confirmation.</p></div>
  <h3 class="construction-subheading">Construction memberships and estimates</h3>
 `;
 constructionView.querySelector('.container').insertBefore(constructionIntro,constructionPlans);
@@ -57,7 +57,7 @@ automotiveIntro.innerHTML=`
  <div class="construction-services">
   <span>Diagnostics</span><span>Engine Repair</span><span>Brakes</span><span>Suspension</span><span>Maintenance</span><span>Electrical</span><span>Detailing</span><span>Body &amp; Paint</span>
  </div>
- <div class="construction-how"><h3>How the automotive network works</h3><p><strong>Customers:</strong> Post an automotive job, receive verified private estimates up to your chosen limit, and decide which professional to contact.</p><p><strong>Professionals:</strong> Apply for a listing, choose your membership and service area, and manage incoming inquiries in your professional workspace.</p><p class="construction-note">Available services vary by business. Private estimates require verified professional eligibility; new subscription checkout is disabled pending PayPal lifecycle verification.</p></div>
+ <div class="construction-how"><h3>How the automotive network works</h3><p><strong>Customers:</strong> Post an automotive job, receive verified private estimates up to your chosen limit, and decide which professional to contact.</p><p><strong>Professionals:</strong> Apply for a listing, choose your membership and service area, and manage incoming inquiries in your professional workspace.</p><p class="construction-note">Available services vary by business. Private estimates require verified professional eligibility; PayPal hosts the subscription checkout; member access requires confirmed payment.</p></div>
  <h3 class="construction-subheading">Automotive memberships and estimates</h3>
 `;
 automotiveView.querySelector('.container').insertBefore(automotiveIntro,automotivePlans);

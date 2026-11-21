@@ -177,7 +177,7 @@ async function spc2MembershipApi(request,env,url){
   }catch{return spc2Error('Application could not be saved. Please retry.',503)}
   return spc2Json({ok:true,requestId:id,accessKey:access,packageKey:industry+'-'+tier,
    checkoutUrl:'https://www.paypal.com/webapps/billing/plans/subscribe?plan_id='+plan.planId,
-   activation:'pending_payment',message:'Application saved. Continue to secure recurring PayPal checkout.'},201);
+   activation:'pending_payment',automaticCheckoutAvailable:spc2PaymentConfig(env),message:'Application saved. Continue to secure recurring PayPal checkout.'},201);
  }
  if(path==='/api/membership/status'){
   if(request.method!=='GET')return spc2Error('GET required',405);

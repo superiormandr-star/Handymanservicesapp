@@ -81,7 +81,7 @@ async function spc2PayPalProvider(env,endpoint,opt={}){
  const token=(await auth.json()).access_token;
  if(!token)throw Error('PayPal token missing');
  const response=await fetch('https://api-m.paypal.com'+endpoint,{
-  method:opt.method||'GET',headers:{authorization:'Bearer '+token,'content-type':'application/json'},
+  method:opt.method||'GET',headers:{authorization:'Bearer '+token,'content-type':'application/json',...(opt.headers||{})},
   ...(opt.body?{body:JSON.stringify(opt.body)}:{})});
  if(!response.ok)throw Error('PayPal request failed');
  return response.json();
@@ -101,9 +101,57 @@ function spc2SubscriptionPaid(sub,plan){
   !Number(sub.billing_info?.failed_payments_count||0) &&
   sub.plan_overridden!==true;
 }
+
+function spc2PlanTermsMatch(live,plan){
+ const billing=live?.billing_cycles||[],cycle=billing[0];
+ return live?.id===plan.planId&&live.status==='ACTIVE'&&billing.length===1&&
+  cycle?.tenure_type==='REGULAR'&&cycle.total_cycles===0&&
+  cycle.frequency?.interval_unit==='MONTH'&&cycle.frequency?.interval_count===1&&
+  cycle.pricing_scheme?.fixed_price?.currency_code==='USD'&&
+  Number(cycle.pricing_scheme.fixed_price.value)===Number(plan.amount)&&
+  !Number(live.payment_preferences?.setup_fee?.value||0)&&!Number(live.taxes?.percentage||0);
+}
+async function spc2CreateSubscriptionCheckout(request,env){
+ if(!spc2PaymentConfig(env))return spc2Error('Automatic PayPal checkout connection is not configured yet',503);
+ let body;try{body=await spc2ReadJson(request)}catch{return spc2Error('Invalid checkout request')}
+ const requestId=spc2Clean(body?.requestId,36),key=spc2Clean(body?.accessKey,64);
+ if(!/^[a-f0-9-]{36}$/.test(requestId)||!/^[a-f0-9]{64}$/.test(key))return spc2Error('Valid application access required',401);
+ const record=await env.DB.prepare('SELECT id,industry,tier,access_hash,status,paypal_subscription_id FROM spc2_applications WHERE id=?').bind(requestId).first();
+ if(!record||await spc2Hash(key)!==record.access_hash)return spc2Error('Application access denied',403);
+ if(record.status==='active')return spc2Json({status:'ACTIVE',message:'Membership already active'});
+ const plan=spc2Plans[record.industry+'-'+record.tier];
+ if(!plan)return spc2Error('Membership package not found',400);
+ try{
+  const live=await spc2PayPalProvider(env,'/v1/billing/plans/'+encodeURIComponent(plan.planId));
+  if(!spc2PlanTermsMatch(live,plan))
+   return spc2Error('PayPal plan terms do not match this monthly membership; no payment started',409);
+  let subId=record.paypal_subscription_id;
+  if(!subId){
+   const origin=new URL(request.url).origin;
+   const created=await spc2PayPalProvider(env,'/v1/billing/subscriptions',{
+    method:'POST',headers:{'PayPal-Request-Id':record.id},
+    body:{plan_id:plan.planId,custom_id:record.id,
+     application_context:{brand_name:'Superior ProConnect',user_action:'SUBSCRIBE_NOW',
+      return_url:origin+'/#advertise',cancel_url:origin+'/#advertise'}}});
+   if(!/^I-[A-Z0-9]+$/.test(created?.id||''))throw Error('Subscription response missing ID');
+   subId=created.id;
+   await env.DB.prepare('UPDATE spc2_applications SET paypal_subscription_id=?,payment_status=?,updated_at=? WHERE id=? AND paypal_subscription_id IS NULL')
+    .bind(subId,'awaiting_paypal_approval',new Date().toISOString(),record.id).run();
+  }
+  const subscription=await spc2PayPalProvider(env,'/v1/billing/subscriptions/'+encodeURIComponent(subId));
+  if(subscription.id!==subId||subscription.plan_id!==plan.planId||subscription.custom_id!==record.id)
+   return spc2Error('PayPal subscription did not match the selected application',409);
+  const approve=subscription.links?.find(x=>x.rel==='approve'),u=approve?.href?new URL(approve.href):null;
+  if(!u||u.protocol!=='https:'||u.hostname!=='www.paypal.com')
+   return spc2Json({status:subscription.status||'PENDING',message:'PayPal approval link is unavailable. Review your membership status.'});
+  return spc2Json({checkoutUrl:u.href,source:'paypal',status:subscription.status});
+ }catch{return spc2Error('PayPal cannot authorize this membership right now; no additional payment was submitted',503)}
+}
+
 async function spc2MembershipApi(request,env,url){
  const path=url.pathname;
- if(!['/api/join','/api/membership/status','/api/paypal/webhook'].includes(path))return null;
+ if(!['/api/join','/api/membership/status','/api/membership-checkout','/api/paypal/webhook'].includes(path))return null;
+ if(path==='/api/membership-checkout')return request.method==='POST'?spc2CreateSubscriptionCheckout(request,env):spc2Error('POST required',405);
  if(path==='/api/join'){
   if(request.method!=='POST')return spc2Error('POST required',405);
   let data;try{data=await spc2ReadJson(request)}catch{return spc2Error('Invalid or oversized application');}

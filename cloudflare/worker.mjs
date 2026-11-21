@@ -186,6 +186,23 @@ async function spc2MembershipApi(request,env,url){
  return spc2Json({received:true,activation:active?'active':'pending'});
 }
 
+
+async function spc2PublicDirectoryApi(request,env,url){
+ if(url.pathname!=='/api/profiles')return null;
+ if(request.method!=='GET')return spc2Error('GET required',405);
+ try{
+  const result=await env.DB.prepare("SELECT id,business,city,industry,services_json,coverage_mode,coverage_json,created_at FROM spc2_applications WHERE status='active' AND payment_status='confirmed' ORDER BY created_at DESC LIMIT 100").all();
+  const profiles=(result.results||[]).map(row=>{
+   const services=JSON.parse(row.services_json||'[]'),coverage=JSON.parse(row.coverage_json||'{}');
+   const area=row.coverage_mode==='radius'?(coverage.radius+'-mile radius from ZIP '+coverage.zip):(coverage.locations||[]).join(', ');
+   return {id:row.id,name:row.business,city:row.city,industry:row.industry,
+     area,services,tagline:'Independent service provider',description:'Contact this professional to discuss service availability.',
+     verified:false,featured:false,createdAt:row.created_at};
+  });
+  return spc2Json({profiles});
+ }catch{return spc2Error('Directory temporarily unavailable',503)}
+}
+
 // Cloudflare Workers entry point for Superior ProConnect 2.0.
 // Fail closed until the existing Node.js routes have been ported and tested.
 // Never return fake success for job submissions, payments or membership activation.
@@ -194,6 +211,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/api/jobs')) { const result = await spc2JobApi(request,env,url); if(result)return result; }
     { const result = await spc2MembershipApi(request,env,url); if(result)return result; }
+    { const result = await spc2PublicDirectoryApi(request,env,url); if(result)return result; }
     if (url.pathname === '/api/health') {
       try {
         await env.DB.prepare('SELECT 1 AS ok').first();

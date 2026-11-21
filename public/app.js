@@ -245,6 +245,64 @@ document.addEventListener('click',e=>{
  if(e.target.closest('a[href="#advertise"]')){const f=$('#join-form');f.elements.industry.value=industry;if(card)f.elements.membership.value=card.dataset.packageKey.split('-')[1];}
  if(e.target.closest('a[href="#customers"]'))$('#customer-job-form').elements.industry.value=industry;
 });
-$('#join-form').addEventListener('submit',async e=>{e.preventDefault();const form=e.target,status=$('#join-status'),submit=form.querySelector('[type=submit]');status.classList.remove('error');status.textContent='Submitting your business details…';submit.disabled=true;try{const fd=new FormData(form);const data=Object.fromEntries(fd.entries());await api('/api/join',{method:'POST',body:JSON.stringify(data)});status.textContent='Application received. Membership enrollment is being finalized. No payment has been taken and no founding-member spot is reserved.'}catch(err){status.textContent=err.message;status.classList.add('error')}finally{submit.disabled=false}});
+const spc2EnrollmentStore='spc2-enrollment';
+function spc2MembershipSaved(){
+ try{const raw=localStorage.getItem(spc2EnrollmentStore),val=raw?JSON.parse(raw):null;return val&&val.requestId&&val.accessKey?val:null}catch{return null}
+}
+async function spc2CheckMembership(){
+ const record=spc2MembershipSaved(),status=$('#join-status');
+ if(!record)return;
+ try{
+  const result=await api('/api/membership/status?id='+encodeURIComponent(record.requestId),{headers:{'x-membership-key':record.accessKey}});
+  status.classList.remove('error');
+  status.textContent=result.active
+   ?'Your '+result.industry+' '+result.tier+' membership payment has been confirmed and your membership is active.'
+   :'Your application is saved. Subscription status: '+result.paymentStatus+'. Paid access begins only after PayPal confirms your subscription.';
+ }catch(err){status.classList.add('error');status.textContent='Could not check membership: '+err.message;}
+}
+document.addEventListener('click',e=>{
+ const link=e.target.closest('.paypal-subscription-link');
+ if(!link)return;
+ const card=link.closest('[data-package-key]'),packageKey=card?.dataset.packageKey;
+ if(!packageKey||!/^https:\/\/www\.paypal\.com\/webapps\/billing\/plans\/subscribe\?plan_id=P-[A-Z0-9]+$/.test(link.href))return;
+ e.preventDefault();
+ const [industry,tier]=packageKey.split('-'),form=$('#join-form');
+ form.elements.industry.value=industry;form.elements.membership.value=tier;
+ const prior=spc2MembershipSaved();
+ if(prior?.packageKey===packageKey){
+   const status=$('#join-status');
+   status.classList.remove('error');
+   status.textContent='A saved application for this package exists. Continue through PayPal or check your subscription status.';
+   spc2CheckMembership();
+ }
+ $('#join-status').textContent='Complete this application, then the site will send you to the selected PayPal recurring subscription. Payment does not automatically grant access until PayPal confirmation.';
+ location.hash='#advertise';form.scrollIntoView({behavior:'smooth',block:'center'});
+ form.elements.business.focus();
+});
+$('#join-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const form=e.target,status=$('#join-status'),submit=form.querySelector('[type=submit]');
+ status.classList.remove('error');
+ status.textContent='Saving your business application…';
+ submit.disabled=true;
+ try{
+  const data=Object.fromEntries(new FormData(form).entries());
+  const outcome=await api('/api/join',{method:'POST',body:JSON.stringify(data)});
+  if(!outcome.requestId||!outcome.accessKey||!outcome.checkoutUrl)throw Error('Enrollment response was incomplete; no payment started.');
+  const saved={requestId:outcome.requestId,accessKey:outcome.accessKey,packageKey:outcome.packageKey};
+  localStorage.setItem(spc2EnrollmentStore,JSON.stringify(saved));
+  status.textContent='Application saved. Opening PayPal to finish your recurring subscription. Your membership will activate after payment is confirmed.';
+  location.assign(outcome.checkoutUrl);
+ }catch(err){status.textContent=err.message;status.classList.add('error')}
+ finally{submit.disabled=false}
+});
+if(spc2MembershipSaved()){
+ const saved=spc2MembershipSaved(),form=$('#join-form'),controls=document.createElement('div');
+ controls.className='form-status';controls.id='spc2-existing-membership';
+ const button=document.createElement('button');button.type='button';button.className='btn btn-outline';
+ button.textContent='Check my membership status';
+ button.addEventListener('click',spc2CheckMembership);
+ controls.appendChild(button);form.appendChild(controls);
+}
 (async()=>{try{const data=await api('/api/profiles');profiles=data.profiles;directory()}catch{$('#directory-list').innerHTML='<div class="empty">Business listings are temporarily unavailable.</div>'}route()})();window.addEventListener('hashchange',route);if('serviceWorker'in navigator&&location.protocol==='https:')window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
 })();

@@ -24,6 +24,18 @@ export async function opportunityApi(request,env){
  if(origin&&origin!==new URL(request.url).origin)return fail('Invalid request origin',403);
  if(!env.DB)return fail('Storage unavailable',503);
  try{
+ if(path==='/api/opportunity/overview'&&request.method==='GET'){
+ const queries={
+  jobs:"SELECT industry,status,COUNT(*) AS count FROM spc2_jobs GROUP BY industry,status",
+  members:"SELECT industry,tier,status,payment_status,COUNT(*) AS count FROM spc2_applications GROUP BY industry,tier,status,payment_status",
+  estimates:"SELECT industry,estimate_status,COUNT(*) AS count FROM spc2_estimate_records GROUP BY industry,estimate_status",
+  payments:"SELECT kind,currency,status,COUNT(*) AS count,SUM(amount_cents) AS amount_cents FROM spc2_payment_events WHERE verified=1 GROUP BY kind,currency,status",
+  recentJobs:"SELECT id,industry,title,city,status,created_at FROM spc2_jobs ORDER BY created_at DESC LIMIT 25",
+  recentMembers:"SELECT id,business,industry,tier,city,status,payment_status,created_at FROM spc2_applications ORDER BY created_at DESC LIMIT 25"
+ };
+ const sections=await Promise.all(Object.entries(queries).map(async ([key,sql])=>{try{const r=await env.DB.prepare(sql).all();return [key,{available:true,rows:r.results||[]}]}catch{return [key,{available:false,rows:[]}]}}));
+ return reply({sections:Object.fromEntries(sections),checkedAt:new Date().toISOString(),limitations:{backupVerified:false,automatedBookingEnabled:false,aiEnabled:false,paymentTotalsComplete:false}});
+ }
  if(path==='/api/opportunity/prospects'&&request.method==='GET'){
  const {results}=await env.DB.prepare('SELECT id,business,industry,city,website,source,status,score,demo_at,setup_cents,monthly_cents,created_at,updated_at FROM spc2_opportunity_prospects ORDER BY score DESC, created_at DESC LIMIT 500').all();
  return reply({prospects:results||[]});

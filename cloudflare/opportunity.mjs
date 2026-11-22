@@ -4,14 +4,45 @@ const fail=(error,status=400)=>reply({error},status);
 const clean=(v,max)=>typeof v==='string'?v.trim().slice(0,max):'';
 const statuses=['new','contacted','demo_booked','proposal','client','closed'];
 const industries=['construction','automotive','cleaning','other'];
-async function authorized(request,env){
+const cookieName='__Host-spc2_owner';
+const lifetime=30*24*60*60;
+const hash=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s))),x=>x.toString(16).padStart(2,'0')).join('');
+const generation=key=>hash('spc2-session-generation:'+key);
+function cookie(request){return (request.headers.get('cookie')||'').split(';').map(x=>x.trim()).find(x=>x.startsWith(cookieName+'='))?.slice(cookieName.length+1)||''}
+function cookieHeader(value,maxAge){return cookieName+'='+value+'; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age='+maxAge}
+function sameOrigin(request){return request.headers.get('origin')===new URL(request.url).origin&&request.headers.get('x-spc2-session')==='1'}
+async function bearer(request,env){
  const key=env.OPPORTUNITY_OWNER_TOKEN;
  if(typeof key!=='string'||key.length<32)return false;
  const supplied=request.headers.get('authorization')||'';
  if(!supplied.startsWith('Bearer ')||supplied.length>1024)return false;
- const digest=async s=>new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)));
- const a=await digest(supplied.slice(7)),b=await digest(key);
- let diff=0;for(let n=0;n<a.length;n++)diff|=a[n]^b[n];return diff===0;
+ const a=await hash(supplied.slice(7)),b=await hash(key);
+ let diff=0;for(let n=0;n<a.length;n++)diff|=a.charCodeAt(n)^b.charCodeAt(n);return diff===0;
+}
+async function sessionAuthorized(request,env){
+ const key=env.OPPORTUNITY_OWNER_TOKEN,raw=cookie(request);
+ if(typeof key!=='string'||key.length<32||!/^[a-f0-9]{64}$/.test(raw)||!env.DB)return false;
+ if(request.method!=='GET'&&!sameOrigin(request))return false;
+ const entry=await env.DB.prepare('SELECT owner_generation,expires_at FROM spc2_owner_sessions WHERE session_hash=?').bind(await hash(raw)).first();
+ return !!entry&&entry.expires_at>Math.floor(Date.now()/1000)&&entry.owner_generation===await generation(key);
+}
+async function sessionRoute(request,env,path){
+ if(request.method!=='POST')return fail('Method not allowed',405);
+ if(!sameOrigin(request))return fail('Invalid request origin',403);
+ if(!env.DB)return fail('Storage unavailable',503);
+ if(path.endsWith('/logout')){
+ const raw=cookie(request);
+ if(/^[a-f0-9]{64}$/.test(raw))await env.DB.prepare('DELETE FROM spc2_owner_sessions WHERE session_hash=?').bind(await hash(raw)).run();
+ return new Response(JSON.stringify({ok:true}),{headers:{'content-type':'application/json','cache-control':'private, no-store','set-cookie':cookieHeader('',0)}});
+ }
+ if(!await bearer(request,env))return fail('Owner access required',401);
+ const raw=Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');
+ const now=Math.floor(Date.now()/1000);
+ const previous=cookie(request);
+ if(/^[a-f0-9]{64}$/.test(previous))await env.DB.prepare('DELETE FROM spc2_owner_sessions WHERE session_hash=?').bind(await hash(previous)).run();
+ await env.DB.prepare('DELETE FROM spc2_owner_sessions WHERE expires_at<=?').bind(now).run();
+ await env.DB.prepare('INSERT INTO spc2_owner_sessions(session_hash,owner_generation,expires_at) VALUES(?,?,?)').bind(await hash(raw),await generation(env.OPPORTUNITY_OWNER_TOKEN),now+lifetime).run();
+ return new Response(JSON.stringify({ok:true}),{headers:{'content-type':'application/json','cache-control':'private, no-store','set-cookie':cookieHeader(raw,lifetime)}});
 }
 export function priority(record){
  return (record.inbound===true?35:0)+(record.bookingGap===true?35:0)+(record.highValue===true?30:0);
@@ -19,11 +50,12 @@ export function priority(record){
 export async function opportunityApi(request,env){
  const path=new URL(request.url).pathname;
  if(!path.startsWith('/api/opportunity/'))return null;
- if(!await authorized(request,env))return fail('Owner access required',401);
+ try{
+ if(path==='/api/opportunity/session/login'||path==='/api/opportunity/session/logout')return await sessionRoute(request,env,path);
+ if(!await bearer(request,env)&&!await sessionAuthorized(request,env))return fail('Owner access required',401);
  const origin=request.headers.get('origin');
  if(origin&&origin!==new URL(request.url).origin)return fail('Invalid request origin',403);
  if(!env.DB)return fail('Storage unavailable',503);
- try{
  if(path==='/api/opportunity/overview'&&request.method==='GET'){
  const queries={
   jobs:"SELECT industry,status,COUNT(*) AS count FROM spc2_jobs GROUP BY industry,status",

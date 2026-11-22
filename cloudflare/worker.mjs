@@ -1,3 +1,4 @@
+import { opportunityApi } from './opportunity.mjs';
 
 const spc2Json=(data,status=200)=>Response.json(data,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
 const spc2Hash=async value=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -270,6 +271,7 @@ async function spc2PublicDirectoryApi(request,env,url){
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    { const result = await opportunityApi(request,env); if(result)return result; }
     if (url.pathname.startsWith('/api/jobs')) { const result = await spc2JobApi(request,env,url); if(result)return result; }
     { const result = await spc2MembershipApi(request,env,url); if(result)return result; }
     { const result = await spc2PublicDirectoryApi(request,env,url); if(result)return result; }

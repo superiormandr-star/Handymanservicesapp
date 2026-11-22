@@ -11,3 +11,21 @@ test('demo booking requires a date',async()=>assert.equal((await opportunityApi(
 
 test('owner overview requires authorization',async()=>assert.equal((await opportunityApi(new Request('https://example.com/api/opportunity/overview'),{OPPORTUNITY_OWNER_TOKEN:key})).status,401));
 test('overview reports unavailable sources separately and never selects private fields',async()=>{const DB={prepare:sql=>{assert.doesNotMatch(sql,/customer_private|access_hash|SELECT \*/);return{all:async()=>{if(sql.includes('payment_events'))throw Error('missing table');return {results:[]}}}}};const response=await opportunityApi(new Request('https://example.com/api/opportunity/overview',{headers}),{DB,OPPORTUNITY_OWNER_TOKEN:key});assert.equal(response.status,200);const body=await response.json();assert.equal(body.sections.jobs.available,true);assert.equal(body.sections.payments.available,false);assert.equal(body.limitations.paymentTotalsComplete,false)});
+
+function sessionTestDb(){const sessions=new Map();return{sessions,prepare(sql){return{bind(...args){return{run:async()=>{if(sql.startsWith('INSERT INTO spc2_owner_sessions'))sessions.set(args[0],{owner_generation:args[1],expires_at:args[2]});else if(sql.includes('WHERE session_hash='))sessions.delete(args[0]);return {meta:{changes:1}}},first:async()=>sessions.get(args[0])}},all:async()=>({results:[]})}}}}
+test('remembered login, rotation, CSRF, logout and expiry',async()=>{
+ const db=sessionTestDb(),env={DB:db,OPPORTUNITY_OWNER_TOKEN:key},base='https://example.com/api/opportunity/',same={origin:'https://example.com','x-spc2-session':'1'};
+ const post=(path,h)=>new Request(base+path,{method:'POST',headers:{...same,...h}});
+ assert.equal((await opportunityApi(post('session/login',{}),env)).status,401);
+ const login=await opportunityApi(post('session/login',headers),env);assert.equal(login.status,200);
+ const set=login.headers.get('set-cookie');assert.match(set,/HttpOnly/);assert.match(set,/SameSite=Strict/);assert.match(set,/Secure/);assert.match(set,/Max-Age=2592000/);
+ const cookie=set.split(';')[0];assert.ok(!db.sessions.has(cookie.split('=')[1]));
+ const request=new Request(base+'overview',{headers:{cookie}});assert.equal((await opportunityApi(request,env)).status,200);
+ assert.equal((await opportunityApi(request,{...env,OPPORTUNITY_OWNER_TOKEN:'z'.repeat(40)})).status,401);
+ assert.equal((await opportunityApi(new Request(base+'prospects',{method:'POST',headers:{cookie},body:'{}'}),env)).status,401);
+ assert.equal((await opportunityApi(post('session/logout',{cookie}),env)).status,200);
+ assert.equal((await opportunityApi(request,env)).status,401);
+ const second=await opportunityApi(post('session/login',headers),env),c2=second.headers.get('set-cookie').split(';')[0];
+ for(const s of db.sessions.values())s.expires_at=0;
+ assert.equal((await opportunityApi(new Request(base+'overview',{headers:{cookie:c2}}),env)).status,401);
+});

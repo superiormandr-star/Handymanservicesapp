@@ -1,8 +1,8 @@
 'use strict';
-const $=id=>document.getElementById(id);let token='';
+const $=id=>document.getElementById(id);
 const status=(s)=>{$('status').textContent=s};
 const el=(tag,text)=>{const x=document.createElement(tag);x.textContent=text;return x};
-async function api(path,method='GET',body){const r=await fetch('/api/opportunity/'+path,{method,headers:{authorization:'Bearer '+token,...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),cache:'no-store'});const d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');return d}
+async function api(path,method='GET',body,key){const r=await fetch('/api/opportunity/'+path,{method,headers:{'x-spc2-session':'1',...(key?{authorization:'Bearer '+key}:{}),...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),credentials:'same-origin',cache:'no-store'});const d=await r.json();if(!r.ok){const e=Error(d.error||'Request failed');e.status=r.status;throw e}return d}
 const dollars=c=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(c/100);
 function field(parent,label,control){const l=el('label',label);l.append(control);parent.append(l);return control}
 function render(rows){$('metrics').replaceChildren();$('records').replaceChildren();
@@ -24,7 +24,11 @@ async function load(){
  if($('network-overview')){const d=await api('overview');networkRender(d);try{const p=await api('prospects');render(p.prospects)}catch(e){$('metrics').replaceChildren();$('records').replaceChildren(el('p',e.message));}}
  else{const d=await api('prospects');render(d.prospects)}
 }
-$('signin').onsubmit=async e=>{e.preventDefault();token=$('token').value;$('token').value='';try{await load();$('login').hidden=true;$('workspace').hidden=false;status('Owner access verified.')}catch(e){token='';status(e.message)}};
-$('logout').onclick=()=>{token='';$('records').replaceChildren();$('metrics').replaceChildren();if($('network-metrics')){$('network-metrics').replaceChildren();$('network-details').replaceChildren();$('network-status').textContent=''}$('workspace').hidden=true;$('login').hidden=false;status('Signed out.')};
+function showWorkspace(){ $('login').hidden=true;$('workspace').hidden=false;status('Owner access verified. This device stays signed in for 30 days.')}
+function clearWorkspace(){ $('records').replaceChildren();$('metrics').replaceChildren();if($('network-metrics')){$('network-metrics').replaceChildren();$('network-details').replaceChildren();$('network-status').textContent=''}$('workspace').hidden=true;$('login').hidden=false;}
+$('signin').onsubmit=async e=>{e.preventDefault();const input=$('token'),key=input.value;input.value='';const button=e.target.querySelector('button');button.disabled=true;try{await api('session/login','POST',undefined,key);await load();showWorkspace()}catch(e){clearWorkspace();status(e.message)}finally{button.disabled=false}};
+$('logout').onclick=async()=>{try{await api('session/logout','POST');clearWorkspace();status('Signed out.')}catch(e){status('Could not sign out securely: '+e.message)}};
+async function restore(){try{await load();showWorkspace()}catch(e){clearWorkspace();status(e.status===401?'Sign in once on this device.':e.message)}}
+restore();
 $('refresh').onclick=()=>load().catch(e=>status(e.message));
 $('new').onsubmit=async e=>{e.preventDefault();const f=e.target,b=f.querySelector('button');b.disabled=true;const data=Object.fromEntries(new FormData(f));for(const k of ['inbound','bookingGap','highValue'])data[k]=f.elements[k].checked;try{await api('prospects','POST',data);f.reset();await load();status('Prospect added.')}catch(e){status(e.message)}finally{b.disabled=false}};
